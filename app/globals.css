@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.2rem;
+
+    /* Premium Light Mode - using HSL for Tailwind v3 compatibility */
+    --background: 48 100% 98%; /* Warm Off-white */
+    --foreground: 240 15% 9%; /* Deep Navy Black */
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 15% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 15% 9%;
+
+    --primary: 180 25% 25%; /* Formal Deep Teal */
+    --primary-foreground: 48 100% 98%;
+
+    --secondary: 48 30% 95%; /* Light Sand/Gold tint */
+    --secondary-foreground: 180 25% 25%;
+
+    --muted: 180 10% 96%;
+    --muted-foreground: 180 10% 40%;
+
+    --accent: 48 20% 97%;
+    --accent-foreground: 180 25% 25%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 180 15% 88%;
+    --input: 180 15% 88%;
+    --ring: 180 25% 25%;
+
+    /* Charts - harmonized with teal primary */
+    --chart-1: 180 40% 35%; /* Teal */
+    --chart-2: 48 50% 60%; /* Gold */
+    --chart-3: 200 35% 45%;
+    --chart-4: 40 45% 70%;
+    --chart-5: 30 50% 75%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 180 20% 20%;
+    --sidebar-primary: 180 25% 25%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 48 20% 97%;
+    --sidebar-accent-foreground: 180 25% 25%;
+    --sidebar-border: 180 15% 88%;
+    --sidebar-ring: 180 25% 25%;
+  }
+
+  .dark {
+    /* Premium Dark Mode - Deep Navy & Teal */
+    --background: 240 25% 12%; /* Deep Navy base */
+    --foreground: 48 100% 98%;
+
+    --card: 240 20% 15%;
+    --card-foreground: 48 100% 98%;
+
+    --popover: 240 20% 15%;
+    --popover-foreground: 48 100% 98%;
+
+    --primary: 180 60% 55%; /* Bright Teal/Cyan */
+    --primary-foreground: 240 25% 12%;
+
+    --secondary: 240 15% 20%;
+    --secondary-foreground: 48 100% 98%;
+
+    --muted: 240 15% 20%;
+    --muted-foreground: 240 10% 65%;
+
+    --accent: 240 15% 20%;
+    --accent-foreground: 48 100% 98%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 48 100% 98%;
+
+    --border: 240 15% 25%;
+    --input: 240 15% 25%;
+    --ring: 180 60% 55%;
+
+    --chart-1: 180 60% 55%;
+    --chart-2: 240 40% 50%;
+    --chart-3: 280 50% 60%;
+    --chart-4: 40 45% 70%;
+    --chart-5: 20 45% 60%;
+
+    --sidebar-background: 240 25% 12%;
+    --sidebar-foreground: 48 100% 98%;
+    --sidebar-primary: 180 60% 55%;
+    --sidebar-primary-foreground: 240 25% 12%;
+    --sidebar-accent: 240 15% 20%;
+    --sidebar-accent-foreground: 48 100% 98%;
+    --sidebar-border: 240 15% 25%;
+    --sidebar-ring: 180 60% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-area, #printable-area * {
+    visibility: visible;
+  }
+  #printable-area {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+  }
+  html {
+    font-size: 14px;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Custom Page Load Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-fade-in-up {
+  animation-duration: 0.8s;
+  animation-fill-mode: both;
+  animation-name: fadeInUp;
+  opacity: 0;
+}
+
+/* Banner Animations */
+@keyframes lightSweep {
+  0% {
+    transform: translateX(-100%) skewX(-25deg);
+  }
+  20%, 100% {
+    transform: translateX(200%) skewX(-25deg);
+  }
+}
+
+.animate-light-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-light-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 70%,
+    transparent 100%
+  );
+  animation: lightSweep 2s ease-in-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Fix for Add to Calendar z-index issue within Modals */
+.atcb-modal {
+  z-index: 9999 !important;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* Slide Up Animation for Bottom Bar */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
