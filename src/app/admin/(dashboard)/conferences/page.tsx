@@ -9,7 +9,7 @@ import { ConferenceExcelOperations } from '@/components/conference-excel'
 
 export default async function ConferencesPage() {
   // TODO: dynamic project ID
-  const projectId = 'cm6x20a8h00010clc2p180c42' 
+  const projectId = 'horti-agri' 
   const { data: conferences } = await getConferences(projectId)
 
   return (

@@ -9,7 +9,7 @@ export default async function ParticipantsPage({
   searchParams: { q?: string; type?: string } 
 }) {
   // TODO: Dynamic Project ID from context/auth
-  const projectId = 'cm743xxx' 
+  const projectId = 'horti-agri' 
   const query = searchParams.q || ''
   const type = searchParams.type || 'ALL'
 

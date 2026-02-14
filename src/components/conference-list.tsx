@@ -63,19 +63,21 @@ export function ConferenceList({ conferences }: ConferenceListProps) {
               <Card key={conference.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-48 h-32 md:h-auto bg-muted flex-shrink-0 relative">
-                      {conference.photoUrl ? (
-                         // eslint-disable-next-line @next/next/no-img-element
-                        <img 
-                          src={conference.photoUrl} 
-                          alt={conference.topic}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          No Photo
-                        </div>
-                      )}
+                    <div className="p-3 w-full md:w-52 flex-shrink-0">
+                      <div className="h-32 md:h-40 bg-muted rounded-md overflow-hidden relative">
+                        {conference.photoUrl ? (
+                           // eslint-disable-next-line @next/next/no-img-element
+                          <img 
+                            src={conference.photoUrl} 
+                            alt={conference.topic}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                            No Photo
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex-1 p-4 flex flex-col justify-between">
                       <div className="space-y-2">

@@ -103,8 +103,8 @@ export default function ExhibitorsPage() {
                   <TableRow key={item.id}>
                     <TableCell>{item.registrationId || '-'}</TableCell>
                     <TableCell className="font-medium">{item.companyName}</TableCell>
-                    <TableCell>{item.contactPerson || '-'}</TableCell>
-                    <TableCell>{item.boothNo || '-'}</TableCell>
+                    <TableCell>{item.contactName || '-'}</TableCell>
+                    <TableCell>{item.boothNumber || '-'}</TableCell>
                     <TableCell>
                       {item.quota} (+{item.overQuota})
                     </TableCell>
