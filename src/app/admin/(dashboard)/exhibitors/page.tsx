@@ -1,0 +1,154 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { getExhibitors, deleteExhibitor } from '@/app/actions/exhibitor'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus, Pencil, Trash2, Link as LinkIcon, Loader2 } from 'lucide-react'
+import { toast } from 'sonner' // Using sonner as recommended by shadcn
+
+export default function ExhibitorsPage() {
+  const searchParams = useSearchParams()
+  const projectId = searchParams.get('projectId')
+  
+  const [exhibitors, setExhibitors] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!projectId) return
+
+    async function fetchExhibitors() {
+      setLoading(true)
+      const result = await getExhibitors(projectId!)
+      if (result.success && result.exhibitors) {
+        setExhibitors(result.exhibitors)
+      }
+      setLoading(false)
+    }
+    fetchExhibitors()
+  }, [projectId])
+
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to delete this exhibitor?')) return
+
+    const result = await deleteExhibitor(id)
+    if (result.success) {
+      setExhibitors(exhibitors.filter(e => e.id !== id))
+      toast.success('Exhibitor deleted')
+    } else {
+      toast.error('Failed to delete exhibitor')
+    }
+  }
+
+  if (!projectId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh]">
+        <h2 className="text-xl font-semibold">No Project Selected</h2>
+        <p className="text-muted-foreground">Please select a project from the dashboard.</p>
+        <Link href="/admin/projects">
+          <Button className="mt-4" variant="outline">Select Project</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Exhibitors</h1>
+        <Link href={`/admin/exhibitors/new?projectId=${projectId}`}>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Add Exhibitor
+          </Button>
+        </Link>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All Exhibitors</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : exhibitors.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No exhibitors found. Add one to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Registration ID</TableHead>
+                  <TableHead>Company Name</TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Booth No.</TableHead>
+                  <TableHead>Quota</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {exhibitors.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.registrationId || '-'}</TableCell>
+                    <TableCell className="font-medium">{item.companyName}</TableCell>
+                    <TableCell>{item.contactPerson || '-'}</TableCell>
+                    <TableCell>{item.boothNo || '-'}</TableCell>
+                    <TableCell>
+                      {item.quota} (+{item.overQuota})
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {item.inviteCode ? (
+                          <Button variant="ghost" size="icon" title="Copy Invite Link" onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/invite/${item.inviteCode}`)
+                            toast.success('Invite link copied')
+                          }}>
+                            <LinkIcon className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="icon" title="Generate Invite Code" onClick={async () => {
+                             // Assuming we import generateInviteCode and have a local handler or just simpler to reload
+                             // For now, let's just create a quick inline handler or better, create a separate client component for the row actions if this gets complex.
+                             // But since I can't easily import the server action inside this map without client component boundary issues if not careful...
+                             // Actually, this is a client component, so I can import the action.
+                             const { generateInviteCode } = await import('@/app/actions/exhibitor')
+                             const res = await generateInviteCode(item.id)
+                             if(res.success) {
+                               toast.success('Code generated')
+                             }
+                          }}>
+                            <Loader2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
+                          <Button variant="ghost" size="icon">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -1,0 +1,292 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff } from '@/app/actions/staff'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface StaffManagementProps {
+  exhibitorId: string
+}
+
+export function StaffManagement({ exhibitorId }: StaffManagementProps) {
+  const [staffList, setStaffList] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingStaff, setEditingStaff] = useState<any>(null)
+  
+  // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
+  // but for production consistency, RHF + Zod is better. 
+  // I'll stick to controlled inputs for now to save setup time unless complex validation is needed.
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    title: '',
+    position: '',
+    email: '',
+    mobile: ''
+  })
+  const [isOtherTitle, setIsOtherTitle] = useState(false)
+  const [customTitle, setCustomTitle] = useState('')
+
+  const TITLES = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'Miss']
+
+  const fetchStaff = useCallback(async () => {
+    setLoading(true)
+    const result = await getStaffByExhibitorId(exhibitorId)
+    if (result.success && result.staff) {
+      setStaffList(result.staff)
+    }
+    setLoading(false)
+  }, [exhibitorId])
+
+  useEffect(() => {
+    fetchStaff()
+  }, [fetchStaff])
+
+  function handleOpenDialog(staff?: any) {
+    if (staff) {
+      setEditingStaff(staff)
+      const isStandard = TITLES.includes(staff.title || '')
+      
+      setFormData({
+        firstName: staff.firstName,
+        lastName: staff.lastName,
+        title: isStandard ? staff.title : 'Other',
+        position: staff.position || '',
+        email: staff.email || '',
+        mobile: staff.mobile || ''
+      })
+      
+      if (!isStandard && staff.title) {
+        setIsOtherTitle(true)
+        setCustomTitle(staff.title)
+      } else {
+        setIsOtherTitle(false)
+        setCustomTitle('')
+      }
+    } else {
+      setEditingStaff(null)
+      setFormData({
+        firstName: '',
+        lastName: '',
+        title: '',
+        position: '',
+        email: '',
+        mobile: ''
+      })
+      setIsOtherTitle(false)
+      setCustomTitle('')
+    }
+    setIsDialogOpen(true)
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    
+    const finalTitle = isOtherTitle ? customTitle : formData.title
+    
+    let result
+      if (editingStaff) {
+        const payload = {
+          name: `${finalTitle} ${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          phone: formData.mobile,
+          role: formData.position,
+        }
+        result = await updateStaff(editingStaff.id, payload)
+      } else {
+        const payload = {
+            exhibitorId: exhibitorId,
+            name: `${finalTitle} ${formData.firstName} ${formData.lastName}`.trim(),
+            email: formData.email,
+            phone: formData.mobile,
+            role: formData.position,
+        }
+        result = await createStaff(payload)
+      }
+
+    if (result.success) {
+      toast.success(editingStaff ? 'Staff updated' : 'Staff added')
+      setIsDialogOpen(false)
+      fetchStaff()
+    } else {
+      toast.error(result.error || 'Operation failed')
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this staff member?')) return
+    
+    const result = await deleteStaff(id)
+    if (result.success) {
+      toast.success('Staff deleted')
+      setStaffList(staffList.filter(s => s.id !== id))
+    } else {
+      toast.error('Failed to delete staff')
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Staff Members</CardTitle>
+        <Button onClick={() => handleOpenDialog()} size="sm">
+          <Plus className="mr-2 h-4 w-4" /> Add Staff
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center p-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : staffList.length === 0 ? (
+          <div className="text-center p-4 text-muted-foreground">
+            No staff members added yet.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[30px]"></TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {staffList.map((staff) => (
+                <TableRow key={staff.id}>
+                  <TableCell>
+                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                  </TableCell>
+                  <TableCell>{staff.title}</TableCell>
+                  <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
+                  <TableCell>{staff.position}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">{staff.email}</div>
+                    <div className="text-xs text-muted-foreground">{staff.mobile}</div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(staff.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingStaff ? 'Edit Staff' : 'Add Staff'}</DialogTitle>
+            <DialogDescription>
+              {editingStaff ? 'Update staff details.' : 'Add a new staff member to this exhibitor.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">Title</Label>
+                <div className="col-span-3 flex gap-2">
+                  <Select 
+                    value={formData.title} 
+                    onValueChange={(value) => {
+                      if (value === 'Other') {
+                        setIsOtherTitle(true)
+                        setFormData({...formData, title: 'Other'})
+                      } else {
+                        setIsOtherTitle(false)
+                        setFormData({...formData, title: value})
+                        setCustomTitle('')
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TITLES.map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {isOtherTitle && (
+                    <Input 
+                      placeholder="Specify title" 
+                      value={customTitle} 
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                      className="flex-1"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="firstName" className="text-right">First Name</Label>
+                <Input id="firstName" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="lastName" className="text-right">Last Name</Label>
+                <Input id="lastName" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="position" className="text-right">Position</Label>
+                <Input id="position" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">Email</Label>
+                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mobile" className="text-right">Mobile</Label>
+                <Input id="mobile" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="col-span-3" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">{editingStaff ? 'Save Changes' : 'Add Staff'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  )
+}
