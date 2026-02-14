@@ -65,7 +65,7 @@ export default function UsersPage() {
     <div className="space-y-6">
        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[hsl(180,25%,25%)] to-[hsl(180,25%,45%)]">User Management</h2>
           <p className="text-muted-foreground">
             Manage participants, exhibitors, and staff.
           </p>

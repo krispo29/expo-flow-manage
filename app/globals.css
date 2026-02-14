@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --radius: 0.2rem;
+    --radius: 0.75rem;
 
     /* Premium Light Mode - using HSL for Tailwind v3 compatibility */
-    --background: 48 100% 98%; /* Warm Off-white */
+    --background: 0 0% 100%; /* Warm Off-white */
     --foreground: 240 15% 9%; /* Deep Navy Black */
 
     --card: 0 0% 100%;
@@ -105,7 +105,26 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+  }
+
+  /* Premium Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 }
 
@@ -113,7 +132,8 @@
   body * {
     visibility: hidden;
   }
-  #printable-area, #printable-area * {
+  #printable-area,
+  #printable-area * {
     visibility: visible;
   }
   #printable-area {
@@ -160,7 +180,8 @@
   0% {
     transform: translateX(-100%) skewX(-25deg);
   }
-  20%, 100% {
+  20%,
+  100% {
     transform: translateX(200%) skewX(-25deg);
   }
 }
@@ -195,11 +216,21 @@
   z-index: 9999 !important;
 }
 
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-400 {
+  animation-delay: 400ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
 
 /* Slide Up Animation for Bottom Bar */
 @keyframes slideUp {

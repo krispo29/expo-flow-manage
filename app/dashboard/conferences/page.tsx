@@ -117,14 +117,14 @@ export default function ConferencesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Manage Conferences</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[hsl(180,25%,25%)] to-[hsl(180,25%,45%)]">Manage Conferences</h2>
           <p className="text-muted-foreground">
             Create and manage event sessions.
           </p>
         </div>
         <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDownloadTemplate}>
-                <Download className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={handleDownloadTemplate} className="hover:bg-indigo-50 hover:text-indigo-600 border-indigo-200 dark:border-indigo-800 transition-colors">
+                <Download className="mr-2 h-4 w-4 text-indigo-500" />
                 Template
             </Button>
             
@@ -136,15 +136,15 @@ export default function ConferencesPage() {
                     accept=".xlsx, .xls" 
                     onChange={handleImportExcel}
                 />
-                <Button variant="outline" onClick={() => document.getElementById('excel-import')?.click()}>
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <Button variant="outline" onClick={() => document.getElementById('excel-import')?.click()} className="hover:bg-green-50 hover:text-green-600 border-green-200 dark:border-green-800 transition-colors">
+                    <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
                     Import Excel
                 </Button>
             </div>
 
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
-                    <Button className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg transition-all">
+                    <Button className="shadow-md hover:shadow-lg transition-all">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Conference
                     </Button>

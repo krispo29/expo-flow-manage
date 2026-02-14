@@ -66,6 +66,11 @@ const config: Config = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        brand: {
+          yellow: "#FFD700", // Gold/Yellow from banner
+          green: "#006400", // Dark Green from buttons
+          "green-light": "#008000",
+        },
       },
       keyframes: {
         "accordion-down": {

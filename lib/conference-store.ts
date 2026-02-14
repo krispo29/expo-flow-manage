@@ -13,8 +13,8 @@ interface ConferenceStore {
 const MOCK_CONFERENCES: Conference[] = [
   {
     id: '1',
-    topic: 'Opening Ceremony',
-    date: '2024-11-20',
+    topic: 'Grand Opening Ceremony',
+    date: '2026-05-20',
     timeStart: '09:00',
     timeEnd: '10:00',
     room: 'Main Hall',
@@ -27,8 +27,8 @@ const MOCK_CONFERENCES: Conference[] = [
   },
   {
     id: '2',
-    topic: 'Future of Agri-Tech',
-    date: '2024-11-20',
+    topic: 'Future of Agri-Tech 2026',
+    date: '2026-05-20',
     timeStart: '10:30',
     timeEnd: '12:00',
     room: 'Room A',
@@ -41,8 +41,8 @@ const MOCK_CONFERENCES: Conference[] = [
   },
   {
     id: '3',
-    topic: 'Sustainable Farming',
-    date: '2024-11-21',
+    topic: 'Sustainable Farming Workshop',
+    date: '2026-05-21',
     timeStart: '13:00',
     timeEnd: '14:30',
     room: 'Room B',
