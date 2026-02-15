@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ExhibitorForm } from '@/components/exhibitor-form'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft } from 'lucide-react'
 
 export default function NewExhibitorPage() {
@@ -26,14 +25,9 @@ export default function NewExhibitorPage() {
         <h1 className="text-3xl font-bold tracking-tight">Add New Exhibitor</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Exhibitor Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ExhibitorForm projectId={projectId} />
-        </CardContent>
-      </Card>
+      <div className="bg-transparent">
+        <ExhibitorForm projectId={projectId} />
+      </div>
     </div>
   )
 }

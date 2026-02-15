@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod' // Use namespace import for Zod to avoid compatibility issues
+import * as z from 'zod'
 import { createExhibitor, updateExhibitor } from '@/app/actions/exhibitor'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,7 +18,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Store, Shield, User, Mail, MapPin, Ticket, Globe, Phone, Printer } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Exhibitor } from '@/lib/mock-service'
 
 const exhibitorSchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
@@ -42,11 +45,11 @@ const exhibitorSchema = z.object({
 type ExhibitorFormValues = z.infer<typeof exhibitorSchema>
 
 interface ExhibitorFormProps {
-  initialData?: any
+  initialData?: Exhibitor
   projectId: string
 }
 
-export function ExhibitorForm({ initialData, projectId }: ExhibitorFormProps) {
+export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorFormProps>) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -55,8 +58,8 @@ export function ExhibitorForm({ initialData, projectId }: ExhibitorFormProps) {
         companyName: initialData.companyName,
         registrationId: initialData.registrationId || '',
         password: initialData.password || '',
-        boothNo: initialData.boothNo || '',
-        contactPerson: initialData.contactPerson || '',
+        boothNo: initialData.boothNumber || '',
+        contactPerson: initialData.contactName || '',
         email: initialData.email || '',
         phone: initialData.phone || '',
         fax: initialData.fax || '',
@@ -96,14 +99,11 @@ export function ExhibitorForm({ initialData, projectId }: ExhibitorFormProps) {
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
     
-    // Clean up empty strings to null or undefined if needed, but Prisma handles optional strings well usually.
-    // However, unique constraints might key off empty strings, so careful.
-    
     const payload = {
       ...data,
-      name: data.companyName, // Map companyName to name as required by interface
+      name: data.companyName,
       projectId,
-      boothNumber: data.boothNo || '', // Map boothNo to boothNumber
+      boothNumber: data.boothNo || '',
       contactName: data.contactPerson || '',
       email: data.email || '',
       phone: data.phone || '',
@@ -117,7 +117,7 @@ export function ExhibitorForm({ initialData, projectId }: ExhibitorFormProps) {
     }
 
     if (result.success) {
-      toast.success(initialData ? 'Exhibitor updated' : 'Exhibitor created')
+      toast.success(initialData ? 'Exhibitor updated successfully' : 'Exhibitor created successfully')
       router.push(`/admin/exhibitors?projectId=${projectId}`)
       router.refresh()
     } else {
@@ -128,237 +128,336 @@ export function ExhibitorForm({ initialData, projectId }: ExhibitorFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Acme Corp" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-            <FormField
-              control={form.control}
-              name="registrationId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="REG-001" {...field} />
-                  </FormControl>
-                  <FormDescription>Unique ID used for login.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="text" placeholder="Secret123" {...field} />
-                  </FormControl>
-                  <FormDescription>Leave blank to keep existing password (if editing).</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          <FormField
-            control={form.control}
-            name="contactPerson"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Person</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="john@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input placeholder="+1 234 567 890" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="fax"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fax</FormLabel>
-                <FormControl>
-                  <Input placeholder="+1 234 567 899" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="website"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Website</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-8 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Company Profile Card */}
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <Store className="size-4" />
+                </div>
+                <CardTitle className="text-lg">Company Profile</CardTitle>
+              </div>
+              <CardDescription>Basic information about the exhibitor.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <FormField
+                control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Acme Corp" className="h-11" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                        <Input placeholder="https://example.com" className="h-11 pl-10" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Account Access Card */}
+          <Card className="shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <Shield className="size-4" />
+                </div>
+                <CardTitle className="text-lg">Account Access</CardTitle>
+              </div>
+              <CardDescription>Credentials for the exhibitor portal.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <FormField
+                control={form.control}
+                name="registrationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username (Registration ID)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="REG-001" className="h-11" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-[11px]">Unique identifier for login.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="••••••••" className="h-11" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-[11px]">
+                      {initialData ? "Leave blank to keep existing." : "Initial password for login."}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Contact Information Card */}
+          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <Mail className="size-4" />
+                </div>
+                <CardTitle className="text-lg">Contact Information</CardTitle>
+              </div>
+              <CardDescription>Primary contact details for communication.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="contactPerson"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Representative</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                          <Input placeholder="John Doe" className="h-11 pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                          <Input type="email" placeholder="john@example.com" className="h-11 pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mobile / Phone</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                          <Input placeholder="+1 234 567 890" className="h-11 pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fax (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Printer className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                          <Input placeholder="+1 234 567 899" className="h-11 pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Address Details Card */}
+          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <MapPin className="size-4" />
+                </div>
+                <CardTitle className="text-lg">Location Details</CardTitle>
+              </div>
+              <CardDescription>Physical address for shipping and documentation.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Full Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Export Lane, Suite 400" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="New York" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="province"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Province / State</FormLabel>
+                      <FormControl>
+                        <Input placeholder="NY" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input placeholder="USA" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="postalCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="10001" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Allocation Card */}
+          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <Ticket className="size-4" />
+                </div>
+                <CardTitle className="text-lg">Booth & Staff Allocation</CardTitle>
+              </div>
+              <CardDescription>Configure event logistics and limits.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="boothNo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Booth Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="A-101" className="h-11 bg-white" {...field} />
+                      </FormControl>
+                      <FormDescription className="text-[11px]">Primary booth location.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="quota"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quota</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" className="h-11 bg-white" {...field} />
+                      </FormControl>
+                      <FormDescription className="text-[11px]">Free staff badges allowed.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="overQuota"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Over-Quota</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" className="h-11 bg-white" {...field} />
+                      </FormControl>
+                      <FormDescription className="text-[11px]">Paid staff badges limit.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Address Information</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem className="col-span-2">
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123 Main St" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="New York" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="province"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Province/State</FormLabel>
-                  <FormControl>
-                    <Input placeholder="NY" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <FormControl>
-                    <Input placeholder="USA" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="postalCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Postal Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="10001" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+        <Separator className="my-8" />
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Booth & Staff Allocation</h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="boothNo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Booth Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="A-101" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="quota"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Staff Quota</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="0" {...field} />
-                  </FormControl>
-                  <FormDescription>Number of staff allowed.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="overQuota"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Over Quota</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="0" {...field} />
-                  </FormControl>
-                  <FormDescription>Additional staff allowed beyond quota.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? 'Update Exhibitor' : 'Create Exhibitor'}
+        <div className="flex items-center justify-between">
+          <Button type="button" variant="ghost" onClick={() => router.back()}>
+            Cancel
+          </Button>
+          <Button type="submit" size="lg" className="min-w-[200px] h-12 shadow-md hover:shadow-lg transition-all" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Please Wait...
+              </>
+            ) : (() => {
+              if (initialData) return 'Save Changes'
+              return 'Create Exhibitor Account'
+            })()}
           </Button>
         </div>
       </form>

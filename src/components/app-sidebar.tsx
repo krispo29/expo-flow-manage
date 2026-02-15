@@ -141,6 +141,32 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
+                  tooltip="Participants" 
+                  className="h-10 text-[15px] font-medium px-4"
+                  isActive={isActive('/admin/participants')}
+                >
+                  <Link href={projectId ? `/admin/participants?projectId=${projectId}` : "/admin/participants"}>
+                    <Contact className="size-5" />
+                    <span>Participants</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild 
+                  tooltip="Organizers" 
+                  className="h-10 text-[15px] font-medium px-4"
+                  isActive={isActive('/admin/organizers')}
+                >
+                  <Link href={projectId ? `/admin/organizers?projectId=${projectId}` : "/admin/organizers"}>
+                    <Users className="size-5" />
+                    <span>Organizers</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild 
                   tooltip="Exhibitors" 
                   className="h-10 text-[15px] font-medium px-4"
                   isActive={isActive('/admin/exhibitors')}
@@ -161,32 +187,6 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   <Link href={projectId ? `/admin/conferences?projectId=${projectId}` : "/admin/conferences"}>
                     <Presentation className="size-5" />
                     <span>Conferences</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  tooltip="Organizers" 
-                  className="h-10 text-[15px] font-medium px-4"
-                  isActive={isActive('/admin/organizers')}
-                >
-                  <Link href={projectId ? `/admin/organizers?projectId=${projectId}` : "/admin/organizers"}>
-                    <Users className="size-5" />
-                    <span>Organizers</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  tooltip="Participants" 
-                  className="h-10 text-[15px] font-medium px-4"
-                  isActive={isActive('/admin/participants')}
-                >
-                  <Link href={projectId ? `/admin/participants?projectId=${projectId}` : "/admin/participants"}>
-                    <Contact className="size-5" />
-                    <span>Participants</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

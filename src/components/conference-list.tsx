@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Clock, MapPin, Users, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { Pencil, Trash2, Clock, MapPin, Users, Search, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { deleteConference } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -21,14 +22,23 @@ interface ConferenceListProps {
 export function ConferenceList({ conferences, projectId }: Readonly<ConferenceListProps>) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set())
 
-  // Filter conferences by search query
-  const filteredConferences = conferences.filter(conf => 
-    conf.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conf.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conf.detail?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter conferences by search query and date range
+  const filteredConferences = conferences.filter(conf => {
+    const matchesSearch = 
+      conf.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conf.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conf.detail?.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const confDate = format(new Date(conf.date), 'yyyy-MM-dd')
+    const matchesStartDate = !startDate || confDate >= startDate
+    const matchesEndDate = !endDate || confDate <= endDate
+
+    return matchesSearch && matchesStartDate && matchesEndDate
+  })
 
   // Group conferences by date
   const groupedConferences = filteredConferences.reduce((acc, conf) => {
@@ -55,6 +65,12 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
     })
   }
 
+  function clearFilters() {
+    setSearchQuery('')
+    setStartDate('')
+    setEndDate('')
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this conference?')) return
 
@@ -77,14 +93,56 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="ค้นหา Conference (หัวข้อ, ห้อง, รายละเอียด...)" 
-          className="pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="bg-muted/30 p-5 rounded-xl border border-border/50 space-y-4 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="search" className="text-sm font-semibold flex items-center gap-2">
+              <Search className="size-4 text-primary" />
+              ค้นหา Conference
+            </Label>
+            <Input 
+              id="search"
+              placeholder="หัวข้อ, ห้อง, รายละเอียด..." 
+              className="h-10 bg-background border-border/50 focus-visible:ring-primary"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="startDate" className="text-sm font-semibold">Start Date</Label>
+            <Input 
+              id="startDate"
+              type="date"
+              className="h-10 bg-background border-border/50 focus-visible:ring-primary"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="endDate" className="text-sm font-semibold">End Date</Label>
+            <Input 
+              id="endDate"
+              type="date"
+              className="h-10 bg-background border-border/50 focus-visible:ring-primary"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+        
+        {(searchQuery || startDate || endDate) && (
+          <div className="flex justify-end pt-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={clearFilters} 
+              className="h-9 px-4 text-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+            >
+              <X className="size-4 mr-2" />
+              ล้างการค้นหาทั้งสิ้น
+            </Button>
+          </div>
+        )}
       </div>
 
       {filteredConferences.length === 0 ? (

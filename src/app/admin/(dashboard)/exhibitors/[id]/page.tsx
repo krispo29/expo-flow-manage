@@ -7,7 +7,6 @@ import { getExhibitorById } from '@/app/actions/exhibitor'
 import { ExhibitorForm } from '@/components/exhibitor-form'
 import { StaffManagement } from '@/components/staff-management'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
 export default function EditExhibitorPage() {
@@ -56,16 +55,11 @@ export default function EditExhibitorPage() {
         <h1 className="text-3xl font-bold tracking-tight">Edit Exhibitor</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Exhibitor Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {exhibitor && (
-            <ExhibitorForm initialData={exhibitor} projectId={projectId} />
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-transparent">
+        {exhibitor && (
+          <ExhibitorForm initialData={exhibitor} projectId={projectId} />
+        )}
+      </div>
       
       {exhibitor && (
         <StaffManagement exhibitorId={exhibitor.id} />
