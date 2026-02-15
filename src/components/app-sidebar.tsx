@@ -12,9 +12,9 @@ import {
   FileText,
   Wrench,
   Settings,
+  ChevronsUpDown,
 } from "lucide-react"
 
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -28,10 +28,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import Link from 'next/link'
-
-
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ModeToggle } from "@/components/mode-toggle"
 import { useAuthStore } from "@/store/useAuthStore"
 
@@ -43,18 +47,12 @@ interface SidebarProject {
 
 export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof Sidebar> & { projects?: SidebarProject[] }) {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const projectId = searchParams.get('projectId')
   const { user } = useAuthStore()
 
   // Find the active project
   const activeProject = projects?.find(p => p.id === projectId)
-
-  // Display only the active project, or nothing (or a placeholder)
-  const displayProjects = activeProject ? [{
-    name: activeProject.name,
-    url: '/admin/projects', // Link back to selection
-    icon: Frame
-  }] : []
 
   const userData = {
     name: user?.username || "Admin",
@@ -62,43 +60,58 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
     avatar: "/avatars/admin.jpg",
   }
 
+  const handleProjectChange = (newProjectId: string) => {
+    router.push(`/admin?projectId=${newProjectId}`)
+  }
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Command className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold uppercase tracking-wider">Expo Flow</span>
-                  <span className="truncate text-xs opacity-70">Management System</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Frame className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {activeProject?.name || "Select Project"}
+                    </span>
+                    <span className="truncate text-xs opacity-70">Management System</span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56" align="start">
+                {projects?.map((project) => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => handleProjectChange(project.id)}
+                    className="gap-2 p-2"
+                  >
+                    <Frame className="size-4" />
+                    {project.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects projects={displayProjects} projectId={projectId} />
-        <SidebarGroup>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Dashboard">
-                <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
-                  <LayoutDashboard className="size-4" />
-                  <span>Dashboard</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-        
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Dashboard">
+                  <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
+                    <LayoutDashboard className="size-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Exhibitors">
                   <Link href={projectId ? `/admin/exhibitors?projectId=${projectId}` : "/admin/exhibitors"}>
