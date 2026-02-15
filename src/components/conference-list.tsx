@@ -9,10 +9,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Pencil, Trash2, Clock, MapPin, Users, Search, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Search, X, Clock, MapPin, Users, Pencil, Trash2, Image as ImageIcon, Eye } from 'lucide-react'
 import { deleteConference } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import { Separator } from '@/components/ui/separator'
 
 interface ConferenceListProps {
   conferences: Conference[]
@@ -24,7 +32,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
   const [searchQuery, setSearchQuery] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set())
+  const [previewConference, setPreviewConference] = useState<Conference | null>(null)
 
   // Filter conferences by search query and date range
   const filteredConferences = conferences.filter(conf => {
@@ -53,17 +61,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
   // Sort dates
   const sortedDates = Object.keys(groupedConferences).sort((a, b) => a.localeCompare(b))
   
-  function toggleDetail(id: string) {
-    setExpandedDetails(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(id)) {
-        newSet.delete(id)
-      } else {
-        newSet.add(id)
-      }
-      return newSet
-    })
-  }
+
 
   function clearFilters() {
     setSearchQuery('')
@@ -86,7 +84,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
   if (conferences.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        ไม่พบ Conference คลิก &quot;เพิ่ม Conference&quot; เพื่อสร้างใหม่
+        No Conferences found. Click &quot;Add Conference&quot; to create a new one.
       </div>
     )
   }
@@ -98,11 +96,11 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
           <div className="md:col-span-2 space-y-2">
             <Label htmlFor="search" className="text-sm font-semibold flex items-center gap-2">
               <Search className="size-4 text-primary" />
-              ค้นหา Conference
+              Search Conference
             </Label>
             <Input 
               id="search"
-              placeholder="หัวข้อ, ห้อง, รายละเอียด..." 
+              placeholder="Topic, Room, Details..." 
               className="h-10 bg-background border-border/50 focus-visible:ring-primary"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -139,7 +137,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
               className="h-9 px-4 text-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
             >
               <X className="size-4 mr-2" />
-              ล้างการค้นหาทั้งสิ้น
+              Clear All Filters
             </Button>
           </div>
         )}
@@ -147,7 +145,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
 
       {filteredConferences.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          ไม่พบผลลัพธ์ที่ตรงกับการค้นหา
+          No results found for your search.
         </div>
       ) : (
         <div className="space-y-8">
@@ -158,23 +156,22 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
             </h2>
             <div className="grid gap-4">
               {groupedConferences[dateKey].map((conference) => {
-                const isExpanded = expandedDetails.has(conference.id)
                 return (
-                  <Card key={conference.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <Card key={conference.id} className="overflow-hidden hover:shadow-md transition-shadow group">
                     <CardContent className="p-0">
                       <div className="flex flex-col md:flex-row">
                         <div className="p-3 w-full md:w-52 shrink-0">
-                          <div className="h-32 md:h-40 bg-muted rounded-md overflow-hidden relative">
+                          <div className="w-full md:w-48 aspect-video bg-muted relative overflow-hidden flex-shrink-0 border-r border-border/50">
                             {conference.photoUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
                               <img 
                                 src={conference.photoUrl} 
                                 alt={conference.topic}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                                ไม่มีรูปภาพ
+                              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
+                                <ImageIcon className="size-8 opacity-20" />
+                                <span className="text-xs font-medium opacity-50 uppercase tracking-wider">No Image</span>
                               </div>
                             )}
                           </div>
@@ -198,7 +195,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
                                   {conference.capacity && (
                                     <span className="flex items-center gap-1">
                                       <Users className="h-3 w-3" />
-                                      {conference.capacity} ที่นั่ง
+                                      {conference.capacity} Limit Seats
                                     </span>
                                   )}
                                 </div>
@@ -209,62 +206,45 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
                                 ) : (
                                   <Badge variant="outline">Private</Badge>
                                 )}
-                                {conference.showOnReg && <Badge variant="default">แสดงในหน้าลงทะเบียน</Badge>}
+                                {conference.showOnReg && <Badge variant="default">Show on Registration</Badge>}
                                 {conference.allowPreReg && <Badge variant="outline">Pre-Registration</Badge>}
                               </div>
                             </div>
 
-                            {(conference.detail || conference.speakerInfo) && (
-                              <div className="pt-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => toggleDetail(conference.id)}
-                                  className="text-xs"
-                                >
-                                  {isExpanded ? (
-                                    <>
-                                      <ChevronUp className="h-3 w-3 mr-1" />
-                                      ซ่อนรายละเอียด
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ChevronDown className="h-3 w-3 mr-1" />
-                                      แสดงรายละเอียด
-                                    </>
-                                  )}
-                                </Button>
-                                
-                                {isExpanded && (
-                                  <div className="mt-2 space-y-3 text-sm">
-                                    {conference.detail && (
-                                      <div>
-                                        <p className="font-medium text-muted-foreground mb-1">รายละเอียด:</p>
-                                        <p className="text-foreground whitespace-pre-wrap">{conference.detail}</p>
-                                      </div>
-                                    )}
-                                    {conference.speakerInfo && (
-                                      <div>
-                                        <p className="font-medium text-muted-foreground mb-1">ข้อมูลวิทยากร:</p>
-                                        <p className="text-foreground whitespace-pre-wrap">{conference.speakerInfo}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                            <div className="pt-3 space-y-3">
+                              {conference.detail && (
+                                <div className="text-sm">
+                                  <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Description</p>
+                                  <p className="text-foreground/90 line-clamp-2">{conference.detail}</p>
+                                </div>
+                              )}
+                              {conference.speakerInfo && (
+                                <div className="text-sm">
+                                  <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker Information</p>
+                                  <p className="text-foreground/90 line-clamp-1">{conference.speakerInfo}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
                           <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => setPreviewConference(conference)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
                             <Button variant="ghost" size="sm" asChild>
                               <Link href={`/admin/conferences/${conference.id}?projectId=${projectId}`}>
                                 <Pencil className="h-4 w-4 mr-2" />
-                                แก้ไข
+                                Edit
                               </Link>
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleDelete(conference.id)} className="text-destructive hover:text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
-                              ลบ
+                              Delete
                             </Button>
                           </div>
                         </div>
@@ -278,6 +258,129 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
         ))}
         </div>
       )}
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewConference} onOpenChange={() => setPreviewConference(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {previewConference && (
+            <>
+              <DialogHeader>
+                <div className="flex justify-between items-start pr-8">
+                  <div>
+                    <DialogTitle className="text-2xl font-bold">{previewConference.topic}</DialogTitle>
+                    <DialogDescription className="mt-1 flex flex-wrap gap-3">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {previewConference.startTime} - {previewConference.endTime}
+                      </span>
+                      {previewConference.room && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {previewConference.room}
+                        </span>
+                      )}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {previewConference.photoUrl && (
+                  <div className="w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted">
+                    <img 
+                      src={previewConference.photoUrl} 
+                      alt={previewConference.topic}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
+                      <div className="flex flex-wrap gap-2">
+                        {previewConference.isPublic ? (
+                          <Badge variant="secondary">Public</Badge>
+                        ) : (
+                          <Badge variant="outline">Private</Badge>
+                        )}
+                        {previewConference.showOnReg && <Badge variant="default">Show on Registration</Badge>}
+                        {previewConference.allowPreReg && <Badge variant="outline">Pre-Registration</Badge>}
+                      </div>
+                    </div>
+
+                    {previewConference.capacity && (
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Capacity</p>
+                        <p className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          {previewConference.capacity} Limit Seats
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Location</p>
+                      <p className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        {previewConference.room || 'Not specified'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Schedule</p>
+                      <p className="flex items-center gap-2 text-sm">
+                        {format(new Date(previewConference.date), 'EEEE, MMMM do, yyyy')}
+                      </p>
+                      <p className="flex items-center gap-2 font-medium">
+                        {previewConference.startTime} - {previewConference.endTime}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Description</p>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
+                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                      {previewConference.detail || 'No description provided.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker Information</p>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
+                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                      {previewConference.speakerInfo || 'No speaker information provided.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t">
+                <Button variant="outline" onClick={() => setPreviewConference(null)}>
+                  Close
+                </Button>
+                <Button asChild>
+                  <Link href={`/admin/conferences/${previewConference.id}?projectId=${projectId}`}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Conference
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+

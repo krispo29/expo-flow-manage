@@ -37,6 +37,7 @@ export async function createConference(formData: FormData) {
     const isPublic = formData.get('isPublic') === 'on'
     const showOnReg = formData.get('showOnReg') === 'on'
     const allowPreReg = formData.get('allowPreReg') === 'on'
+    const photoUrl = formData.get('photoUrl') as string
     
     await mockService.createConference({
         projectId,
@@ -45,10 +46,10 @@ export async function createConference(formData: FormData) {
         startTime,
         endTime,
         room,
-        capacity: capacityVal ? parseInt(capacityVal, 10) : undefined,
+        capacity: capacityVal ? Number.parseInt(capacityVal, 10) : undefined,
         detail,
         speakerInfo,
-        photoUrl: '', // simplified
+        photoUrl: photoUrl || '',
         isPublic,
         showOnReg,
         allowPreReg
@@ -75,6 +76,7 @@ export async function updateConference(id: string, formData: FormData) {
     const isPublic = formData.get('isPublic') === 'on'
     const showOnReg = formData.get('showOnReg') === 'on'
     const allowPreReg = formData.get('allowPreReg') === 'on'
+    const photoUrl = formData.get('photoUrl') as string
 
     await mockService.updateConference(id, {
         topic,
@@ -82,9 +84,10 @@ export async function updateConference(id: string, formData: FormData) {
         startTime,
         endTime,
         room,
-        capacity: capacityVal ? parseInt(capacityVal, 10) : undefined,
+        capacity: capacityVal ? Number.parseInt(capacityVal, 10) : undefined,
         detail,
         speakerInfo,
+        photoUrl: photoUrl || '',
         isPublic,
         showOnReg,
         allowPreReg
@@ -123,6 +126,7 @@ export async function importConferences(data: any[]) {
              capacity: conf.capacity,
              detail: conf.detail,
              speakerInfo: conf.speakerInfo,
+             photoUrl: conf.photoUrl || '',
              isPublic: conf.isPublic,
              showOnReg: conf.showOnReg,
              allowPreReg: conf.allowPreReg

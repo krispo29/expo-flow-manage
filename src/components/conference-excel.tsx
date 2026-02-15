@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download, Upload, Loader2, FileSpreadsheet } from 'lucide-react'
+import { Download, Loader2, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Conference } from '@/lib/mock-service'
 import { toast } from 'sonner'
@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,7 +48,7 @@ function downloadTemplate() {
 
 export function ConferenceExcelOperations({ conferences, projectId }: Readonly<ConferenceExcelOperationsProps>) {
   const router = useRouter()
-  const [importing, setImporting] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   function handleExport() {
@@ -72,10 +73,10 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
       XLSX.utils.book_append_sheet(workbook, worksheet, "Conferences")
       
       XLSX.writeFile(workbook, `Conferences_${new Date().toISOString().split('T')[0]}.xlsx`)
-      toast.success('ส่งออกข้อมูลสำเร็จ')
+      toast.success('Export successful')
     } catch (error) {
       console.error(error)
-      toast.error('ส่งออกข้อมูลล้มเหลว')
+      toast.error('Export failed')
     }
   }
 
@@ -83,7 +84,7 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
     const file = e.target.files?.[0]
     if (!file) return
 
-    setImporting(true)
+    setLoading(true)
     try {
       const arrayBuffer = await file.arrayBuffer()
       const workbook = XLSX.read(arrayBuffer)
@@ -110,17 +111,17 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
       const result = await importConferences(payload)
       
       if (result.success) {
-        toast.success(`นำเข้า ${result.count} conferences สำเร็จ`)
+        toast.success(`Imported ${result.count} conferences successfully`)
         setIsDialogOpen(false)
         router.refresh()
       } else {
-        toast.error('นำเข้าข้อมูลล้มเหลว')
+        toast.error('Import failed')
       }
     } catch (error) {
       console.error(error)
-      toast.error('เกิดข้อผิดพลาดในการประมวลผลไฟล์')
+      toast.error('Error processing file')
     } finally {
-      setImporting(false)
+      setLoading(false)
       // Reset input
       e.target.value = ''
     }
@@ -128,48 +129,51 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
 
   return (
     <>
-      <Button variant="outline" onClick={downloadTemplate} title="ดาวน์โหลด Template">
+      <Button variant="outline" onClick={downloadTemplate} title="Download Template">
         <FileSpreadsheet className="h-4 w-4 mr-2" />
-        ดาวน์โหลด Template
+        Download Template
       </Button>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" title="นำเข้าจาก Excel">
-            <Upload className="h-4 w-4 mr-2" />
-            นำเข้า Excel
+          <Button variant="outline" title="Import from Excel">
+            <Download className="h-4 w-4 mr-2" />
+            Import Excel
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>นำเข้า Conferences</DialogTitle>
+            <DialogTitle>Import Conferences</DialogTitle>
             <DialogDescription>
-              อัปโหลดไฟล์ Excel เพื่อสร้าง Conferences แบบจำนวนมาก
+              Upload an Excel file to bulk create conferences.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <Button variant="secondary" size="sm" onClick={downloadTemplate} className="w-full">
-              <FileSpreadsheet className="mr-2 h-4 w-4" /> ดาวน์โหลด Template
-            </Button>
-            
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="file">ไฟล์ Excel</Label>
-              <Input id="file" type="file" accept=".xlsx, .xls" onChange={handleImport} disabled={importing} />
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Need a template?</span>
+              <Button variant="link" size="sm" onClick={downloadTemplate} className="h-auto p-0">
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Download Template
+              </Button>
             </div>
-            
-            {importing && (
-              <div className="flex items-center justify-center text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> กำลังประมวลผล...
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="file">Excel File</Label>
+              <Input id="file" type="file" accept=".xlsx, .xls" onChange={handleImport} disabled={loading} />
+            </div>
+          </div>
+          <DialogFooter>
+            {loading && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
               </div>
             )}
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Button variant="outline" onClick={handleExport} title="ส่งออกเป็น Excel">
+      <Button variant="outline" onClick={handleExport} title="Export to Excel">
         <Download className="h-4 w-4 mr-2" />
-        ส่งออก Excel
+        Export Excel
       </Button>
     </>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { Conference } from '@/lib/mock-service'
@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Image as ImageIcon, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface ConferenceFormProps {
@@ -25,10 +26,11 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Initialize checkbox states based on conference data or defaults
+  // Initialize states based on conference data or defaults
   const [isPublic, setIsPublic] = useState(conference?.isPublic ?? true)
   const [showOnReg, setShowOnReg] = useState(conference?.showOnReg ?? true)
   const [allowPreReg, setAllowPreReg] = useState(conference?.allowPreReg ?? true)
+  const [photoUrl, setPhotoUrl] = useState(conference?.photoUrl ?? '')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -36,14 +38,6 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
 
     try {
       const formData = new FormData(event.currentTarget)
-      
-      // Manually append checkbox values since we're using controlled components 
-      // referencing hidden inputs or just ignoring the UI component state in FormData 
-      // if not wired up with hidden input. 
-      // We will add hidden inputs for these to make it work seamlessly with FormData.
-      
-      // Let's ensure the FormData has everything we need.
-      // Since we'll use hidden inputs for the checkboxes, formData will pick them up.
       
       const result = conference 
         ? await updateConference(conference.id, formData)
@@ -64,13 +58,46 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
     }
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png']
+      if (!validTypes.includes(file.type)) {
+        toast.error('Invalid file type. Please upload .jpg or .png')
+        e.target.value = ''
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const img = new Image()
+        img.onload = () => {
+          if (img.width !== 300 || img.height !== 300) {
+            toast.error('Image must be exactly 300x300 px')
+            e.target.value = ''
+            return
+          }
+          setPhotoUrl(reader.result as string)
+        }
+        img.src = reader.result as string
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeImage = () => {
+    setPhotoUrl('')
+  }
+
   return (
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
           {/* Hidden field for projectId is required for create */}
           <input type="hidden" name="projectId" value={projectId} />
+          <input type="hidden" name="photoUrl" value={photoUrl} />
 
           <div className="mb-6">
-            <Button variant="ghost" asChild className="mb-2 pl-0 hover:bg-transparent hover:text-primary">
+            <Button variant="ghost" type="button" asChild className="mb-2 pl-0 hover:bg-transparent hover:text-primary">
               <Link href={`/admin/conferences?projectId=${projectId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Conferences
@@ -95,6 +122,57 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
             </CardHeader>
             <CardContent className="space-y-6">
               
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label>Conference Image</Label>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Remark: .jpg, .png (300x300 px)
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-4">
+                  {photoUrl ? (
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted">
+                      <img 
+                        src={photoUrl} 
+                        alt="Preview" 
+                        className="w-full h-full object-contain"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 size-8 rounded-full shadow-lg"
+                        onClick={removeImage}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-video rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 bg-muted/50 text-muted-foreground transition-colors hover:bg-muted/80">
+                      <ImageIcon className="size-10 opacity-50" />
+                      <p className="text-sm font-medium">Click to upload 300x300 image</p>
+                      <p className="text-xs">Supports: .jpg, .png (Strict 300x300 px)</p>
+                      <Input
+                        type="file"
+                        accept=".jpg,.jpeg,.png"
+                        className="hidden"
+                        id="image-upload"
+                        onChange={handleImageChange}
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => document.getElementById('image-upload')?.click()}
+                      >
+                        Select Image
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="topic">Topic *</Label>
                 <Input 
@@ -150,7 +228,7 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
                   />
                 </div>
                  <div className="space-y-2">
-                  <Label htmlFor="capacity">Capacity</Label>
+                  <Label htmlFor="capacity">Limit Seats</Label>
                   <Input 
                     id="capacity" 
                     name="capacity" 
@@ -183,26 +261,30 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
                   rows={3}
                 />
               </div>
-
-              <div className="space-y-4 pt-2 border-t">
-                <h3 className="text-sm font-medium text-muted-foreground">Visibility & Registration Settings</h3>
+              
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-sm font-medium text-muted-foreground">Conference Type & Visibility</h3>
                 
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="isPublic" 
-                    checked={isPublic} 
-                    onCheckedChange={(checked) => setIsPublic(checked === true)}
-                  />
+                <div className="space-y-3">
+                  <Label>Conference Type</Label>
+                  <RadioGroup 
+                    defaultValue={isPublic ? 'on' : 'off'} 
+                    onValueChange={(value: string) => setIsPublic(value === 'on')}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="on" id="public" />
+                      <Label htmlFor="public" className="font-normal cursor-pointer">Public</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="off" id="private" />
+                      <Label htmlFor="private" className="font-normal cursor-pointer">Private</Label>
+                    </div>
+                  </RadioGroup>
                   <input type="hidden" name="isPublic" value={isPublic ? 'on' : 'off'} />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label htmlFor="isPublic" className="cursor-pointer">Publicly Visible</Label>
-                    <p className="text-xs text-muted-foreground">
-                      If unchecked, this session will strictly be hidden from public view.
-                    </p>
-                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 pt-2">
                   <Checkbox 
                     id="showOnReg" 
                     checked={showOnReg} 
@@ -217,7 +299,7 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
                   </div>
                 </div>
 
-                 <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="allowPreReg" 
                     checked={allowPreReg} 
