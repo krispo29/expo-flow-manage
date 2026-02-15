@@ -9,6 +9,9 @@ import {
   LayoutDashboard,
   Store,
   Presentation,
+  FileText,
+  Wrench,
+  Settings,
 } from "lucide-react"
 
 import { NavProjects } from "@/components/nav-projects"
@@ -125,6 +128,30 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   <Link href={projectId ? `/admin/participants?projectId=${projectId}` : "/admin/participants"}>
                     <Contact className="size-4" />
                     <span>Participants</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Reports">
+                   <Link href={projectId ? `/admin/reports?projectId=${projectId}` : "/admin/reports"}>
+                    <FileText className="size-4" />
+                    <span>Reports</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Utility">
+                   <Link href={projectId ? `/admin/utilities?projectId=${projectId}` : "/admin/utilities"}>
+                    <Wrench className="size-4" />
+                    <span>Utility</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Settings">
+                   <Link href={projectId ? `/admin/settings?projectId=${projectId}` : "/admin/settings"}>
+                    <Settings className="size-4" />
+                    <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -100,6 +100,15 @@ export interface SystemSettings {
   cutoffDate: Date;
   eventTitle: string;
   eventSubtitle: string;
+  rooms: string[];
+}
+
+export interface InvitationCode {
+  id: string;
+  companyName: string;
+  code: string;
+  isUsed: boolean;
+  createdAt: Date;
 }
 
 // Mock Data Store
@@ -119,8 +128,19 @@ class MockService {
     eventDate: new Date('2024-05-29'),
     cutoffDate: new Date('2024-05-20'),
     eventTitle: 'ILDEX Vietnam 2024',
-    eventSubtitle: 'International Livestock, Dairy, Meat Processing and Aquaculture Exposition'
+    eventSubtitle: 'International Livestock, Dairy, Meat Processing and Aquaculture Exposition',
+    rooms: ['Grand Ballroom', 'Room 304', 'Conference Hall B']
   };
+
+  private invitationCodes: InvitationCode[] = [
+    {
+      id: 'inv-1',
+      companyName: 'Partner Corp',
+      code: 'VIP2026',
+      isUsed: false,
+      createdAt: new Date()
+    }
+  ];
 
   private organizers: Organizer[] = [
     {
@@ -665,6 +685,26 @@ class MockService {
   async updateSettings(data: Partial<SystemSettings>): Promise<SystemSettings> {
     this.settings = { ...this.settings, ...data };
     return this.settings;
+  }
+
+  // --- Invitation Codes ---
+  async getInvitationCodes(): Promise<InvitationCode[]> {
+    return this.invitationCodes;
+  }
+
+  async createInvitationCode(data: Omit<InvitationCode, 'id' | 'createdAt' | 'isUsed'>): Promise<InvitationCode> {
+    const newCode = {
+      ...data,
+      id: uuidv4(),
+      isUsed: false,
+      createdAt: new Date()
+    };
+    this.invitationCodes.push(newCode);
+    return newCode;
+  }
+
+  async deleteInvitationCode(id: string): Promise<void> {
+    this.invitationCodes = this.invitationCodes.filter(c => c.id !== id);
   }
 }
 
