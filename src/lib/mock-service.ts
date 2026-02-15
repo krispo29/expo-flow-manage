@@ -5,7 +5,7 @@ export interface User {
   id: string;
   username: string;
   password: string; // Plain text or hashed, but we'll mock login check
-  role: 'ADMIN' | 'ORGANIZER';
+  role: 'ADMIN' | 'ORGANIZER' | 'EXHIBITOR';
 }
 
 export interface Project {
@@ -122,7 +122,9 @@ export interface InvitationCode {
 // Mock Data Store
 class MockService {
   private readonly users: User[] = [
-    { id: '1', username: 'admin', password: 'password', role: 'ADMIN' },
+    { id: '1', username: 'admin', password: '123', role: 'ADMIN' },
+    { id: '2', username: 'organizer', password: '123', role: 'ORGANIZER' },
+    { id: '3', username: 'exhibitor', password: '123', role: 'EXHIBITOR' },
   ];
   
   private projectsList: Project[] = [

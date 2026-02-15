@@ -25,7 +25,7 @@ export async function loginAction(formData: FormData) {
     // const isValid = await bcrypt.compare(password, user.password)
     
     // For the specific requested mock "admin" / "password"
-    if (username === 'admin' && password === 'password') {
+    if (user && password === user.password) {
          return {
             success: true,
             user: {
@@ -36,10 +36,6 @@ export async function loginAction(formData: FormData) {
         }
     }
      
-    // Fallback for other users if we add them later and want real hashing
-    // const isValid = await bcrypt.compare(password, user.password)
-    // if (!isValid) return { error: 'Invalid username or password' }
-
     return { error: 'Invalid username or password' }
 
   } catch (error) {
