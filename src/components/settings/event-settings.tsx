@@ -1,16 +1,17 @@
 "use client"
 
-import { useTransition, useRef } from "react"
+import { useTransition, useRef, useState } from "react"
 import { toast } from "sonner"
-import { createProject } from "@/app/actions/settings"
+import { createProject, updateProject, deleteProject } from "@/app/actions/settings"
 import { Project } from "@/lib/mock-service"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { format } from "date-fns"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, Trash2, Edit } from "lucide-react"
 
 interface EventSettingsProps {
   projects: Project[]
@@ -19,6 +20,7 @@ interface EventSettingsProps {
 export function EventSettings({ projects }: Readonly<EventSettingsProps>) {
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
 
   async function handleCreate(formData: FormData) {
     startTransition(async () => {
@@ -28,6 +30,31 @@ export function EventSettings({ projects }: Readonly<EventSettingsProps>) {
         formRef.current?.reset()
       } else {
         toast.error("Failed to create event")
+      }
+    })
+  }
+
+  async function handleUpdate(formData: FormData) {
+    if (!editingProject) return
+    startTransition(async () => {
+      const result = await updateProject(editingProject.id, formData)
+      if (result.success) {
+        toast.success("Event updated")
+        setEditingProject(null)
+      } else {
+        toast.error("Failed to update event")
+      }
+    })
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return
+    startTransition(async () => {
+      const result = await deleteProject(id)
+      if (result.success) {
+        toast.success("Event deleted")
+      } else {
+        toast.error("Failed to delete event")
       }
     })
   }
@@ -81,9 +108,52 @@ export function EventSettings({ projects }: Readonly<EventSettingsProps>) {
                                     </span>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                Edit Settings
-                            </Button>
+                            <div className="flex gap-2">
+                                <Dialog open={!!editingProject && editingProject.id === project.id} onOpenChange={(open) => !open && setEditingProject(null)}>
+                                    <DialogTrigger asChild>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => setEditingProject(project)}
+                                        >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Edit Event</DialogTitle>
+                                            <DialogDescription>
+                                                Update the details for this event.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <form action={handleUpdate} className="space-y-4 pt-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="edit-name">Event Name</Label>
+                                                <Input id="edit-name" name="name" defaultValue={project.name} required />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="edit-description">Description</Label>
+                                                <Textarea id="edit-description" name="description" defaultValue={project.description} />
+                                            </div>
+                                            <DialogFooter>
+                                                <Button type="button" variant="outline" onClick={() => setEditingProject(null)}>Cancel</Button>
+                                                <Button type="submit" disabled={isPending}>Save Changes</Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </DialogContent>
+                                </Dialog>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleDelete(project.id)}
+                                    disabled={isPending}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -93,3 +163,4 @@ export function EventSettings({ projects }: Readonly<EventSettingsProps>) {
     </Card>
   )
 }
+

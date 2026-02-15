@@ -1,6 +1,6 @@
 'use server'
 
-import { mockService } from '@/lib/mock-service'
+import { mockService, Participant } from '@/lib/mock-service'
 import { revalidatePath } from 'next/cache'
 
 export async function getParticipants(projectId: string, query?: string, type?: string) {
@@ -90,7 +90,7 @@ export async function deleteParticipant(id: string) {
   }
 }
 
-export async function importParticipants(data: any[]) {
+export async function importParticipants(data: Omit<Participant, 'id' | 'createdAt'>[]) {
     try {
       const formattedData = data.map(p => ({
         projectId: p.projectId,
@@ -145,5 +145,25 @@ export async function processScannerData(formData: FormData) {
   } catch (error) {
     console.error('Scanner import error:', error);
     return { success: false, error: 'Failed to process scanner data' };
+  }
+}
+
+export async function searchParticipantByCode(code: string) {
+  try {
+    const participant = await mockService.findParticipantByCode(code);
+    return { success: true, data: participant };
+  } catch (error) {
+    console.error('Error searching participant:', error);
+    return { error: 'Failed to search participant' };
+  }
+}
+
+export async function getRecentScannerImports() {
+  try {
+    const history = await mockService.getRecentImports();
+    return { success: true, data: history };
+  } catch (error) {
+    console.error('Error fetching import history:', error);
+    return { error: 'Failed to fetch import history' };
   }
 }

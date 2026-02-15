@@ -1,14 +1,15 @@
 "use client"
 
-import { useTransition, useRef } from "react"
+import { useTransition, useRef, useState } from "react"
 import { toast } from "sonner"
-import { createInvitationCode, deleteInvitationCode } from "@/app/actions/settings"
+import { createInvitationCode, updateInvitationCode, deleteInvitationCode } from "@/app/actions/settings"
 import { InvitationCode } from "@/lib/mock-service"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Copy, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import { Copy, Trash2, Edit } from "lucide-react"
 
 interface InvitationCodeSettingsProps {
   codes: InvitationCode[]
@@ -18,6 +19,7 @@ interface InvitationCodeSettingsProps {
 export function InvitationCodeSettings({ codes, siteUrl }: Readonly<InvitationCodeSettingsProps>) {
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
+  const [editingCode, setEditingCode] = useState<InvitationCode | null>(null)
 
   async function handleCreate(formData: FormData) {
     startTransition(async () => {
@@ -27,6 +29,19 @@ export function InvitationCodeSettings({ codes, siteUrl }: Readonly<InvitationCo
         formRef.current?.reset()
       } else {
         toast.error("Failed to create invitation code")
+      }
+    })
+  }
+
+  async function handleUpdate(formData: FormData) {
+    if (!editingCode) return
+    startTransition(async () => {
+      const result = await updateInvitationCode(editingCode.id, formData)
+      if (result.success) {
+        toast.success("Invitation code updated")
+        setEditingCode(null)
+      } else {
+        toast.error("Failed to update invitation code")
       }
     })
   }
@@ -105,11 +120,49 @@ export function InvitationCodeSettings({ codes, siteUrl }: Readonly<InvitationCo
                         >
                             <Copy className="h-4 w-4" />
                         </Button>
+                        
+                        <Dialog open={!!editingCode && editingCode.id === item.id} onOpenChange={(open) => !open && setEditingCode(null)}>
+                            <DialogTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => setEditingCode(item)}
+                                    title="Edit Code"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                >
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Edit Invitation Code</DialogTitle>
+                                    <DialogDescription>
+                                        Update the company name and code.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form action={handleUpdate} className="space-y-4 pt-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-companyName">Company Name</Label>
+                                        <Input id="edit-companyName" name="companyName" defaultValue={item.companyName} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-code">Code</Label>
+                                        <Input id="edit-code" name="code" defaultValue={item.code} required />
+                                    </div>
+                                    <DialogFooter>
+                                        <Button type="button" variant="outline" onClick={() => setEditingCode(null)}>Cancel</Button>
+                                        <Button type="submit" disabled={isPending}>Save Changes</Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+
                         <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleDelete(item.id)}
                             disabled={isPending}
+                            title="Delete Code"
                             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                             <Trash2 className="h-4 w-4" />
@@ -122,3 +175,4 @@ export function InvitationCodeSettings({ codes, siteUrl }: Readonly<InvitationCo
     </Card>
   )
 }
+

@@ -106,6 +106,7 @@ export async function deleteInvitationCode(id: string) {
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error) {
+    console.error('Error deleting invitation code:', error)
     return { error: 'Failed to delete invitation code' }
   }
 }
@@ -129,4 +130,42 @@ export async function createProject(formData: FormData) {
     }
 }
 
-// We don't have deleteProject in mockService yet, let's assume update is enough or user wants CRUD
+
+export async function updateProject(id: string, formData: FormData) {
+  try {
+    const name = formData.get('name') as string
+    const description = formData.get('description') as string
+
+    await mockService.updateProject(id, { name, description })
+    revalidatePath('/admin/settings')
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating project:', error)
+    return { error: 'Failed to update project' }
+  }
+}
+
+export async function deleteProject(id: string) {
+  try {
+    await mockService.deleteProject(id)
+    revalidatePath('/admin/settings')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting project:', error)
+    return { error: 'Failed to delete project' }
+  }
+}
+
+export async function updateInvitationCode(id: string, formData: FormData) {
+  try {
+    const companyName = formData.get('companyName') as string
+    const code = formData.get('code') as string
+
+    await mockService.updateInvitationCode(id, { companyName, code })
+    revalidatePath('/admin/settings')
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating invitation code:', error)
+    return { error: 'Failed to update invitation code' }
+  }
+}

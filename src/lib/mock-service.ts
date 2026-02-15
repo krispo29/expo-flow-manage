@@ -94,6 +94,14 @@ export interface Staff {
   createdAt: Date;
 }
 
+export interface ImportHistory {
+  id: number;
+  filename: string;
+  date: string;
+  records: number;
+  status: string;
+}
+
 export interface SystemSettings {
   siteUrl: string;
   eventDate: Date;
@@ -117,7 +125,7 @@ class MockService {
     { id: '1', username: 'admin', password: 'password', role: 'ADMIN' },
   ];
   
-  private readonly projectsList: Project[] = [
+  private projectsList: Project[] = [
     { id: 'ildex-vietnam-2026', name: 'ILDEX VIETNAM 2026', description: 'International Livestock, Dairy, Meat Processing and Aquaculture Exposition', createdAt: new Date() },
     { id: 'horti-agri', name: 'Horti Agri Next', description: 'Horticultural & Agricultural Technologies', createdAt: new Date() },
     { id: 'viv-asia-2027', name: 'VIV Asia 2027', description: 'International Trade Show from Feed to Food', createdAt: new Date() }
@@ -161,6 +169,12 @@ class MockService {
       isUsed: true,
       createdAt: new Date('2025-01-20')
     }
+  ];
+
+  private readonly recentImports: ImportHistory[] = [
+    { id: 1, filename: "scanner_data_2025-02-14.csv", date: "2025-02-14 10:30 AM", records: 154, status: "Success" },
+    { id: 2, filename: "scanner_data_2025-02-13.csv", date: "2025-02-13 04:15 PM", records: 89, status: "Success" },
+    { id: 3, filename: "scanner_data_2025-02-12_part1.csv", date: "2025-02-12 09:00 AM", records: 210, status: "Pending" },
   ];
 
   private organizers: Organizer[] = [
@@ -514,6 +528,17 @@ class MockService {
     return newProject;
   }
 
+  async updateProject(id: string, data: Partial<Omit<Project, 'id' | 'createdAt'>>): Promise<Project> {
+    const index = this.projectsList.findIndex(p => p.id === id);
+    if (index === -1) throw new Error('Project not found');
+    this.projectsList[index] = { ...this.projectsList[index], ...data };
+    return this.projectsList[index];
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    this.projectsList = this.projectsList.filter(p => p.id !== id);
+  }
+
   // --- Organizers ---
   async getOrganizers(): Promise<Organizer[]> {
      return this.organizers;
@@ -601,6 +626,13 @@ class MockService {
         return count;
     }
 
+  async findParticipantByCode(code: string): Promise<Participant | undefined> {
+    return this.participants.find(p => p.code?.toLowerCase() === code.toLowerCase());
+  }
+
+  async getRecentImports(): Promise<ImportHistory[]> {
+    return this.recentImports;
+  }
 
   // --- Conferences ---
   async getConferences(projectId: string): Promise<Conference[]> {
@@ -734,6 +766,13 @@ class MockService {
     };
     this.invitationCodes.push(newCode);
     return newCode;
+  }
+
+  async updateInvitationCode(id: string, data: Partial<Omit<InvitationCode, 'id' | 'createdAt'>>): Promise<InvitationCode> {
+    const index = this.invitationCodes.findIndex(c => c.id === id);
+    if (index === -1) throw new Error('Invitation code not found');
+    this.invitationCodes[index] = { ...this.invitationCodes[index], ...data };
+    return this.invitationCodes[index];
   }
 
   async deleteInvitationCode(id: string): Promise<void> {
