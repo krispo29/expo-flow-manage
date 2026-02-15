@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateSystemSettings } from '@/app/actions/settings'
+import { updateSettings } from '@/app/actions/settings'
 import { SystemSettings } from '@/lib/mock-service'
 
 interface SettingsFormProps {
@@ -24,7 +24,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
     const formData = new FormData(e.currentTarget)
     
     try {
-      const result = await updateSystemSettings(formData)
+      const result = await updateSettings(formData)
       if (result.success) {
         toast.success('Settings updated successfully')
       } else {

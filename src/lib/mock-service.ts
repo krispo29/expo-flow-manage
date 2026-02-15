@@ -137,8 +137,29 @@ class MockService {
       id: 'inv-1',
       companyName: 'Partner Corp',
       code: 'VIP2026',
+      isUsed: true,
+      createdAt: new Date('2025-01-15')
+    },
+    {
+      id: 'inv-2',
+      companyName: 'Media Group One',
+      code: 'MEDIA26',
       isUsed: false,
-      createdAt: new Date()
+      createdAt: new Date('2025-02-01')
+    },
+    {
+      id: 'inv-3',
+      companyName: 'Tech Sponsors Inc',
+      code: 'SPON26',
+      isUsed: false,
+      createdAt: new Date('2025-02-10')
+    },
+    {
+      id: 'inv-4',
+      companyName: 'Global Exhibitions',
+      code: 'GLOBAL26',
+      isUsed: true,
+      createdAt: new Date('2025-01-20')
     }
   ];
 

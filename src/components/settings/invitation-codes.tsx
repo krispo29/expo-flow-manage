@@ -71,9 +71,10 @@ export function InvitationCodeSettings({ codes, siteUrl }: Readonly<InvitationCo
         </form>
 
         <div className="border rounded-md">
-            <div className="grid grid-cols-4 p-3 font-medium text-sm bg-muted/50 border-b">
+            <div className="grid grid-cols-5 p-3 font-medium text-sm bg-muted/50 border-b">
                 <div>Company</div>
                 <div>Code</div>
+                <div>Status</div>
                 <div>Created At</div>
                 <div className="text-right">Actions</div>
             </div>
@@ -81,10 +82,15 @@ export function InvitationCodeSettings({ codes, siteUrl }: Readonly<InvitationCo
                 <div className="p-8 text-center text-muted-foreground text-sm">No invitation codes created yet.</div>
             )}
             {codes.map((item) => (
-                <div key={item.id} className="grid grid-cols-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
+                <div key={item.id} className="grid grid-cols-5 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
                     <div className="font-medium">{item.companyName}</div>
                     <div>
                         <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{item.code}</code>
+                    </div>
+                     <div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.isUsed ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                            {item.isUsed ? 'Used' : 'Available'}
+                        </span>
                     </div>
                     <div className="text-muted-foreground text-xs">
                         {new Date(item.createdAt).toLocaleDateString()}

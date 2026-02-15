@@ -22,13 +22,21 @@ export async function updateSettings(formData: FormData) {
     const eventDateStr = formData.get('eventDate') as string
     const cutoffDateStr = formData.get('cutoffDate') as string
 
-    await mockService.updateSettings({
+    const updateData: Partial<SystemSettings> = {
       siteUrl,
       eventTitle,
       eventSubtitle,
-      eventDate: eventDateStr ? new Date(eventDateStr) : undefined,
-      cutoffDate: cutoffDateStr ? new Date(cutoffDateStr) : undefined,
-    })
+    }
+
+    if (eventDateStr) {
+      updateData.eventDate = new Date(eventDateStr)
+    }
+    
+    if (cutoffDateStr) {
+      updateData.cutoffDate = new Date(cutoffDateStr)
+    }
+
+    await mockService.updateSettings(updateData)
 
     revalidatePath('/admin/settings')
     return { success: true }
