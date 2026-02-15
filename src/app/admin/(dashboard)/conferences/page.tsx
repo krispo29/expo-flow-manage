@@ -7,10 +7,14 @@ import Link from 'next/link'
 import { getConferences } from '@/app/actions/conference'
 import { ConferenceExcelOperations } from '@/components/conference-excel'
 
-export default async function ConferencesPage() {
-  // TODO: dynamic project ID
-  const projectId = 'horti-agri' 
-  const { data: conferences } = await getConferences(projectId)
+export default async function ConferencesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const projectId = resolvedSearchParams.projectId || "horti-agri";
+  const { data: conferences } = await getConferences(projectId);
 
   return (
     <div className="space-y-6">
@@ -22,7 +26,7 @@ export default async function ConferencesPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/conferences/new">
+          <Link href={`/admin/conferences/new?projectId=${projectId}`}>
             <Plus className="mr-2 h-4 w-4" />
             Add Conference
           </Link>

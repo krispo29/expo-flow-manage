@@ -6,12 +6,13 @@ import { redirect } from 'next/navigation'
 export default async function ParticipantsPage({ 
   searchParams 
 }: { 
-  searchParams: { q?: string; type?: string } 
+  searchParams: Promise<{ q?: string; type?: string }> 
 }) {
+  const resolvedSearchParams = await searchParams
   // TODO: Dynamic Project ID from context/auth
   const projectId = 'horti-agri' 
-  const query = searchParams.q || ''
-  const type = searchParams.type || 'ALL'
+  const query = resolvedSearchParams.q || ''
+  const type = resolvedSearchParams.type || 'ALL'
 
   // Fetch data
   const result = await getParticipants(projectId, query, type)

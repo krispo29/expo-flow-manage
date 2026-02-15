@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff } from '@/app/actions/staff'
+import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials } from '@/app/actions/staff'
+import { Staff } from '@/lib/mock-service'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -19,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -30,18 +30,23 @@ import {
 } from "@/components/ui/select"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface StaffManagementProps {
-  exhibitorId: string
+  readonly exhibitorId: string
 }
 
 export function StaffManagement({ exhibitorId }: StaffManagementProps) {
-  const [staffList, setStaffList] = useState<any[]>([])
+  const [staffList, setStaffList] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingStaff, setEditingStaff] = useState<any>(null)
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null)
+  
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
+  const [targetEmail, setTargetEmail] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
   
   // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
   // but for production consistency, RHF + Zod is better. 
@@ -72,15 +77,22 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
     fetchStaff()
   }, [fetchStaff])
 
-  function handleOpenDialog(staff?: any) {
+  function handleOpenDialog(staff?: Staff) {
     if (staff) {
       setEditingStaff(staff)
       const isStandard = TITLES.includes(staff.title || '')
       
+      let displayTitle = '';
+      if (isStandard) {
+        displayTitle = staff.title;
+      } else if (staff.title) {
+        displayTitle = 'Other';
+      }
+      
       setFormData({
-        firstName: staff.firstName,
-        lastName: staff.lastName,
-        title: isStandard ? staff.title : 'Other',
+        firstName: staff.firstName || '',
+        lastName: staff.lastName || '',
+        title: displayTitle,
         position: staff.position || '',
         email: staff.email || '',
         mobile: staff.mobile || ''
@@ -109,30 +121,29 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
     setIsDialogOpen(true)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     
     const finalTitle = isOtherTitle ? customTitle : formData.title
     
+    const payload = {
+      title: finalTitle,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      position: formData.position,
+      email: formData.email,
+      mobile: formData.mobile,
+    }
+
     let result
-      if (editingStaff) {
-        const payload = {
-          name: `${finalTitle} ${formData.firstName} ${formData.lastName}`.trim(),
-          email: formData.email,
-          phone: formData.mobile,
-          role: formData.position,
-        }
-        result = await updateStaff(editingStaff.id, payload)
-      } else {
-        const payload = {
-            exhibitorId: exhibitorId,
-            name: `${finalTitle} ${formData.firstName} ${formData.lastName}`.trim(),
-            email: formData.email,
-            phone: formData.mobile,
-            role: formData.position,
-        }
-        result = await createStaff(payload)
-      }
+    if (editingStaff) {
+      result = await updateStaff(editingStaff.id, payload)
+    } else {
+      result = await createStaff({
+        ...payload,
+        exhibitorId: exhibitorId,
+      })
+    }
 
     if (result.success) {
       toast.success(editingStaff ? 'Staff updated' : 'Staff added')
@@ -152,6 +163,27 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
       setStaffList(staffList.filter(s => s.id !== id))
     } else {
       toast.error('Failed to delete staff')
+    }
+  }
+
+  function handleOpenEmailDialog(staff: Staff) {
+    setSelectedStaff(staff)
+    setTargetEmail(staff.email || '')
+    setEmailDialogOpen(true)
+  }
+
+  async function handleSendCredentials() {
+    if (!selectedStaff) return
+    
+    setSendingEmail(true)
+    const result = await sendStaffCredentials(selectedStaff.id, targetEmail)
+    setSendingEmail(false)
+    
+    if (result.success) {
+      toast.success('Credentials sent successfully')
+      setEmailDialogOpen(false)
+    } else {
+      toast.error('Failed to send credentials')
     }
   }
 
@@ -177,6 +209,7 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[30px]"></TableHead>
+                <TableHead>Staff ID</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Full Name</TableHead>
                 <TableHead>Position</TableHead>
@@ -190,6 +223,7 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
                   <TableCell>
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
                   </TableCell>
+                  <TableCell>{staff.id}</TableCell>
                   <TableCell>{staff.title}</TableCell>
                   <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
                   <TableCell>{staff.position}</TableCell>
@@ -199,6 +233,9 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                       <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(staff)}>
+                        <Mail className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -285,6 +322,33 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
               <Button type="submit">{editingStaff ? 'Save Changes' : 'Add Staff'}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Credentials</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">Email</Label>
+              <Input 
+                id="email" 
+                value={targetEmail} 
+                onChange={e => setTargetEmail(e.target.value)} 
+                className="col-span-3" 
+                placeholder="example@email.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSendCredentials} disabled={sendingEmail}>
+              {sendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+              Send Credentials
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

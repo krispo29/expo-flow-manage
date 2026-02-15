@@ -148,7 +148,7 @@ export function ExhibitorForm({ initialData, projectId }: ExhibitorFormProps) {
               name="registrationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Registration ID (Username)</FormLabel>
+                  <FormLabel>Username</FormLabel>
                   <FormControl>
                     <Input placeholder="REG-001" {...field} />
                   </FormControl>

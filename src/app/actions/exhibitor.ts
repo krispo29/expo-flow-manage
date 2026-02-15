@@ -69,3 +69,22 @@ export async function generateInviteCode(id: string) {
     return { error: 'Failed to generate invite code' }
   }
 }
+
+export async function sendExhibitorCredentials(id: string, targetEmail?: string) {
+  try {
+    const exhibitor = await mockService.getExhibitorById(id)
+    if (!exhibitor) throw new Error('Exhibitor not found')
+    
+    const emailToUse = targetEmail || exhibitor.email
+    
+    // Mock sending email
+    console.log(`Sending credentials to: ${emailToUse} (Exhibitor: ${exhibitor.companyName})`)
+    console.log(`Username: ${exhibitor.registrationId}, Password: ${exhibitor.password}`)
+    
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    return { success: true }
+  } catch (error) {
+    console.error('Error sending credentials:', error)
+    return { error: 'Failed to send credentials' }
+  }
+}

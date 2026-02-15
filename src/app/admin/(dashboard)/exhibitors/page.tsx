@@ -14,7 +14,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Pencil, Trash2, Link as LinkIcon, Loader2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Plus, Pencil, Trash2, Link as LinkIcon, Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner' // Using sonner as recommended by shadcn
 
 export default function ExhibitorsPage() {
@@ -23,6 +33,11 @@ export default function ExhibitorsPage() {
   
   const [exhibitors, setExhibitors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [selectedExhibitor, setSelectedExhibitor] = useState<any>(null)
+  const [targetEmail, setTargetEmail] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   useEffect(() => {
     if (!projectId) return
@@ -47,6 +62,28 @@ export default function ExhibitorsPage() {
       toast.success('Exhibitor deleted')
     } else {
       toast.error('Failed to delete exhibitor')
+    }
+  }
+
+  function handleOpenEmailDialog(exhibitor: any) {
+    setSelectedExhibitor(exhibitor)
+    setTargetEmail(exhibitor.email || '')
+    setEmailDialogOpen(true)
+  }
+
+  async function handleSendCredentials() {
+    if (!selectedExhibitor) return
+    
+    setSendingEmail(true)
+    const { sendExhibitorCredentials } = await import('@/app/actions/exhibitor')
+    const result = await sendExhibitorCredentials(selectedExhibitor.id, targetEmail)
+    setSendingEmail(false)
+    
+    if (result.success) {
+      toast.success('Credentials sent successfully')
+      setEmailDialogOpen(false)
+    } else {
+      toast.error('Failed to send credentials')
     }
   }
 
@@ -90,7 +127,7 @@ export default function ExhibitorsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Registration ID</TableHead>
+                  <TableHead>Username</TableHead>
                   <TableHead>Company Name</TableHead>
                   <TableHead>Contact Person</TableHead>
                   <TableHead>Booth No.</TableHead>
@@ -132,6 +169,9 @@ export default function ExhibitorsPage() {
                             <Loader2 className="h-4 w-4" />
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(item)}>
+                          <Mail className="h-4 w-4" />
+                        </Button>
                         <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
                           <Button variant="ghost" size="icon">
                             <Pencil className="h-4 w-4" />
@@ -149,6 +189,36 @@ export default function ExhibitorsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Credentials</DialogTitle>
+            <DialogDescription>
+              Confirm the recipient email address for {selectedExhibitor?.companyName}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">Email</Label>
+              <Input 
+                id="email" 
+                value={targetEmail} 
+                onChange={e => setTargetEmail(e.target.value)} 
+                className="col-span-3" 
+                placeholder="example@email.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSendCredentials} disabled={sendingEmail}>
+              {sendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+              Send Credentials
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

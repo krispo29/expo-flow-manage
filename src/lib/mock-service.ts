@@ -83,12 +83,14 @@ export interface Exhibitor {
 }
 
 export interface Staff {
-  id: string;
+  id: string; // Sequence based: exhibitorId-NN (e.g. ex-1-01)
   exhibitorId: string;
-  name: string;
+  title: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
-  role: string;
+  mobile: string;
+  position: string;
   createdAt: Date;
 }
 
@@ -338,48 +340,58 @@ class MockService {
   ];
   private staffMembers: Staff[] = [
     {
-      id: "s-1",
+      id: "ex-1-01",
       exhibitorId: "ex-1",
-      name: "Le Van D",
+      title: "Mr.",
+      firstName: "Le Van",
+      lastName: "D",
       email: "d@agrotech.vn",
-      phone: "+84 111 222 333",
-      role: "Manager",
+      mobile: "+84 111 222 333",
+      position: "Manager",
       createdAt: new Date(),
     },
     {
-      id: "s-2",
+      id: "ex-1-02",
       exhibitorId: "ex-1",
-      name: "Pham Thi E",
+      title: "Ms.",
+      firstName: "Pham Thi",
+      lastName: "E",
       email: "e@agrotech.vn",
-      phone: "+84 444 555 666",
-      role: "Engineer",
+      mobile: "+84 444 555 666",
+      position: "Engineer",
       createdAt: new Date(),
     },
     {
-      id: "s-3",
+      id: "ex-2-01",
       exhibitorId: "ex-2",
-      name: "Hoang Van F",
+      title: "Mr.",
+      firstName: "Hoang Van",
+      lastName: "F",
       email: "f@biofeed.com",
-      phone: "+84 777 888 999",
-      role: "Sales",
+      mobile: "+84 777 888 999",
+      position: "Sales",
       createdAt: new Date(),
     },
     {
-      id: "s-4",
+      id: "ex-4-01",
       exhibitorId: "ex-4",
-      name: "Kanya P",
+      title: "Ms.",
+      firstName: "Kanya",
+      lastName: "P",
       email: "kanya@greenery.th",
-      phone: "+66 89 000 1111",
-      role: "Operator",
+      mobile: "+66 89 000 1111",
+      position: "Operator",
       createdAt: new Date(),
     },
     {
-      id: "s-5",
+      id: "ex-6-01",
       exhibitorId: "ex-6",
-      name: "Somchai M",
+      title: "Mr.",
+      firstName: "Somchai",
+      lastName: "M",
       email: "somchai@asialivestock.com",
-      phone: "+66 2 888 7777",
-      role: "Director",
+      mobile: "+66 2 888 7777",
+      position: "Director",
       createdAt: new Date(),
     },
   ];
@@ -575,10 +587,18 @@ class MockService {
     return this.staffMembers.filter(s => s.exhibitorId === exhibitorId);
   }
 
+  async getStaffById(id: string): Promise<Staff | undefined> {
+    return this.staffMembers.find(s => s.id === id);
+  }
+
   async createStaff(data: Omit<Staff, 'id' | 'createdAt'>): Promise<Staff> {
+    const existingStaff = this.staffMembers.filter(s => s.exhibitorId === data.exhibitorId);
+    const sequence = existingStaff.length + 1;
+    const sequenceStr = sequence.toString().padStart(2, '0');
+    
     const newStaff = {
       ...data,
-      id: uuidv4(),
+      id: `${data.exhibitorId}-${sequenceStr}`,
       createdAt: new Date()
     };
     this.staffMembers.push(newStaff);
