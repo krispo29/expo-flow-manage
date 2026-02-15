@@ -155,15 +155,21 @@ export function StaffManagement({ exhibitorId }: StaffManagementProps) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this staff member?')) return
-    
-    const result = await deleteStaff(id)
-    if (result.success) {
-      toast.success('Staff deleted')
-      setStaffList(staffList.filter(s => s.id !== id))
-    } else {
-      toast.error('Failed to delete staff')
-    }
+    toast("Delete this staff member?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          const result = await deleteStaff(id)
+          if (result.success) {
+            toast.success('Staff deleted')
+            setStaffList(staffList.filter(s => s.id !== id))
+          } else {
+            toast.error('Failed to delete staff')
+          }
+        },
+      },
+    })
   }
 
   function handleOpenEmailDialog(staff: Staff) {

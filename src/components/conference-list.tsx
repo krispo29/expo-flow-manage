@@ -70,15 +70,21 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this conference?')) return
-
-    const result = await deleteConference(id)
-    if (result.success) {
-      toast.success('Conference deleted')
-      router.refresh()
-    } else {
-      toast.error('Failed to delete conference')
-    }
+    toast("Delete this conference?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          const result = await deleteConference(id)
+          if (result.success) {
+            toast.success('Conference deleted')
+            router.refresh()
+          } else {
+            toast.error('Failed to delete conference')
+          }
+        },
+      },
+    })
   }
 
   if (conferences.length === 0) {

@@ -48,14 +48,21 @@ export function EventSettings({ projects }: Readonly<EventSettingsProps>) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return
-    startTransition(async () => {
-      const result = await deleteProject(id)
-      if (result.success) {
-        toast.success("Event deleted")
-      } else {
-        toast.error("Failed to delete event")
-      }
+    toast("Delete this event?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          startTransition(async () => {
+            const result = await deleteProject(id)
+            if (result.success) {
+              toast.success("Event deleted")
+            } else {
+              toast.error("Failed to delete event")
+            }
+          })
+        },
+      },
     })
   }
 

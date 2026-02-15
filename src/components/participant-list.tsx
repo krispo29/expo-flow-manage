@@ -91,17 +91,23 @@ export function ParticipantList({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this participant?')) return
-    
-    setLoading(true)
-    const result = await deleteParticipant(id)
-    setLoading(false)
+    toast("Delete this participant?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          setLoading(true)
+          const result = await deleteParticipant(id)
+          setLoading(false)
 
-    if (result.success) {
-      toast.success('Participant deleted')
-    } else {
-      toast.error(result.error)
-    }
+          if (result.success) {
+            toast.success('Participant deleted')
+          } else {
+            toast.error(result.error)
+          }
+        },
+      },
+    })
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

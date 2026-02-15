@@ -86,17 +86,23 @@ export function OrganizerList({ organizers }: OrganizerListProps) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this organizer?')) return
-    
-    setLoading(true)
-    const result = await deleteOrganizer(id)
-    setLoading(false)
+    toast("Delete this organizer?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          setLoading(true)
+          const result = await deleteOrganizer(id)
+          setLoading(false)
 
-    if (result.success) {
-      toast.success('Organizer deleted')
-    } else {
-      toast.error(result.error)
-    }
+          if (result.success) {
+            toast.success('Organizer deleted')
+          } else {
+            toast.error(result.error)
+          }
+        },
+      },
+    })
   }
 
   return (

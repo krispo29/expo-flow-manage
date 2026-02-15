@@ -33,15 +33,20 @@ export function RoomSettings({ rooms }: Readonly<RoomSettingsProps>) {
   }
 
   async function handleDelete(roomName: string) {
-    if (!confirm(`Delete room "${roomName}"?`)) return
-
-    startTransition(async () => {
-      const result = await deleteRoom(roomName)
-      if (result.success) {
-        toast.success("Room deleted")
-      } else {
-        toast.error("Failed to delete room")
-      }
+    toast(`Delete room "${roomName}"?`, {
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          startTransition(async () => {
+            const result = await deleteRoom(roomName)
+            if (result.success) {
+              toast.success("Room deleted")
+            } else {
+              toast.error("Failed to delete room")
+            }
+          })
+        },
+      },
     })
   }
 

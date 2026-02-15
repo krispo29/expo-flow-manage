@@ -54,15 +54,21 @@ export default function ExhibitorsPage() {
   }, [projectId])
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this exhibitor?')) return
-
-    const result = await deleteExhibitor(id)
-    if (result.success) {
-      setExhibitors(exhibitors.filter(e => e.id !== id))
-      toast.success('Exhibitor deleted')
-    } else {
-      toast.error('Failed to delete exhibitor')
-    }
+    toast("Delete this exhibitor?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          const result = await deleteExhibitor(id)
+          if (result.success) {
+            setExhibitors(exhibitors.filter(e => e.id !== id))
+            toast.success('Exhibitor deleted')
+          } else {
+            toast.error('Failed to delete exhibitor')
+          }
+        }
+      }
+    })
   }
 
   function handleOpenEmailDialog(exhibitor: any) {
