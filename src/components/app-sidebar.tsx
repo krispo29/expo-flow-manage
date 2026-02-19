@@ -258,6 +258,22 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+                
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Invitation Codes" 
+                      className="h-10 text-[15px] font-medium px-4"
+                      isActive={isActive('/admin/invitation-codes')}
+                    >
+                      <Link href={projectId ? `/admin/invitation-codes?projectId=${projectId}` : "/admin/invitation-codes"}>
+                        <FileText className="size-5" />
+                        <span>Invitation Codes</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

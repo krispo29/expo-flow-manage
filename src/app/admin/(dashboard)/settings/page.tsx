@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProjectSettings } from '@/components/settings/general-settings'
 import { RoomSettings } from '@/components/settings/room-settings'
 import { EventSettings } from '@/components/settings/event-settings'
-import { InvitationCodeSettings } from '@/components/settings/invitation-codes'
 
 export default function SettingsPage() {
   const searchParams = useSearchParams()
@@ -33,7 +32,6 @@ export default function SettingsPage() {
           <TabsTrigger value="project">Project Settings</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="invitations">Invitation Codes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="project">
@@ -47,11 +45,7 @@ export default function SettingsPage() {
         <TabsContent value="events">
           <EventSettings projectUuid={projectId} />
         </TabsContent>
-
-        <TabsContent value="invitations">
-          <InvitationCodeSettings projectUuid={projectId} />
-        </TabsContent>
-      </Tabs>
+        </Tabs>
     </div>
   )
 }
