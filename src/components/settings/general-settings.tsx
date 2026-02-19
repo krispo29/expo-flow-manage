@@ -96,13 +96,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Project Settings</CardTitle>
-        <CardDescription>
-          Configure the project details, dates, and assets.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Registration Toggle */}
           <div className="flex items-center justify-between p-4 border rounded-lg bg-primary/5">

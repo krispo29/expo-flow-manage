@@ -12,6 +12,8 @@ import {
   Wrench,
   Settings,
   ChevronsUpDown,
+  Calendar,
+  DoorOpen,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -201,6 +203,54 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Rooms" 
+                      className="h-10 text-[15px] font-medium px-4"
+                      isActive={isActive('/admin/rooms')}
+                    >
+                      <Link href={projectId ? `/admin/rooms?projectId=${projectId}` : "/admin/rooms"}>
+                        <DoorOpen className="size-5" />
+                        <span>Rooms</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Events" 
+                      className="h-10 text-[15px] font-medium px-4"
+                      isActive={isActive('/admin/events')}
+                    >
+                      <Link href={projectId ? `/admin/events?projectId=${projectId}` : "/admin/events"}>
+                        <Calendar className="size-5" />
+                        <span>Events</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Invitation Codes" 
+                      className="h-10 text-[15px] font-medium px-4"
+                      isActive={isActive('/admin/invitation-codes')}
+                    >
+                      <Link href={projectId ? `/admin/invitation-codes?projectId=${projectId}` : "/admin/invitation-codes"}>
+                        <FileText className="size-5" />
+                        <span>Invitation Codes</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -254,22 +304,6 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       <Link href={projectId ? `/admin/settings?projectId=${projectId}` : "/admin/settings"}>
                         <Settings className="size-5" />
                         <span>Settings</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                
-                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Invitation Codes" 
-                      className="h-10 text-[15px] font-medium px-4"
-                      isActive={isActive('/admin/invitation-codes')}
-                    >
-                      <Link href={projectId ? `/admin/invitation-codes?projectId=${projectId}` : "/admin/invitation-codes"}>
-                        <FileText className="size-5" />
-                        <span>Invitation Codes</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

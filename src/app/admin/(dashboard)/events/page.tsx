@@ -1,9 +1,9 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { ProjectSettings } from '@/components/settings/general-settings'
+import { EventSettings } from '@/components/settings/event-settings'
 
-export default function SettingsPage() {
+export default function EventsPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId') || ''
 
@@ -18,16 +18,12 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Project Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Events</h1>
         <p className="text-muted-foreground">
-          Configure the project details, dates, and assets.
+          Manage event configuration and timing.
         </p>
       </div>
-
-      <div>
-        <ProjectSettings projectUuid={projectId} />
-      </div>
+      <EventSettings projectUuid={projectId} />
     </div>
   )
 }
-
