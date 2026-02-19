@@ -1,8 +1,7 @@
 'use server'
 
 import { cookies } from 'next/headers'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft.co'
+import api from '@/lib/api'
 
 export async function loginAction(formData: FormData) {
   const username = formData.get('username') as string
@@ -14,13 +13,11 @@ export async function loginAction(formData: FormData) {
 
   try {
     const body = new URLSearchParams({ username, password })
-    const response = await fetch(`${API_URL}/auth/c/signin`, {
-      method: 'POST',
+    const response = await api.post('/auth/c/signin', body.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
     })
 
-    const result = await response.json()
+    const result = response.data
 
     if (result.code !== 200 || !result.data?.access_token) {
       return { error: result.message || 'Invalid username or password' }
@@ -47,9 +44,10 @@ export async function loginAction(formData: FormData) {
         com_uuid: com_uuid,
       },
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error)
-    return { error: 'Unable to connect to server. Please try again.' }
+    const errorMsg = error.response?.data?.message || error.message || 'Unable to connect to server'
+    return { error: errorMsg }
   }
 }
 

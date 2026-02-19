@@ -1,171 +1,193 @@
 'use server'
 
-import { mockService, SystemSettings, InvitationCode, Project } from '@/lib/mock-service'
 import { revalidatePath } from 'next/cache'
+import api from '@/lib/api'
 
-// --- General Settings ---
-export async function getSettings() {
+// ==================== CHECK & HEADERS REMOVED (Handled by api.ts) ====================
+
+// ==================== TYPES ====================
+
+export interface Room {
+  room_uuid: string
+  event_uuid: string
+  event_name: string
+  room_name: string
+  location_detail: string
+  capacity: number
+  is_active: boolean
+}
+
+export interface Event {
+  event_uuid: string
+  event_code: string
+  event_name: string
+  is_active: boolean
+  order_index: number
+}
+
+export interface Invitation {
+  invite_uuid: string
+  company_name: string
+  invite_code: string
+  invite_link: string
+  is_active: boolean
+}
+
+// ==================== ROOMS ====================
+
+export async function getRooms(projectUuid: string) {
   try {
-    const settings = await mockService.getSettings()
-    return { success: true, settings }
-  } catch (error) {
-    console.error('Error fetching settings:', error)
-    return { error: 'Failed to fetch settings' }
-  }
-}
-
-export async function updateSettings(formData: FormData) {
-  try {
-    const siteUrl = formData.get('siteUrl') as string
-    const eventTitle = formData.get('eventTitle') as string
-    const eventSubtitle = formData.get('eventSubtitle') as string
-    const eventDateStr = formData.get('eventDate') as string
-    const cutoffDateStr = formData.get('cutoffDate') as string
-
-    const updateData: Partial<SystemSettings> = {
-      siteUrl,
-      eventTitle,
-      eventSubtitle,
-    }
-
-    if (eventDateStr) {
-      updateData.eventDate = new Date(eventDateStr)
-    }
-    
-    if (cutoffDateStr) {
-      updateData.cutoffDate = new Date(cutoffDateStr)
-    }
-
-    await mockService.updateSettings(updateData)
-
-    revalidatePath('/admin/settings')
-    return { success: true }
-  } catch (error) {
-    console.error('Error updating settings:', error)
-    return { error: 'Failed to update settings' }
-  }
-}
-
-// --- Rooms ---
-export async function addRoom(roomName: string) {
-    try {
-        const settings = await mockService.getSettings();
-        const rooms = settings.rooms || [];
-        if (!rooms.includes(roomName)) {
-            await mockService.updateSettings({ rooms: [...rooms, roomName] });
-        }
-        revalidatePath('/admin/settings')
-        return { success: true }
-    } catch (error) {
-        return { error: 'Failed to add room' }
-    }
-}
-
-export async function deleteRoom(roomName: string) {
-    try {
-        const settings = await mockService.getSettings();
-        const rooms = settings.rooms || [];
-        await mockService.updateSettings({ rooms: rooms.filter(r => r !== roomName) });
-        revalidatePath('/admin/settings')
-        return { success: true }
-    } catch (error) {
-        return { error: 'Failed to delete room' }
-    }
-}
-
-// --- Invitation Codes ---
-export async function getInvitationCodes() {
-  try {
-    const codes = await mockService.getInvitationCodes()
-    return { success: true, codes }
-  } catch (error) {
-    return { error: 'Failed to fetch invitation codes' }
-  }
-}
-
-export async function createInvitationCode(formData: FormData) {
-  try {
-    const companyName = formData.get('companyName') as string
-    const code = formData.get('code') as string
-
-    await mockService.createInvitationCode({
-      companyName,
-      code
+    const response = await api.get('/v1/admin/rooms', {
+      headers: { 'X-Project-UUID': projectUuid }
     })
-
-    revalidatePath('/admin/settings')
-    return { success: true }
-  } catch (error) {
-    return { error: 'Failed to create invitation code' }
+    const result = response.data
+    return { success: true, rooms: (result.data || []) as Room[] }
+  } catch (error: any) {
+    console.error('Error fetching rooms:', error)
+    return { success: false, error: 'Failed to fetch rooms', rooms: [] as Room[] }
   }
 }
 
-export async function deleteInvitationCode(id: string) {
+export async function createRoom(projectUuid: string, data: {
+  event_uuid: string
+  room_name: string
+  location_detail: string
+  capacity: number
+  is_active: boolean
+}) {
   try {
-    await mockService.deleteInvitationCode(id)
+    await api.post('/v1/admin/rooms', data, {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
     revalidatePath('/admin/settings')
     return { success: true }
-  } catch (error) {
-    console.error('Error deleting invitation code:', error)
-    return { error: 'Failed to delete invitation code' }
+  } catch (error: any) {
+    console.error('Error creating room:', error)
+    const errMsg = error.response?.data?.message || 'Failed to create room'
+    return { success: false, error: errMsg }
   }
 }
 
-// --- Events (Projects) ---
-// Note: We might need to move this to project actions if we want full separation, but for "settings" context it's fine here to wrap it or import from project logic. 
-// However, mockService has createProject.
-export async function createProject(formData: FormData) {
-    try {
-        const name = formData.get('name') as string
-        const description = formData.get('description') as string
-        
-        await mockService.createProject({
-            name,
-            description
-        })
-        revalidatePath('/admin/settings')
-        return { success: true }
-    } catch (error) {
-         return { error: 'Failed to create project' }
-    }
-}
-
-
-export async function updateProject(id: string, formData: FormData) {
+export async function updateRoom(projectUuid: string, data: {
+  room_uuid: string
+  event_uuid: string
+  room_name: string
+  location_detail: string
+  capacity: number
+  is_active: boolean
+}) {
   try {
-    const name = formData.get('name') as string
-    const description = formData.get('description') as string
-
-    await mockService.updateProject(id, { name, description })
+    await api.put('/v1/admin/rooms', data, {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
     revalidatePath('/admin/settings')
     return { success: true }
-  } catch (error) {
-    console.error('Error updating project:', error)
-    return { error: 'Failed to update project' }
+  } catch (error: any) {
+    console.error('Error updating room:', error)
+    const errMsg = error.response?.data?.message || 'Failed to update room'
+    return { success: false, error: errMsg }
   }
 }
 
-export async function deleteProject(id: string) {
+// ==================== EVENTS ====================
+
+export async function getEvents(projectUuid: string) {
   try {
-    await mockService.deleteProject(id)
-    revalidatePath('/admin/settings')
-    return { success: true }
-  } catch (error) {
-    console.error('Error deleting project:', error)
-    return { error: 'Failed to delete project' }
+    const response = await api.get('/v1/admin/events', {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
+    const result = response.data
+    return { success: true, events: (result.data || []) as Event[] }
+  } catch (error: any) {
+    console.error('Error fetching events:', error)
+    return { success: false, error: 'Failed to fetch events', events: [] as Event[] }
   }
 }
 
-export async function updateInvitationCode(id: string, formData: FormData) {
+export async function createEvent(projectUuid: string, data: {
+  event_name: string
+  is_active: boolean
+  order_index: number
+}) {
   try {
-    const companyName = formData.get('companyName') as string
-    const code = formData.get('code') as string
-
-    await mockService.updateInvitationCode(id, { companyName, code })
+    await api.post('/v1/admin/events', data, {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
     revalidatePath('/admin/settings')
     return { success: true }
-  } catch (error) {
-    console.error('Error updating invitation code:', error)
-    return { error: 'Failed to update invitation code' }
+  } catch (error: any) {
+    console.error('Error creating event:', error)
+    const errMsg = error.response?.data?.message || 'Failed to create event'
+    return { success: false, error: errMsg }
+  }
+}
+
+export async function updateEvent(projectUuid: string, data: {
+  event_uuid: string
+  event_name: string
+  is_active: boolean
+  order_index: number
+}) {
+  try {
+    await api.put('/v1/admin/events', data, {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
+    revalidatePath('/admin/settings')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error updating event:', error)
+    const errMsg = error.response?.data?.message || 'Failed to update event'
+    return { success: false, error: errMsg }
+  }
+}
+
+// ==================== INVITATIONS ====================
+
+export async function getInvitations(projectUuid: string) {
+  try {
+    const response = await api.get('/v1/admin/invitations', {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
+    const result = response.data
+    return { success: true, invitations: (result.data || []) as Invitation[] }
+  } catch (error: any) {
+    console.error('Error fetching invitations:', error)
+    return { success: false, error: 'Failed to fetch invitations', invitations: [] as Invitation[] }
+  }
+}
+
+export async function createInvitation(projectUuid: string, data: {
+  company_name: string
+  invite_code: string
+}) {
+  try {
+    await api.post('/v1/admin/invitations', data, {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
+    revalidatePath('/admin/settings')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error creating invitation:', error)
+    const errMsg = error.response?.data?.message || 'Failed to create invitation'
+    return { success: false, error: errMsg }
+  }
+}
+
+export async function updateInvitation(projectUuid: string, data: {
+  invite_uuid: string
+  company_name: string
+  invite_code: string
+  is_active: boolean
+}) {
+  try {
+    await api.put('/v1/admin/invitations', data, {
+      headers: { 'X-Project-UUID': projectUuid }
+    })
+    revalidatePath('/admin/settings')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error updating invitation:', error)
+    const errMsg = error.response?.data?.message || 'Failed to update invitation'
+    return { success: false, error: errMsg }
   }
 }

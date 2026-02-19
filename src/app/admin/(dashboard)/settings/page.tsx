@@ -1,51 +1,58 @@
-import { getSettings, getInvitationCodes } from "@/app/actions/settings"
-import { getProjects } from "@/app/actions/project"
-import { GeneralSettings } from "@/components/settings/general-settings"
-import { RoomSettings } from "@/components/settings/room-settings"
-import { EventSettings } from "@/components/settings/event-settings"
-import { InvitationCodeSettings } from "@/components/settings/invitation-codes"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+'use client'
 
-export default async function SettingsPage() {
-  const { settings } = await getSettings()
-  const { projects } = await getProjects()
-  const { codes } = await getInvitationCodes()
+import { useSearchParams } from 'next/navigation'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ProjectSettings } from '@/components/settings/general-settings'
+import { RoomSettings } from '@/components/settings/room-settings'
+import { EventSettings } from '@/components/settings/event-settings'
+import { InvitationCodeSettings } from '@/components/settings/invitation-codes'
 
-  if (!settings) return <div>Failed to load settings</div>
+export default function SettingsPage() {
+  const searchParams = useSearchParams()
+  const projectId = searchParams.get('projectId') || ''
+
+  if (!projectId) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">No project selected. Please select a project first.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
-          Manage system-wide configuration and preferences.
+          Manage project settings, rooms, events, and invitation codes.
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
+      <Tabs defaultValue="project" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="project">Project Settings</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="invitations">Invitation Codes</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general">
-          <GeneralSettings initialSettings={settings} />
+        <TabsContent value="project">
+          <ProjectSettings projectUuid={projectId} />
         </TabsContent>
-        
+
         <TabsContent value="rooms">
-          <RoomSettings rooms={settings.rooms || []} />
+          <RoomSettings projectUuid={projectId} />
         </TabsContent>
-        
+
         <TabsContent value="events">
-          <EventSettings projects={projects || []} />
+          <EventSettings projectUuid={projectId} />
         </TabsContent>
-        
+
         <TabsContent value="invitations">
-          <InvitationCodeSettings codes={codes || []} siteUrl={settings.siteUrl} />
+          <InvitationCodeSettings projectUuid={projectId} />
         </TabsContent>
       </Tabs>
     </div>
   )
 }
+

@@ -6,7 +6,7 @@ import {
   Contact,
   Frame,
   LayoutDashboard,
-  Store,
+
   Presentation,
   FileText,
   Wrench,
@@ -132,7 +132,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER' || user?.role === 'EXHIBITOR') && (
+        {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
             <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-4 mb-2">
               Event Management
@@ -169,21 +169,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER' || user?.role === 'EXHIBITOR') && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Exhibitors" 
-                      className="h-10 text-[15px] font-medium px-4"
-                      isActive={isActive('/admin/exhibitors')}
-                    >
-                      <Link href={projectId ? `/admin/exhibitors?projectId=${projectId}` : "/admin/exhibitors"}>
-                        <Store className="size-5" />
-                        <span>Exhibitors</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
+
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
