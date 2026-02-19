@@ -84,7 +84,7 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
       
       let displayTitle = '';
       if (isStandard) {
-        displayTitle = staff.title;
+        displayTitle = staff.title || '';
       } else if (staff.title) {
         displayTitle = 'Other';
       }

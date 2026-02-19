@@ -5,19 +5,26 @@ import api from '@/lib/api'
 
 export interface Exhibitor {
   id: string
-  // Add other properties based on what the UI expects, 
-  // or just use generic types if we don't have the full shape yet.
-  // Based on old code:
   companyName: string
   registrationId: string
   boothNumber?: string
   zone?: string
   email?: string
   phone?: string
+  contactName?: string
   contactPerson?: string
+  fax?: string
+  website?: string
+  address?: string
+  city?: string
+  province?: string
+  country?: string
+  postalCode?: string
+  quota: number
+  overQuota: number
   inviteCode?: string
   projectId?: string
-  password?: string // only if returned
+  password?: string
   createdAt?: string
 }
 
@@ -53,9 +60,11 @@ export async function createExhibitor(projectUuid: string, data: any) {
 }
 
 // PUT /v1/admin/project/exhibitors
-export async function updateExhibitor(projectUuid: string, data: any) {
+export async function updateExhibitor(projectUuid: string, exhibitorUuid: string, data: any) {
   try {
-    const response = await api.put('/v1/admin/project/exhibitors', data, {
+    // Merge exhibitor_uuid into data if not present
+    const payload = { ...data, exhibitor_uuid: exhibitorUuid }
+    const response = await api.put('/v1/admin/project/exhibitors', payload, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/exhibitors')

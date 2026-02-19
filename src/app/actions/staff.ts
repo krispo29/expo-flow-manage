@@ -6,11 +6,14 @@ import api from '@/lib/api'
 export interface Staff {
   id: string
   exhibitorId: string
+  title?: string
   firstName: string
   lastName: string
   email: string
   phone?: string
+  mobile?: string
   position?: string
+  type?: string
   isActive: boolean
   createdAt: string
   // Add other fields as needed
@@ -46,9 +49,10 @@ export async function createStaff(projectUuid: string, data: any) {
 }
 
 // PUT /v1/admin/project/exhibitors/staff
-export async function updateStaff(projectUuid: string, data: any) {
+export async function updateStaff(projectUuid: string, staffUuid: string, data: any) {
   try {
-    const response = await api.put('/v1/admin/project/exhibitors/staff', data, {
+    const payload = { ...data, staff_uuid: staffUuid }
+    const response = await api.put('/v1/admin/project/exhibitors/staff', payload, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/exhibitors')
