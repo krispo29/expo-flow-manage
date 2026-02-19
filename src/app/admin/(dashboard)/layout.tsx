@@ -16,6 +16,8 @@ import {
 import { ProjectGuard } from "@/components/project-guard"
 import { getProjects } from "@/app/actions/project"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Fetch projects from server action
   const { projects } = await getProjects()
@@ -28,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   })) || []
 
   return (
-    <ProjectGuard>
+    <ProjectGuard projects={sidebarProjects}>
       <SidebarProvider>
         <AppSidebar projects={sidebarProjects} />
         <SidebarInset>

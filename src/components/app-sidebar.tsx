@@ -139,6 +139,22 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Exhibitors" 
+                      className="h-10 text-[15px] font-medium px-4"
+                      isActive={isActive('/admin/exhibitors')}
+                    >
+                      <Link href={projectId ? `/admin/exhibitors?projectId=${projectId}` : "/admin/exhibitors"}>
+                        <Users className="size-5" />
+                        <span>Exhibitors</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 

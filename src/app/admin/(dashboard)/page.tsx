@@ -15,7 +15,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export default function Page() {
+export default async function Page() {
+  // ProjectGuard handles the redirect logic now.
+  
   return (
     <div className="flex flex-col gap-6">
       <div>

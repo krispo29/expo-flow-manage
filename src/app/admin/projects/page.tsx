@@ -31,6 +31,11 @@ export default function ProjectsPage() {
     setError(null)
     const result = await getProjects()
     if (result.success && result.projects) {
+      // Auto-redirect if only one project exists (equivalent to Vue beforeMount)
+      if (result.projects.length === 1) {
+        router.push(`/admin?projectId=${result.projects[0].project_uuid}`)
+        return
+      }
       setProjects(result.projects)
     } else {
       setError(result.error || 'Failed to load projects')
