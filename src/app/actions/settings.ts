@@ -3,8 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import api from '@/lib/api'
 
-// ==================== CHECK & HEADERS REMOVED (Handled by api.ts) ====================
-
 // ==================== TYPES ====================
 
 export interface Room {
@@ -37,7 +35,7 @@ export interface Invitation {
 
 export async function getRooms(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/rooms', {
+    const response = await api.get('/v1/admin/project/rooms', {
       headers: { 'X-Project-UUID': projectUuid }
     })
     const result = response.data
@@ -56,7 +54,7 @@ export async function createRoom(projectUuid: string, data: {
   is_active: boolean
 }) {
   try {
-    await api.post('/v1/admin/rooms', data, {
+    await api.post('/v1/admin/project/rooms', data, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/settings')
@@ -77,7 +75,7 @@ export async function updateRoom(projectUuid: string, data: {
   is_active: boolean
 }) {
   try {
-    await api.put('/v1/admin/rooms', data, {
+    await api.put('/v1/admin/project/rooms', data, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/settings')
@@ -93,7 +91,7 @@ export async function updateRoom(projectUuid: string, data: {
 
 export async function getEvents(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/events', {
+    const response = await api.get('/v1/admin/project/events', {
       headers: { 'X-Project-UUID': projectUuid }
     })
     const result = response.data
@@ -110,7 +108,7 @@ export async function createEvent(projectUuid: string, data: {
   order_index: number
 }) {
   try {
-    await api.post('/v1/admin/events', data, {
+    await api.post('/v1/admin/project/events', data, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/settings')
@@ -129,7 +127,7 @@ export async function updateEvent(projectUuid: string, data: {
   order_index: number
 }) {
   try {
-    await api.put('/v1/admin/events', data, {
+    await api.put('/v1/admin/project/events', data, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/settings')
@@ -145,7 +143,7 @@ export async function updateEvent(projectUuid: string, data: {
 
 export async function getInvitations(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/invitations', {
+    const response = await api.get('/v1/admin/project/invitations', {
       headers: { 'X-Project-UUID': projectUuid }
     })
     const result = response.data
@@ -161,7 +159,7 @@ export async function createInvitation(projectUuid: string, data: {
   invite_code: string
 }) {
   try {
-    await api.post('/v1/admin/invitations', data, {
+    await api.post('/v1/admin/project/invitations', data, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/settings')
@@ -180,7 +178,7 @@ export async function updateInvitation(projectUuid: string, data: {
   is_active: boolean
 }) {
   try {
-    await api.put('/v1/admin/invitations', data, {
+    await api.put('/v1/admin/project/invitations', data, {
       headers: { 'X-Project-UUID': projectUuid }
     })
     revalidatePath('/admin/settings')

@@ -1,97 +1,106 @@
 'use server'
 
-import { mockService } from '@/lib/mock-service'
 import { revalidatePath } from 'next/cache'
+import api from '@/lib/api'
 
-export async function getOrganizers() {
+export interface Organizer {
+  organizer_uuid: string
+  username: string
+  full_name: string
+  project_uuid: string
+  project_name: string
+  is_active: boolean
+  last_login: string
+  created_at: string
+}
+
+// GET /v1/admin/project/organizers
+export async function getOrganizers(projectUuid: string) {
   try {
-    const organizers = await mockService.getOrganizers()
-    return { success: true, data: organizers }
-  } catch (error) {
+    const response = await api.get('/v1/admin/project/organizers', {
+      headers: { 'X-Project-UUID': projectUuid },
+      params: { project_uuid: projectUuid }, // Keep query param if API creates filtered list based on this too, or just to be safe
+    })
+    const result = response.data
+    return { success: true, data: (result.data || []) as Organizer[] }
+  } catch (error: any) {
     console.error('Error fetching organizers:', error)
-    return { error: 'Failed to fetch organizers' }
+    return { success: false, error: 'Failed to fetch organizers', data: [] as Organizer[] }
   }
 }
 
-export async function createOrganizer(formData: FormData) {
+// POST /v1/admin/project/organizers
+export async function createOrganizer(projectUuid: string, data: {
+  username: string
+  password: string
+  full_name: string
+}) {
   try {
-    const username = formData.get('username') as string
-    const email = formData.get('email') as string
-    const projectId = formData.get('projectId') as string
-    const role = formData.get('role') as string || 'ORGANIZER' // Default to ORGANIZER if not specified
-
-    // Check if user already exists in mock data (simulated)
-    const existingUser = await mockService.findUserByUsername(username)
-    if (existingUser) {
-      return { error: 'Username already exists' }
-    }
-    
-    // In mock service, we separate Auth User and Organizer Record usually, 
-    // but for simplicity in this refactor, let's treat Organizer list as the source of truth for display
-    // and assume an associated User would be created in a real app.
-    
-    await mockService.createOrganizer({
-        username,
-        email,
-        projectId,
-        role
+    await api.post('/v1/admin/project/organizers', {
+      project_uuid: projectUuid,
+      ...data,
+    }, {
+      headers: { 'X-Project-UUID': projectUuid },
     })
-
     revalidatePath('/admin/organizers')
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating organizer:', error)
-    return { error: 'Failed to create organizer' }
+    const errMsg = error.response?.data?.message || 'Failed to create organizer'
+    return { success: false, error: errMsg }
   }
 }
 
-export async function updateOrganizer(id: string, formData: FormData) {
+// PUT /v1/admin/project/organizers
+export async function updateOrganizer(projectUuid: string, data: {
+  organizer_uuid: string
+  full_name: string
+  is_active: boolean
+}) {
   try {
-    const username = formData.get('username') as string
-    const email = formData.get('email') as string
-    // Password update logic omitted for mock simplicity as we don't store passwords in Organizer model in mock yet
-    // const password = formData.get('password') as string 
-
-    await mockService.updateOrganizer(id, {
-        username,
-        email
+    await api.put('/v1/admin/project/organizers', data, {
+      headers: { 'X-Project-UUID': projectUuid },
     })
-
     revalidatePath('/admin/organizers')
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating organizer:', error)
-    return { error: 'Failed to update organizer' }
+    const errMsg = error.response?.data?.message || 'Failed to update organizer'
+    return { success: false, error: errMsg }
   }
 }
 
-export async function deleteOrganizer(id: string) {
+// PATCH /v1/admin/project/organizers/force_reset_password
+export async function forceResetPassword(projectUuid: string, data: {
+  organizer_uuid: string
+  new_password: string
+}) {
   try {
-    await mockService.deleteOrganizer(id)
+    await api.patch('/v1/admin/project/organizers/force_reset_password', data, {
+      headers: { 'X-Project-UUID': projectUuid },
+    })
     revalidatePath('/admin/organizers')
     return { success: true }
-  } catch (error) {
-    console.error('Error deleting organizer:', error)
-    return { error: 'Failed to delete organizer' }
+  } catch (error: any) {
+    console.error('Error resetting password:', error)
+    const errMsg = error.response?.data?.message || 'Failed to reset password'
+    return { success: false, error: errMsg }
   }
 }
 
-export async function getOrganizerProjectAction(username: string) {
+// PATCH /v1/admin/project/organizers/toggle_status
+export async function toggleOrganizerStatus(projectUuid: string, organizerUuid: string) {
   try {
-    const organizer = await mockService.findOrganizerByUsername(username)
-    if (organizer?.projectId) {
-      return { success: true, projectId: organizer.projectId }
-    }
-    
-    // Fallback: get first available project if organizer doesn't have one assigned or not found in list
-    const projects = await mockService.getProjects()
-    if (projects.length > 0) {
-      return { success: true, projectId: projects[0].id }
-    }
-
-    return { error: 'No projects available' }
-  } catch (error) {
-    console.error('Error getting organizer project:', error)
-    return { error: 'Failed to get project' }
+    await api.patch('/v1/admin/project/organizers/toggle_status', {
+      organizer_uuid: organizerUuid,
+    }, {
+      headers: { 'X-Project-UUID': projectUuid },
+    })
+    revalidatePath('/admin/organizers')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error toggling organizer status:', error)
+    const errMsg = error.response?.data?.message || 'Failed to toggle status'
+    return { success: false, error: errMsg }
   }
 }

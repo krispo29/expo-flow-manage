@@ -21,7 +21,7 @@ export interface Project {
   updated_at: string
 }
 
-// GET /v1/admin/projects
+// GET /v1/admin/projects (No X-Project-UUID header)
 export async function getProjects() {
   try {
     const response = await api.get('/v1/admin/projects')
@@ -33,10 +33,12 @@ export async function getProjects() {
   }
 }
 
-// GET /v1/admin/projects/:uuid
+// GET /v1/admin/project/detail
 export async function getProjectDetail(uuid: string) {
   try {
-    const response = await api.get(`/v1/admin/projects/${uuid}`)
+    const response = await api.get('/v1/admin/project/detail', {
+      headers: { 'X-Project-UUID': uuid }
+    })
     const result = response.data
     return { success: true, project: result.data as Project }
   } catch (error: any) {
@@ -45,11 +47,12 @@ export async function getProjectDetail(uuid: string) {
   }
 }
 
-// PUT /v1/admin/projects
+// PUT /v1/admin/project/detail
 export async function updateProject(projectData: Partial<Project> & { project_uuid: string }) {
   try {
-    const response = await api.put('/v1/admin/projects', projectData)
-    // No need to check response.ok, axios throws on error status
+    const response = await api.put('/v1/admin/project/detail', projectData, {
+      headers: { 'X-Project-UUID': projectData.project_uuid }
+    })
     
     revalidatePath('/admin/projects')
     return { success: true, project: projectData }

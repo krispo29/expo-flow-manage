@@ -1,8 +1,19 @@
-import { getOrganizers } from '@/app/actions/organizer'
+'use client'
+
+import { useSearchParams } from 'next/navigation'
 import { OrganizerList } from '@/components/organizer-list'
 
-export default async function OrganizersPage() {
-  const { data: organizers } = await getOrganizers()
+export default function OrganizersPage() {
+  const searchParams = useSearchParams()
+  const projectId = searchParams.get('projectId') || ''
+
+  if (!projectId) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">No project selected. Please select a project first.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -12,8 +23,8 @@ export default async function OrganizersPage() {
           Manage user accounts for event organizers.
         </p>
       </div>
-      
-      <OrganizerList organizers={organizers || []} />
+
+      <OrganizerList projectUuid={projectId} />
     </div>
   )
 }
