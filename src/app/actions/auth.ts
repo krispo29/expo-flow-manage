@@ -1,7 +1,8 @@
 'use server'
 
-import { mockService } from '@/lib/mock-service'
+import { cookies } from 'next/headers'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft.co'
 
 export async function loginAction(formData: FormData) {
   const username = formData.get('username') as string
@@ -12,34 +13,48 @@ export async function loginAction(formData: FormData) {
   }
 
   try {
-    const user = await mockService.findUserByUsername(username)
+    const body = new URLSearchParams({ username, password })
+    const response = await fetch(`${API_URL}/auth/c/signin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    })
 
-    if (!user) {
-      return { error: 'Invalid username or password' }
+    const result = await response.json()
+
+    if (result.code !== 200 || !result.data?.access_token) {
+      return { error: result.message || 'Invalid username or password' }
     }
 
-    // In a real app, use bcrypt.compare. For mock, we can just check directly or rely on the mock service logic.
-    // For now, let's keep it simple and assume the password storage in mock service is plaintext or we simulate comparison.
-    // Since we initialized mock user with 'password' (hashed in real life, but here for simplicity let's match string)
-    // If you want to simulate real auth:
-    // const isValid = await bcrypt.compare(password, user.password)
-    
-    // For the specific requested mock "admin" / "password"
-    if (user && password === user.password) {
-         return {
-            success: true,
-            user: {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-            },
-        }
-    }
-     
-    return { error: 'Invalid username or password' }
+    const { access_token, uuid, com_uuid } = result.data
 
+    // Store access token in HTTP-only cookie
+    const cookieStore = await cookies()
+    cookieStore.set('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: result.data.expires_in || 604800,
+      path: '/',
+    })
+
+    return {
+      success: true,
+      user: {
+        id: uuid,
+        username,
+        role: 'ADMIN',
+        com_uuid: com_uuid,
+      },
+    }
   } catch (error) {
     console.error('Login error:', error)
-    return { error: 'An unexpected error occurred' }
+    return { error: 'Unable to connect to server. Please try again.' }
   }
+}
+
+export async function logoutAction() {
+  const cookieStore = await cookies()
+  cookieStore.delete('access_token')
+  return { success: true }
 }

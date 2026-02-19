@@ -196,6 +196,14 @@ class MockService {
       projectId: "horti-agri",
       createdAt: new Date(),
     },
+    {
+      id: "org-3",
+      username: "organizer",
+      email: "organizer@example.com",
+      role: "ORGANIZER",
+      projectId: "ildex-vietnam-2026",
+      createdAt: new Date(),
+    },
   ];
   private participants: Participant[] = [
     {
@@ -447,6 +455,21 @@ class MockService {
       overQuota: 4,
       createdAt: new Date(),
     },
+    {
+      id: "ex-7",
+      projectId: "viv-asia-2027",
+      name: "Default Exhibitor",
+      companyName: "Default Exhibitor",
+      registrationId: "exhibitor",
+      password: "123",
+      boothNumber: "V-100",
+      contactName: "Exhibitor User",
+      email: "exhibitor@example.com",
+      phone: "+66 2 000 0000",
+      quota: 5,
+      overQuota: 0,
+      createdAt: new Date(),
+    },
   ];
   private staffMembers: Staff[] = [
     {
@@ -509,6 +532,14 @@ class MockService {
   // --- Auth & Users ---
   async findUserByUsername(username: string): Promise<User | undefined> {
     return this.users.find(u => u.username === username);
+  }
+
+  async findOrganizerByUsername(username: string): Promise<Organizer | undefined> {
+    return this.organizers.find(o => o.username === username);
+  }
+
+  async findExhibitorByRegistrationId(regId: string): Promise<Exhibitor | undefined> {
+    return this.exhibitors.find(e => e.registrationId === regId);
   }
 
   // --- Projects ---

@@ -19,20 +19,24 @@ export default function LoginPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
-    setLoading(true)
 
-    const formData = new FormData(event.currentTarget)
-    const result = await loginAction(formData)
+    try {
+      const formData = new FormData(event.currentTarget)
+      const result = await loginAction(formData)
 
-    if (result.error) {
-      toast.error(result.error)
-      setLoading(false)
-    } else if (result.success && result.user) {
-      login(result.user)
-      toast.success('Logged in successfully')
-      router.push('/admin/projects') // Redirect to project selection
-    } else {
-      toast.error('Unknown error')
+      if (result.error) {
+        toast.error(result.error)
+        setLoading(false)
+        return
+      }
+
+      if (result.success && result.user) {
+        login(result.user)
+        toast.success('Logged in successfully')
+        router.push('/admin/projects')
+      }
+    } catch {
+      toast.error('An unexpected error occurred')
       setLoading(false)
     }
   }
@@ -50,7 +54,7 @@ export default function LoginPage() {
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="username">Username</Label>
-              <Input id="username" name="username" type="text" placeholder="admin" required />
+              <Input id="username" name="username" type="text" placeholder="username" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
@@ -58,8 +62,8 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full mt-4 " type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin " />}
+            <Button className="w-full mt-4" type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>
           </CardFooter>

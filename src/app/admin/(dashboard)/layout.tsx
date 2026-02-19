@@ -22,8 +22,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   
   // Map to sidebar format
   const sidebarProjects = projects?.map(p => ({
-    name: p.name,
-    id: p.id,
+    name: p.project_name,
+    id: p.project_uuid,
     url: '/admin/projects',
   })) || []
 

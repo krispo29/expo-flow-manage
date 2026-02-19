@@ -88,3 +88,23 @@ export async function sendExhibitorCredentials(id: string, targetEmail?: string)
     return { error: 'Failed to send credentials' }
   }
 }
+
+export async function getExhibitorProjectAction(registrationId: string) {
+  try {
+    const exhibitor = await mockService.findExhibitorByRegistrationId(registrationId)
+    if (exhibitor?.projectId) {
+      return { success: true, projectId: exhibitor.projectId }
+    }
+    
+    // Fallback: get first available project if exhibitor doesn't have one assigned
+    const projects = await mockService.getProjects()
+    if (projects.length > 0) {
+      return { success: true, projectId: projects[0].id }
+    }
+
+    return { error: 'No projects available' }
+  } catch (error) {
+    console.error('Error getting exhibitor project:', error)
+    return { error: 'Failed to get project' }
+  }
+}

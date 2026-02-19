@@ -75,3 +75,23 @@ export async function deleteOrganizer(id: string) {
     return { error: 'Failed to delete organizer' }
   }
 }
+
+export async function getOrganizerProjectAction(username: string) {
+  try {
+    const organizer = await mockService.findOrganizerByUsername(username)
+    if (organizer?.projectId) {
+      return { success: true, projectId: organizer.projectId }
+    }
+    
+    // Fallback: get first available project if organizer doesn't have one assigned or not found in list
+    const projects = await mockService.getProjects()
+    if (projects.length > 0) {
+      return { success: true, projectId: projects[0].id }
+    }
+
+    return { error: 'No projects available' }
+  } catch (error) {
+    console.error('Error getting organizer project:', error)
+    return { error: 'Failed to get project' }
+  }
+}
