@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, MapPin, Users, Pencil, Trash2, Image as ImageIcon, Eye } from 'lucide-react'
+import { Search, X, Clock, MapPin, Users, Pencil, Trash2, Image as ImageIcon, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { deleteConference } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -34,7 +34,10 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
   const [endDate, setEndDate] = useState('')
   const [previewConference, setPreviewConference] = useState<Conference | null>(null)
 
-  // Filter conferences by search query and date range
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
   const filteredConferences = conferences.filter(conf => {
     const matchesSearch = 
       conf.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -48,8 +51,17 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
     return matchesSearch && matchesStartDate && matchesEndDate
   })
 
-  // Group conferences by date
-  const groupedConferences = filteredConferences.reduce((acc, conf) => {
+  // Calculate pagination based on FILTERED data
+  const totalPages = Math.ceil(filteredConferences.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedConferences = filteredConferences.slice(startIndex, startIndex + itemsPerPage)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Group PAGINATED conferences by date
+  const groupedConferences = paginatedConferences.reduce((acc, conf) => {
     const dateKey = format(new Date(conf.date), 'yyyy-MM-dd')
     if (!acc[dateKey]) {
       acc[dateKey] = []
@@ -61,6 +73,16 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
   // Sort dates
   const sortedDates = Object.keys(groupedConferences).sort((a, b) => a.localeCompare(b))
   
+  function handleSearchChange(query: string) {
+    setSearchQuery(query)
+    setCurrentPage(1)
+  }
+
+  function handleDateChange(type: 'start' | 'end', value: string) {
+    if (type === 'start') setStartDate(value)
+    else setEndDate(value)
+    setCurrentPage(1)
+  }
 
 
   function clearFilters() {
@@ -109,7 +131,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
               placeholder="Topic, Room, Details..." 
               className="h-10 bg-background border-border/50 focus-visible:ring-primary"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -119,7 +141,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
               type="date"
               className="h-10 bg-background border-border/50 focus-visible:ring-primary"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => handleDateChange('start', e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -129,7 +151,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
               type="date"
               className="h-10 bg-background border-border/50 focus-visible:ring-primary"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => handleDateChange('end', e.target.value)}
             />
           </div>
         </div>
@@ -144,6 +166,75 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
             >
               <X className="size-4 mr-2" />
               Clear All Filters
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing <span className="font-medium">{filteredConferences.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredConferences.length)}</span> of <span className="font-medium">{filteredConferences.length}</span> results
+        </div>
+        {filteredConferences.length > itemsPerPage && (
+          <div className="flex items-center gap-1 text-sm">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => goToPage(1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-1 mx-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum = currentPage
+                if (currentPage <= 3) pageNum = i + 1
+                else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                else pageNum = currentPage - 2 + i
+
+                if (pageNum > 0 && pageNum <= totalPages) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="icon"
+                      className="h-8 w-8 text-xs font-medium"
+                      onClick={() => goToPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  )
+                }
+                return null
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => goToPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         )}

@@ -1,6 +1,4 @@
-'use client'
-
-import { useEffect, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -30,15 +28,27 @@ import {
   toggleOrganizerStatus,
   type Organizer,
 } from '@/app/actions/organizer'
-import { Pencil, Plus, Loader2, KeyRound, Power } from 'lucide-react'
+import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 interface OrganizerListProps {
   projectUuid: string
 }
 
-export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
+export interface OrganizerListHandle {
+  openCreateDialog: () => void
+}
+
+export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>(
+  ({ projectUuid }, ref) => {
   const [organizers, setOrganizers] = useState<Organizer[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -47,12 +57,44 @@ export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newOrg, setNewOrg] = useState({ username: '', password: '', full_name: '' })
 
+  // Exposed handle for parent component
+  useImperativeHandle(ref, () => ({
+    openCreateDialog: () => setIsCreateOpen(true)
+  }))
+
   // Edit dialog
   const [editingOrg, setEditingOrg] = useState<Organizer | null>(null)
 
-  // Reset password dialog
   const [resetOrg, setResetOrg] = useState<Organizer | null>(null)
   const [newPassword, setNewPassword] = useState('')
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Filter organizers based on search
+  const filteredOrganizers = organizers.filter(org => 
+    org.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    org.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Calculate pagination based on FILTERED data
+  const totalPages = Math.ceil(filteredOrganizers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedOrganizers = filteredOrganizers.slice(startIndex, startIndex + itemsPerPage)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Handle search change and reset pagination
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query)
+    setCurrentPage(1)
+  }
 
   async function fetchOrganizers() {
     setLoading(true)
@@ -79,7 +121,7 @@ export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
     const result = await createOrganizer(projectUuid, newOrg)
     setSaving(false)
     if (result.success) {
-      toast.success('Organizer created')
+      toast.success('Organizer created successfully')
       setIsCreateOpen(false)
       setNewOrg({ username: '', password: '', full_name: '' })
       fetchOrganizers()
@@ -98,7 +140,7 @@ export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
     })
     setSaving(false)
     if (result.success) {
-      toast.success('Organizer updated')
+      toast.success('Organizer updated successfully')
       setEditingOrg(null)
       fetchOrganizers()
     } else {
@@ -107,7 +149,6 @@ export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
   }
 
   async function handleToggleStatus(org: Organizer) {
-    setSaving(true)
     const result = await toggleOrganizerStatus(projectUuid, org.organizer_uuid)
     setSaving(false)
     if (result.success) {
@@ -138,92 +179,170 @@ export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Organizers ({organizers.length})</h2>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Organizer
-        </Button>
-      </div>
-
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Full Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {organizers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No organizers found. Create one to get started.
-                </TableCell>
-              </TableRow>
-            ) : (
-              organizers.map((org) => (
-                <TableRow key={org.organizer_uuid}>
-                  <TableCell className="font-medium">{org.username}</TableCell>
-                  <TableCell>{org.full_name}</TableCell>
-                  <TableCell>
-                    <Badge variant={org.is_active ? "default" : "secondary"}>
-                      {org.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {org.last_login ? format(new Date(org.last_login), 'MMM d, yyyy HH:mm') : '—'}
-                  </TableCell>
-                  <TableCell>{format(new Date(org.created_at), 'MMM d, yyyy')}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Edit"
-                        onClick={() => setEditingOrg({ ...org })}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Reset Password"
-                        onClick={() => { setResetOrg(org); setNewPassword(''); }}
-                      >
-                        <KeyRound className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title={org.is_active ? 'Deactivate' : 'Activate'}
-                        onClick={() => handleToggleStatus(org)}
-                        disabled={saving}
-                      >
-                        <Power className={`h-4 w-4 ${org.is_active ? 'text-green-500' : 'text-muted-foreground'}`} />
-                      </Button>
-                    </div>
-                  </TableCell>
+      <Card className="overflow-hidden border-none shadow-md">
+        <CardHeader className="bg-muted/30 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle className="text-xl font-bold">All Organizers</CardTitle>
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search username or name..."
+                className="pl-9 bg-background border-border/50 focus-visible:ring-primary"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : organizers.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No organizers found. Add one to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="font-semibold text-foreground">Username</TableHead>
+                  <TableHead className="font-semibold text-foreground">Full Name</TableHead>
+                  <TableHead className="font-semibold text-foreground">Status</TableHead>
+                  <TableHead className="font-semibold text-foreground">Last Login</TableHead>
+                  <TableHead className="font-semibold text-foreground">Created</TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                 </TableRow>
-              ))
+              </TableHeader>
+              <TableBody>
+                {filteredOrganizers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      {searchQuery ? "No results matching your search terms." : "No organizers found."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedOrganizers.map((org) => (
+                    <TableRow key={org.organizer_uuid}>
+                      <TableCell className="font-medium">{org.username}</TableCell>
+                      <TableCell>{org.full_name}</TableCell>
+                      <TableCell>
+                        <Badge variant={org.is_active ? "default" : "secondary"}>
+                          {org.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {org.last_login ? format(new Date(org.last_login), 'MMM d, yyyy HH:mm') : '—'}
+                      </TableCell>
+                      <TableCell>{format(new Date(org.created_at), 'MMM d, yyyy')}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Edit"
+                            onClick={() => setEditingOrg({ ...org })}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Reset Password"
+                            onClick={() => { setResetOrg(org); setNewPassword(''); }}
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={org.is_active ? 'Deactivate' : 'Activate'}
+                            onClick={() => handleToggleStatus(org)}
+                          >
+                            <Power className={`h-4 w-4 ${org.is_active ? 'text-green-500' : 'text-muted-foreground'}`} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+
+          <div className="flex items-center justify-between p-4 border-t bg-muted/10">
+            <div className="text-xs text-muted-foreground italic">
+              Showing <span className="font-medium">{filteredOrganizers.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredOrganizers.length)}</span> of <span className="font-medium">{filteredOrganizers.length}</span> results
+            </div>
+            {filteredOrganizers.length > itemsPerPage && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1 mx-2">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = currentPage
+                    if (currentPage <= 3) pageNum = i + 1
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                    else pageNum = currentPage - 2 + i
+
+                    if (pageNum > 0 && pageNum <= totalPages) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="icon"
+                          className="h-8 w-8 text-xs font-semibold"
+                          onClick={() => goToPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    }
+                    return null
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -344,4 +463,6 @@ export function OrganizerList({ projectUuid }: Readonly<OrganizerListProps>) {
       </Dialog>
     </div>
   )
-}
+})
+
+OrganizerList.displayName = 'OrganizerList'

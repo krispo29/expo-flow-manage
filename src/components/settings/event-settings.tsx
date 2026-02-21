@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Edit, Plus, Loader2, Calendar } from "lucide-react"
+import { Edit, Plus, Loader2, Calendar, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface EventSettingsProps {
@@ -25,6 +25,34 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
 
   // Create form state
   const [newEvent, setNewEvent] = useState({ event_name: '', is_active: true, order_index: 1 })
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Filter events based on search
+  const filteredEvents = events.filter(event => 
+    event.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (event.event_code && event.event_code.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  // Calculate pagination based on FILTERED data
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedEvents = filteredEvents.slice(startIndex, startIndex + itemsPerPage)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Handle search change and reset pagination
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query)
+    setCurrentPage(1)
+  }
 
   async function fetchEvents() {
     setLoading(true)
@@ -93,51 +121,133 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
             <CardTitle>Event Management</CardTitle>
             <CardDescription>Manage events for this project.</CardDescription>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Event
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search events..."
+                className="pl-9 h-9"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Event
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {events.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
-            No events found. Click &quot;Add Event&quot; to create one.
+            {searchQuery ? "No matching results found." : "No events found. Click \"Add Event\" to create one."}
           </div>
         ) : (
-          <div className="grid gap-4">
-            {events.map((event) => (
-              <div key={event.event_uuid} className="group relative border p-4 rounded-xl hover:border-primary/50 transition-all hover:shadow-sm bg-background">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      <Calendar className="size-5" />
-                    </div>
-                    <div>
-                      <div className="font-semibold flex items-center gap-2">
-                        {event.event_name}
-                        <Badge variant={event.is_active ? "default" : "secondary"} className="text-xs">
-                          {event.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-3">
-                        <span>Code: <code className="bg-muted px-1 py-0.5 rounded">{event.event_code || 'N/A'}</code></span>
-                        <span>Order: {event.order_index}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setEditingEvent(event)}
-                  >
+          <div className="border rounded-md">
+            <div className="grid grid-cols-5 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
+              <div>Event Name</div>
+              <div>Event Code</div>
+              <div>Order</div>
+              <div>Status</div>
+              <div className="text-right">Actions</div>
+            </div>
+            {paginatedEvents.map((event) => (
+              <div key={event.event_uuid} className="grid grid-cols-5 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
+                <div className="font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  {event.event_name}
+                </div>
+                <div>
+                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{event.event_code || '—'}</code>
+                </div>
+                <div className="text-muted-foreground">
+                  {event.order_index}
+                </div>
+                <div>
+                  <Badge variant={event.is_active ? "default" : "secondary"} className="text-xs">
+                    {event.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+                <div className="text-right">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingEvent(event)}>
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {filteredEvents.length > itemsPerPage && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs text-muted-foreground">
+              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredEvents.length)}</span> of <span className="font-medium">{filteredEvents.length}</span> results
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex items-center gap-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = currentPage
+                  if (currentPage <= 3) pageNum = i + 1
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                  else pageNum = currentPage - 2 + i
+
+                  if (pageNum > 0 && pageNum <= totalPages) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="icon"
+                        className="h-8 w-8 text-xs"
+                        onClick={() => goToPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  }
+                  return null
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

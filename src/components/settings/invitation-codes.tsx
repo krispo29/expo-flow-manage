@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface InvitationCodeSettingsProps {
@@ -26,18 +26,32 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   // Create form state
   const [newInvite, setNewInvite] = useState({ company_name: '' })
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Calculate pagination
-  const totalPages = Math.ceil(invitations.length / itemsPerPage)
+  // Filter invitations based on search
+  const filteredInvitations = invitations.filter(invite => 
+    invite.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invite.invite_code.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Calculate pagination based on FILTERED data
+  const totalPages = Math.ceil(filteredInvitations.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedInvitations = invitations.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedInvitations = filteredInvitations.slice(startIndex, startIndex + itemsPerPage)
 
   const goToPage = (page: number) => {
     setCurrentPage(page)
-    // Optional: add scroll to top logic if needed
+  }
+
+  // Handle search change and reset pagination
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query)
+    setCurrentPage(1)
   }
 
   async function fetchInvitations() {
@@ -112,16 +126,27 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
             <CardTitle>Invitation Codes</CardTitle>
             <CardDescription>Manage invitation codes for special access.</CardDescription>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Code
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search company or code..."
+                className="pl-9 h-9"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Code
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {invitations.length === 0 ? (
+        {filteredInvitations.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
-            No invitation codes found. Click &quot;Add Code&quot; to create one.
+            {searchQuery ? "No matching results found." : "No invitation codes found. Click \"Add Code\" to create one."}
           </div>
         ) : (
           <div className="border rounded-md">
@@ -180,10 +205,10 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
           </div>
         )}
 
-        {invitations.length > itemsPerPage && (
+        {filteredInvitations.length > itemsPerPage && (
           <div className="mt-4 flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
-              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, invitations.length)}</span> of <span className="font-medium">{invitations.length}</span> results
+              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredInvitations.length)}</span> of <span className="font-medium">{filteredInvitations.length}</span> results
             </div>
             <div className="flex items-center gap-1">
               <Button

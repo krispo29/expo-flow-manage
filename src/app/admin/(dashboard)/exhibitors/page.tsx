@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Key, Loader2, Mail, Power } from 'lucide-react'
+import { Plus, Pencil, Trash2, Key, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -41,6 +41,36 @@ export default function ExhibitorsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Filter exhibitors based on search
+  const filteredExhibitors = exhibitors.filter(item => 
+    (item.username && item.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (item.companyName && item.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (item.eventName && item.eventName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (item.boothNumber && item.boothNumber.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  // Calculate pagination based on FILTERED data
+  const totalPages = Math.ceil(filteredExhibitors.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedExhibitors = filteredExhibitors.slice(startIndex, startIndex + itemsPerPage)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Handle search change and reset pagination
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query)
+    setCurrentPage(1)
+  }
 
   // Wait for fetchExhibitors
   const fetchExhibitors = async () => {
@@ -156,11 +186,22 @@ export default function ExhibitorsPage() {
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Exhibitors</CardTitle>
+      <Card className="overflow-hidden border-none shadow-md">
+        <CardHeader className="bg-muted/30 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle className="text-xl font-bold">All Exhibitors</CardTitle>
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search username, company, booth..."
+                className="pl-9 bg-background border-border/50 focus-visible:ring-primary"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -170,57 +211,112 @@ export default function ExhibitorsPage() {
               No exhibitors found. Add one to get started.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Company Name</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Booth No.</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Used Quota</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {exhibitors.map((item, index) => (
-                  <TableRow key={`${item.id}-${index}`}>
-                    <TableCell className="font-medium">{item.username || '-'}</TableCell>
-                    <TableCell>{item.companyName}</TableCell>
-                    <TableCell>{item.eventName || '-'}</TableCell>
-                    <TableCell>{item.boothNumber || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={item.isActive ? "default" : "secondary"} className={item.isActive ? 'bg-green-500 hover:bg-green-600' : ''}>
-                        {item.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{item.usedQuota}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" title={item.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(item.id)}>
-                          <Power className={`h-4 w-4 ${item.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(item)}>
-                          <Mail className="h-4 w-4 text-purple-500" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Reset Password" onClick={() => handleOpenPasswordDialog(item)}>
-                          <Key className="h-4 w-4 text-blue-500" />
-                        </Button>
-                        <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
-                          <Button variant="ghost" size="icon" title="Edit/Manage">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button variant="ghost" size="icon" title="Delete" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="font-semibold text-foreground">Username</TableHead>
+                    <TableHead className="font-semibold text-foreground">Company Name</TableHead>
+                    <TableHead className="font-semibold text-foreground">Event</TableHead>
+                    <TableHead className="font-semibold text-foreground">Booth No.</TableHead>
+                    <TableHead className="font-semibold text-foreground">Status</TableHead>
+                    <TableHead className="font-semibold text-foreground">Used Quota</TableHead>
+                    <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredExhibitors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedExhibitors.map((item, index) => (
+                      <TableRow key={`${item.id}-${index}`}>
+                        <TableCell className="font-medium">{item.username || '-'}</TableCell>
+                        <TableCell>{item.companyName}</TableCell>
+                        <TableCell>{item.eventName || '-'}</TableCell>
+                        <TableCell>{item.boothNumber || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.isActive ? "default" : "secondary"} className={item.isActive ? 'bg-green-500 hover:bg-green-600' : ''}>
+                            {item.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{item.usedQuota}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" title={item.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(item.id)}>
+                              <Power className={`h-4 w-4 ${item.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(item)}>
+                              <Mail className="h-4 w-4 text-purple-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Reset Password" onClick={() => handleOpenPasswordDialog(item)}>
+                              <Key className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
+                              <Button variant="ghost" size="icon" title="Edit/Manage">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" title="Delete" onClick={() => handleDelete(item.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </>
           )}
+
+          <div className="flex items-center justify-between p-4 border-t bg-muted/10">
+            <div className="text-xs text-muted-foreground italic">
+              Showing <span className="font-medium">{filteredExhibitors.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredExhibitors.length)}</span> of <span className="font-medium">{filteredExhibitors.length}</span> results
+            </div>
+            {filteredExhibitors.length > itemsPerPage && (
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goToPage(1)} disabled={currentPage === 1}>
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1 mx-2">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = currentPage
+                    if (currentPage <= 3) pageNum = i + 1
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                    else pageNum = currentPage - 2 + i
+
+                    if (pageNum > 0 && pageNum <= totalPages) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="icon"
+                          className="h-8 w-8 text-xs font-semibold"
+                          onClick={() => goToPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    }
+                    return null
+                  })}
+                </div>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goToPage(totalPages)} disabled={currentPage === totalPages}>
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
