@@ -4,8 +4,8 @@ import {
   Calendar, 
   LayoutDashboard, 
   ArrowUpRight,
-  TrendingUp,
-  Activity
+  Activity,
+  AlertCircle
 } from "lucide-react"
 import {
   Card,
@@ -14,10 +14,70 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { getExhibitors } from "@/app/actions/exhibitor"
+import { getParticipants } from "@/app/actions/participant"
+import { getConferences } from "@/app/actions/conference"
+import { getRooms } from "@/app/actions/settings"
+import { formatDistanceToNow } from "date-fns"
 
-export default async function Page() {
-  // ProjectGuard handles the redirect logic now.
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function Page(props: Props) {
+  const searchParams = await props.searchParams
+  const projectId = searchParams?.projectId as string | undefined
   
+  if (!projectId) {
+    return null
+  }
+
+  // Fetch all data in parallel
+  const [
+    exhibitorsResult,
+    participantsResult,
+    conferencesResult,
+    roomsResult
+  ] = await Promise.allSettled([
+    getExhibitors(projectId),
+    getParticipants(projectId),
+    getConferences(projectId),
+    getRooms(projectId)
+  ])
+
+  // Process Exhibitors
+  let totalExhibitors = '-'
+  if (exhibitorsResult.status === 'fulfilled' && exhibitorsResult.value.success) {
+    totalExhibitors = (exhibitorsResult.value.exhibitors?.length || 0).toString()
+  }
+
+  // Process Participants
+  let totalParticipants = '-'
+  let recentParticipants: any[] = []
+  if (participantsResult.status === 'fulfilled' && participantsResult.value.success) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const participants: any[] = participantsResult.value.data || []
+    totalParticipants = participants.length.toString()
+    // Simulated sorting for recent
+    recentParticipants = [...participants].reverse().slice(0, 5)
+  }
+
+  // Process Conferences
+  let totalConferences = '-'
+  let upcomingConferences: any[] = []
+  if (conferencesResult.status === 'fulfilled' && conferencesResult.value.success) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const conferences: any[] = conferencesResult.value.data || []
+    totalConferences = conferences.length.toString()
+    upcomingConferences = conferences.slice(0, 3)
+  }
+
+  // Process Rooms (Fallback for Active Scanners)
+  let totalRooms = '-'
+  if (roomsResult.status === 'fulfilled' && roomsResult.value.success) {
+    totalRooms = (roomsResult.value.rooms?.length || 0).toString()
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -26,66 +86,86 @@ export default async function Page() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Total Exhibitors */}
         <Card className="relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Exhibitors</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">124</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <span className="text-emerald-500 flex items-center"><TrendingUp className="h-3 w-3 mr-0.5" /> +12%</span> from last event
+            {totalExhibitors === '-' ? (
+              <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4" /> <span className="text-sm font-medium">Unavailable</span></div>
+            ) : (
+              <div className="text-2xl font-bold">{totalExhibitors}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Active exhibitors
             </p>
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-5">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <Users className="h-12 w-12" />
           </div>
         </Card>
 
+        {/* Total Participants */}
         <Card className="relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Participants</CardTitle>
             <Contact className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,450</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <span className="text-emerald-500">+180</span> newly registered today
+            {totalParticipants === '-' ? (
+              <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4" /> <span className="text-sm font-medium">Unavailable</span></div>
+            ) : (
+              <div className="text-2xl font-bold">{totalParticipants}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Registered users
             </p>
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-5">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <Contact className="h-12 w-12" />
           </div>
         </Card>
 
+        {/* Conferences */}
         <Card className="relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Conferences</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">32</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <span className="font-semibold">8</span> sessions live now
+            {totalConferences === '-' ? (
+               <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4" /> <span className="text-sm font-medium">Unavailable</span></div>
+            ) : (
+               <div className="text-2xl font-bold">{totalConferences}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Scheduled sessions
             </p>
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-5">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <Calendar className="h-12 w-12" />
           </div>
         </Card>
 
+        {/* Event Rooms */}
         <Card className="relative overflow-hidden bg-primary/5 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Scanners</CardTitle>
+            <CardTitle className="text-sm font-medium">Event Rooms</CardTitle>
             <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">12</div>
+            {totalRooms === '-' ? (
+               <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4 text-primary" /> <span className="text-sm font-medium">Unavailable</span></div>
+            ) : (
+              <div className="text-2xl font-bold text-primary">{totalRooms}</div>
+            )}
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> All systems online</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Available spaces</span>
             </p>
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-10 text-primary">
+          <div className="absolute top-0 right-0 p-4 opacity-10 text-primary pointer-events-none">
             <Activity className="h-12 w-12" />
           </div>
         </Card>
@@ -94,59 +174,83 @@ export default async function Page() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle>Project Activity</CardTitle>
-            <CardDescription>Real-time updates from across the event.</CardDescription>
+            <CardTitle>Recent Registrations</CardTitle>
+            <CardDescription>Latest participants joining the event.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-8">
-              {[
-                { name: "John Doe", action: "Registered as Participant", time: "2 mins ago", type: "reg" },
-                { name: "Booth #102", action: "Check-in Session: IoT Future", time: "15 mins ago", type: "checkin" },
-                { name: "Global Tech Inc", action: "Updated Exhibitor Profile", time: "1 hour ago", type: "edit" },
-                { name: "Sarah Williams", action: "Downloaded Badge", time: "2 hours ago", type: "badge" },
-              ].map((activity, i) => (
-                <div key={i} className="flex items-center">
-                  <div className="flex flex-col items-center mr-4">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
-                    {i < 3 && <div className="h-full w-px bg-muted mt-1" />}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">{activity.name}</p>
-                    <p className="text-sm text-muted-foreground">{activity.action}</p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">{activity.time}</div>
+            <div className="space-y-6">
+              {participantsResult.status === 'rejected' || totalParticipants === '-' ? (
+                <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
+                  <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
+                  Failed to load registrations.
                 </div>
-              ))}
+              ) : recentParticipants.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
+                  <Contact className="h-6 w-6 text-muted-foreground/50" />
+                  No registrations found.
+                </div>
+              ) : (
+                recentParticipants.map((p, i) => (
+                  <div key={p.id || i} className="flex items-center">
+                    <div className="flex flex-col items-center mr-4">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      {i < recentParticipants.length - 1 && <div className="h-full w-px bg-muted mt-2" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">{p.firstName} {p.lastName}</p>
+                      <p className="text-sm text-muted-foreground truncate max-w-[250px]">{p.company || 'Independent'}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs text-muted-foreground capitalize bg-muted px-2 py-1 rounded-full whitespace-nowrap">
+                        {p.type || 'Participant'}
+                      </div>
+                      <div className="text-xs text-muted-foreground w-20 text-right">
+                        {p.createdAt ? formatDistanceToNow(new Date(p.createdAt), { addSuffix: true }) : 'Recently'}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Next Conferences</CardTitle>
-            <CardDescription>Upcoming sessions today.</CardDescription>
+            <CardTitle>Conferences Overview</CardTitle>
+            <CardDescription>A glimpse of the upcoming schedule.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { title: "AI Revolution 2026", room: "Ballroom A", time: "14:00 - 15:30" },
-                { title: "Sustainable Energy", room: "Meeting Room 2", time: "15:45 - 17:00" },
-                { title: "Cybersecurity Basics", room: "Workshop Hall", time: "17:15 - 18:30" },
-              ].map((session, i) => (
-                <div key={i} className="flex flex-col p-3 rounded-lg border bg-muted/30">
-                  <div className="font-semibold text-sm">{session.title}</div>
-                  <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1"><LayoutDashboard className="h-3 w-3" /> {session.room}</div>
-                    <div className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {session.time}</div>
+              {conferencesResult.status === 'rejected' || totalConferences === '-' ? (
+                 <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
+                    <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
+                    Failed to load conferences.
+                 </div>
+              ) : upcomingConferences.length === 0 ? (
+                 <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
+                    <Calendar className="h-6 w-6 text-muted-foreground/50" />
+                    No conferences scheduled.
+                 </div>
+              ) : (
+                upcomingConferences.map((session, i) => (
+                  <div key={session.id || i} className="flex flex-col p-3 rounded-lg border bg-muted/30">
+                    <div className="font-semibold text-sm line-clamp-1">{session.topic}</div>
+                    <div className="flex justify-between items-center mt-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5 line-clamp-1"><LayoutDashboard className="h-3 w-3" /> {session.room || 'General Room'}</div>
+                      <div className="flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"><Calendar className="h-3 w-3" /> {session.startTime} - {session.endTime}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-            <div className="mt-4">
-              <button className="w-full text-xs text-primary font-medium flex items-center justify-center gap-1 hover:underline">
-                View All Sessions <ArrowUpRight className="h-3 w-3" />
-              </button>
-            </div>
+            {totalConferences !== '-' && totalConferences !== '0' && (
+              <div className="mt-6">
+                <a href="/admin/events" className="w-full text-xs text-primary font-medium flex items-center justify-center gap-1 hover:underline">
+                  View All Conferences <ArrowUpRight className="h-3 w-3" />
+                </a>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
