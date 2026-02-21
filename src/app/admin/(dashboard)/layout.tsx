@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ProjectGuard } from "@/components/project-guard"
 import { getProjects } from "@/app/actions/project"
+import { CommandPalette } from "@/components/command-palette"
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {children}
           </div>
         </SidebarInset>
+        <CommandPalette />
       </SidebarProvider>
     </ProjectGuard>
   )

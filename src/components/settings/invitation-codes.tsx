@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Copy, Edit, Plus, Loader2, ExternalLink } from "lucide-react"
+import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface InvitationCodeSettingsProps {
@@ -25,6 +25,20 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
 
   // Create form state
   const [newInvite, setNewInvite] = useState({ company_name: '' })
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Calculate pagination
+  const totalPages = Math.ceil(invitations.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedInvitations = invitations.slice(startIndex, startIndex + itemsPerPage)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+    // Optional: add scroll to top logic if needed
+  }
 
   async function fetchInvitations() {
     setLoading(true)
@@ -120,7 +134,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
               <div>Status</div>
               <div className="text-right">Actions</div>
             </div>
-            {invitations.map((invite, index) => (
+            {paginatedInvitations.map((invite, index) => (
               <div key={`${invite.invite_uuid}-${index}`} className="grid grid-cols-7 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
                 <div className="font-medium">{invite.company_name}</div>
                 <div>
@@ -163,6 +177,77 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {invitations.length > itemsPerPage && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs text-muted-foreground">
+              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, invitations.length)}</span> of <span className="font-medium">{invitations.length}</span> results
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex items-center gap-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = currentPage
+                  if (currentPage <= 3) pageNum = i + 1
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                  else pageNum = currentPage - 2 + i
+
+                  if (pageNum > 0 && pageNum <= totalPages) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="icon"
+                        className="h-8 w-8 text-xs"
+                        onClick={() => goToPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  }
+                  return null
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => goToPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

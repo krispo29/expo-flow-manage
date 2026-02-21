@@ -87,7 +87,7 @@ export default async function Page(props: Props) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Exhibitors */}
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Exhibitors</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -108,7 +108,7 @@ export default async function Page(props: Props) {
         </Card>
 
         {/* Total Participants */}
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Participants</CardTitle>
             <Contact className="h-4 w-4 text-muted-foreground" />
@@ -129,7 +129,7 @@ export default async function Page(props: Props) {
         </Card>
 
         {/* Conferences */}
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Conferences</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -150,7 +150,7 @@ export default async function Page(props: Props) {
         </Card>
 
         {/* Event Rooms */}
-        <Card className="relative overflow-hidden bg-primary/5 border-primary/20">
+        <Card className="relative overflow-hidden bg-primary/5 border-primary/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Event Rooms</CardTitle>
             <Activity className="h-4 w-4 text-primary" />
@@ -180,14 +180,20 @@ export default async function Page(props: Props) {
           <CardContent>
             <div className="space-y-6">
               {participantsResult.status === 'rejected' || totalParticipants === '-' ? (
-                <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
-                  <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
-                  Failed to load registrations.
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                  <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                    <AlertCircle className="h-6 w-6 text-destructive" />
+                  </div>
+                  <h3 className="text-sm font-semibold mb-1">Connection Unavailable</h3>
+                  <p className="text-sm text-muted-foreground">Failed to load recent registrations.</p>
                 </div>
               ) : recentParticipants.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
-                  <Contact className="h-6 w-6 text-muted-foreground/50" />
-                  No registrations found.
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Contact className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-sm font-semibold mb-1">No registrations yet</h3>
+                  <p className="text-sm text-muted-foreground">Participants who register for your event will appear here.</p>
                 </div>
               ) : (
                 recentParticipants.map((p, i) => (
@@ -223,14 +229,20 @@ export default async function Page(props: Props) {
           <CardContent>
             <div className="space-y-4">
               {conferencesResult.status === 'rejected' || totalConferences === '-' ? (
-                 <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
-                    <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
-                    Failed to load conferences.
+                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                    <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                      <AlertCircle className="h-6 w-6 text-destructive" />
+                    </div>
+                    <h3 className="text-sm font-semibold mb-1">Connection Unavailable</h3>
+                    <p className="text-sm text-muted-foreground">Failed to load conference schedule.</p>
                  </div>
               ) : upcomingConferences.length === 0 ? (
-                 <div className="text-sm text-muted-foreground py-8 text-center flex flex-col items-center justify-center gap-2">
-                    <Calendar className="h-6 w-6 text-muted-foreground/50" />
-                    No conferences scheduled.
+                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Calendar className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-sm font-semibold mb-1">No upcoming sessions</h3>
+                    <p className="text-sm text-muted-foreground">Schedule your first conference to see it here.</p>
                  </div>
               ) : (
                 upcomingConferences.map((session, i) => (

@@ -80,17 +80,20 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <SidebarMenuButton 
+                  size="lg" 
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-transparent hover:border-sidebar-border transition-all"
+                >
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
                     <Frame className="size-4" />
                   </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold uppercase tracking-tight">
+                  <div className="grid flex-1 text-left text-sm leading-tight leading-4">
+                    <span className="truncate font-bold uppercase tracking-tight text-[11px] text-muted-foreground/80">Active Project</span>
+                    <span className="truncate font-semibold text-sm">
                       {activeProject?.name || "Select Project"}
                     </span>
-                    <span className="truncate text-[10px] opacity-70 font-bold uppercase tracking-widest">Management System</span>
                   </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
+                  <ChevronsUpDown className="ml-auto size-4 opacity-50" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl" align="start">
@@ -125,7 +128,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   isActive={isActive('/admin')}
                 >
                   <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
-                    <LayoutDashboard className="size-5" />
+                    <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
                     <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
@@ -150,7 +153,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/exhibitors')}
                     >
                       <Link href={projectId ? `/admin/exhibitors?projectId=${projectId}` : "/admin/exhibitors"}>
-                        <Users className="size-5" />
+                        <Users className="size-5 transition-transform group-hover:scale-110" />
                         <span>Exhibitors</span>
                       </Link>
                     </SidebarMenuButton>
@@ -166,7 +169,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/participants')}
                     >
                       <Link href={projectId ? `/admin/participants?projectId=${projectId}` : "/admin/participants"}>
-                        <Contact className="size-5" />
+                        <Contact className="size-5 transition-transform group-hover:scale-110" />
                         <span>Participants</span>
                       </Link>
                     </SidebarMenuButton>
@@ -181,7 +184,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/organizers')}
                     >
                       <Link href={projectId ? `/admin/organizers?projectId=${projectId}` : "/admin/organizers"}>
-                        <Users className="size-5" />
+                        <Users className="size-5 transition-transform group-hover:scale-110" />
                         <span>Organizers</span>
                       </Link>
                     </SidebarMenuButton>
@@ -197,7 +200,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/conferences')}
                     >
                       <Link href={projectId ? `/admin/conferences?projectId=${projectId}` : "/admin/conferences"}>
-                        <Presentation className="size-5" />
+                        <Presentation className="size-5 transition-transform group-hover:scale-110" />
                         <span>Conferences</span>
                       </Link>
                     </SidebarMenuButton>
@@ -213,7 +216,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/rooms')}
                     >
                       <Link href={projectId ? `/admin/rooms?projectId=${projectId}` : "/admin/rooms"}>
-                        <DoorOpen className="size-5" />
+                        <DoorOpen className="size-5 transition-transform group-hover:scale-110" />
                         <span>Rooms</span>
                       </Link>
                     </SidebarMenuButton>
@@ -229,7 +232,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/events')}
                     >
                       <Link href={projectId ? `/admin/events?projectId=${projectId}` : "/admin/events"}>
-                        <Calendar className="size-5" />
+                        <Calendar className="size-5 transition-transform group-hover:scale-110" />
                         <span>Events</span>
                       </Link>
                     </SidebarMenuButton>
@@ -245,7 +248,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/invitation-codes')}
                     >
                       <Link href={projectId ? `/admin/invitation-codes?projectId=${projectId}` : "/admin/invitation-codes"}>
-                        <FileText className="size-5" />
+                        <FileText className="size-5 transition-transform group-hover:scale-110" />
                         <span>Invitation Codes</span>
                       </Link>
                     </SidebarMenuButton>
@@ -272,7 +275,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/reports')}
                     >
                       <Link href={projectId ? `/admin/reports?projectId=${projectId}` : "/admin/reports"}>
-                        <FileText className="size-5" />
+                        <FileText className="size-5 transition-transform group-hover:scale-110" />
                         <span>Reports</span>
                       </Link>
                     </SidebarMenuButton>
@@ -287,7 +290,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/utilities')}
                     >
                       <Link href={projectId ? `/admin/utilities?projectId=${projectId}` : "/admin/utilities"}>
-                        <Wrench className="size-5" />
+                        <Wrench className="size-5 transition-transform group-hover:scale-110" />
                         <span>Utility</span>
                       </Link>
                     </SidebarMenuButton>
@@ -302,7 +305,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive('/admin/settings')}
                     >
                       <Link href={projectId ? `/admin/settings?projectId=${projectId}` : "/admin/settings"}>
-                        <Settings className="size-5" />
+                        <Settings className="size-5 transition-transform group-hover:scale-110" />
                         <span>Settings</span>
                       </Link>
                     </SidebarMenuButton>
