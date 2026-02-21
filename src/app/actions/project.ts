@@ -17,6 +17,7 @@ export interface Project {
   banner_url: string
   banner_2_url: string
   copy_right: string
+  country_code?: string
   created_at: string
   updated_at: string
 }

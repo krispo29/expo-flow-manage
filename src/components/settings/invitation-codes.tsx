@@ -111,15 +111,17 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
           </div>
         ) : (
           <div className="border rounded-md">
-            <div className="grid grid-cols-5 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
+            <div className="grid grid-cols-7 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
               <div>Company</div>
               <div>Code</div>
               <div>Invite Link</div>
+              <div>Source</div>
+              <div>Creator</div>
               <div>Status</div>
               <div className="text-right">Actions</div>
             </div>
             {invitations.map((invite, index) => (
-              <div key={`${invite.invite_uuid}-${index}`} className="grid grid-cols-5 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
+              <div key={`${invite.invite_uuid}-${index}`} className="grid grid-cols-7 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
                 <div className="font-medium">{invite.company_name}</div>
                 <div>
                   <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{invite.invite_code}</code>
@@ -127,6 +129,12 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                 <div className="truncate text-xs text-muted-foreground flex items-center gap-1" title={invite.invite_link}>
                   <ExternalLink className="h-3 w-3 flex-shrink-0" />
                   <span className="truncate">{invite.invite_link}</span>
+                </div>
+                <div className="text-muted-foreground truncate" title={invite.source}>
+                  {invite.source || '-'}
+                </div>
+                <div className="text-muted-foreground truncate" title={invite.creator_name}>
+                  {invite.creator_name || '-'}
                 </div>
                 <div>
                   <Badge variant={invite.is_active ? "default" : "secondary"} className="text-xs">

@@ -13,6 +13,7 @@ export interface Room {
   location_detail: string
   capacity: number
   is_active: boolean
+  scanner_id?: string
 }
 
 export interface Event {
@@ -29,6 +30,8 @@ export interface Invitation {
   invite_code: string
   invite_link: string
   is_active: boolean
+  source?: string
+  creator_name?: string
 }
 
 // ==================== ROOMS ====================
@@ -52,6 +55,7 @@ export async function createRoom(projectUuid: string, data: {
   location_detail: string
   capacity: number
   is_active: boolean
+  scanner_id?: string
 }) {
   try {
     await api.post('/v1/admin/project/rooms', data, {
@@ -73,6 +77,7 @@ export async function updateRoom(projectUuid: string, data: {
   location_detail: string
   capacity: number
   is_active: boolean
+  scanner_id?: string
 }) {
   try {
     await api.put('/v1/admin/project/rooms', data, {

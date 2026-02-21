@@ -53,6 +53,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       banner_url: formData.get('banner_url') as string,
       banner_2_url: formData.get('banner_2_url') as string,
       copy_right: formData.get('copy_right') as string,
+      country_code: formData.get('country_code') as string,
     }
 
     const result = await updateProject(projectData)
@@ -125,6 +126,14 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                 Site URL
               </Label>
               <Input id="project_site_url" name="project_site_url" defaultValue={project.project_site_url} placeholder="https://example.com" />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="country_code" className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                Country Code
+              </Label>
+              <Input id="country_code" name="country_code" defaultValue={project.country_code} placeholder="e.g. VN, TH" maxLength={2} className="uppercase" />
             </div>
           </div>
 

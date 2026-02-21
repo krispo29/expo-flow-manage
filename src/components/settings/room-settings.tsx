@@ -26,7 +26,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
 
   // Create form state
-  const [newRoom, setNewRoom] = useState({ event_uuid: '', room_name: '', location_detail: '', capacity: 0, is_active: true })
+  const [newRoom, setNewRoom] = useState({ event_uuid: '', room_name: '', location_detail: '', capacity: 0, is_active: true, scanner_id: '' })
 
   async function fetchData() {
     setLoading(true)
@@ -55,7 +55,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
     if (result.success) {
       toast.success("Room created")
       setIsCreateOpen(false)
-      setNewRoom({ event_uuid: '', room_name: '', location_detail: '', capacity: 0, is_active: true })
+      setNewRoom({ event_uuid: '', room_name: '', location_detail: '', capacity: 0, is_active: true, scanner_id: '' })
       fetchData()
     } else {
       toast.error(result.error || "Failed to create room")
@@ -72,6 +72,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
       location_detail: editingRoom.location_detail,
       capacity: editingRoom.capacity,
       is_active: editingRoom.is_active,
+      scanner_id: editingRoom.scanner_id,
     })
     setSaving(false)
     if (result.success) {
@@ -118,6 +119,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <div>Room Name</div>
               <div>Event</div>
               <div>Location</div>
+              <div>Scanner ID</div>
               <div>Capacity</div>
               <div>Status</div>
               <div className="text-right">Actions</div>
@@ -132,6 +134,9 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <MapPin className="h-3 w-3" />
                   {room.location_detail || '—'}
+                </div>
+                <div className="text-muted-foreground">
+                  {room.scanner_id || '—'}
                 </div>
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Users className="h-3 w-3" />
@@ -184,6 +189,10 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <Input value={newRoom.location_detail} onChange={(e) => setNewRoom({ ...newRoom, location_detail: e.target.value })} placeholder="e.g. Hall 1" />
             </div>
             <div className="grid gap-2">
+              <Label>Scanner ID</Label>
+              <Input value={newRoom.scanner_id} onChange={(e) => setNewRoom({ ...newRoom, scanner_id: e.target.value })} placeholder="e.g. A001" />
+            </div>
+            <div className="grid gap-2">
               <Label>Capacity</Label>
               <Input type="number" value={newRoom.capacity} onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) || 0 })} />
             </div>
@@ -231,6 +240,10 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <div className="grid gap-2">
                 <Label>Location Detail</Label>
                 <Input value={editingRoom.location_detail} onChange={(e) => setEditingRoom({ ...editingRoom, location_detail: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Scanner ID</Label>
+                <Input value={editingRoom.scanner_id || ''} onChange={(e) => setEditingRoom({ ...editingRoom, scanner_id: e.target.value })} placeholder="e.g. A001" />
               </div>
               <div className="grid gap-2">
                 <Label>Capacity</Label>
