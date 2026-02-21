@@ -156,7 +156,6 @@ export async function getInvitations(projectUuid: string) {
 
 export async function createInvitation(projectUuid: string, data: {
   company_name: string
-  invite_code: string
 }) {
   try {
     await api.post('/v1/admin/project/invitations', data, {

@@ -24,7 +24,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   const [editingInvite, setEditingInvite] = useState<Invitation | null>(null)
 
   // Create form state
-  const [newInvite, setNewInvite] = useState({ company_name: '', invite_code: '' })
+  const [newInvite, setNewInvite] = useState({ company_name: '' })
 
   async function fetchInvitations() {
     setLoading(true)
@@ -39,8 +39,8 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   }, [projectUuid])
 
   async function handleCreate() {
-    if (!newInvite.company_name || !newInvite.invite_code) {
-      toast.error("Please fill in Company Name and Code")
+    if (!newInvite.company_name) {
+      toast.error("Please fill in Company Name")
       return
     }
     setSaving(true)
@@ -49,7 +49,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
     if (result.success) {
       toast.success("Invitation created")
       setIsCreateOpen(false)
-      setNewInvite({ company_name: '', invite_code: '' })
+      setNewInvite({ company_name: '' })
       fetchInvitations()
     } else {
       toast.error(result.error || "Failed to create invitation")
@@ -118,8 +118,8 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
               <div>Status</div>
               <div className="text-right">Actions</div>
             </div>
-            {invitations.map((invite) => (
-              <div key={invite.invite_uuid} className="grid grid-cols-5 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
+            {invitations.map((invite, index) => (
+              <div key={`${invite.invite_uuid}-${index}`} className="grid grid-cols-5 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
                 <div className="font-medium">{invite.company_name}</div>
                 <div>
                   <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{invite.invite_code}</code>
@@ -170,10 +170,6 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
             <div className="grid gap-2">
               <Label>Company Name</Label>
               <Input value={newInvite.company_name} onChange={(e) => setNewInvite({ ...newInvite, company_name: e.target.value })} placeholder="e.g. THE DEFT" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Invite Code</Label>
-              <Input value={newInvite.invite_code} onChange={(e) => setNewInvite({ ...newInvite, invite_code: e.target.value })} placeholder="e.g. DF001" />
             </div>
           </div>
           <DialogFooter>
