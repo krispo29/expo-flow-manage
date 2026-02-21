@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Loader2, GripVertical, Mail } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Mail, Power } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface StaffManagementProps {
@@ -66,9 +66,27 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
 
   const fetchStaff = useCallback(async () => {
     setLoading(true)
-    const result = await getStaffByExhibitorId(projectId, exhibitorId)
-    if (result.success && result.staff) {
-      setStaffList(result.staff)
+    const { getExhibitorMembers } = await import('@/app/actions/exhibitor')
+    const result = await getExhibitorMembers(projectId, exhibitorId)
+    if (result.success && result.members) {
+      // Map members to Staff format
+      const mappedStaff: Staff[] = result.members.map((m: any) => ({
+        id: m.member_uuid,
+        registrationCode: m.registration_code,
+        exhibitorId: exhibitorId,
+        title: m.title || '',
+        firstName: m.first_name || '',
+        lastName: m.last_name || '',
+        email: m.email || '',
+        mobile: m.mobile_number || '',
+        phone: m.mobile_number || '', // Mapping to mobile for now
+        position: m.job_position || '',
+        isActive: true, // Assuming active by default
+        createdAt: new Date().toISOString()
+      }))
+      setStaffList(mappedStaff)
+    } else {
+      setStaffList([])
     }
     setLoading(false)
   }, [exhibitorId, projectId])
@@ -126,6 +144,7 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
     
     const finalTitle = isOtherTitle ? customTitle : formData.title
     
+    // Structure expected by the actions
     const payload = {
       title: finalTitle,
       firstName: formData.firstName,
@@ -133,16 +152,14 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
       position: formData.position,
       email: formData.email,
       mobile: formData.mobile,
+      exhibitorId: exhibitorId
     }
 
     let result
     if (editingStaff) {
       result = await updateStaff(projectId, editingStaff.id, payload)
     } else {
-      result = await createStaff(projectId, {
-        ...payload,
-        exhibitorId: exhibitorId,
-      })
+      result = await createStaff(projectId, payload)
     }
 
     if (result.success) {
@@ -160,7 +177,7 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
       action: {
         label: "Delete",
         onClick: async () => {
-          const result = await deleteStaff(projectId, id)
+          const result = await deleteStaff(projectId, id, exhibitorId)
           if (result.success) {
             toast.success('Staff deleted')
             setStaffList(staffList.filter(s => s.id !== id))
@@ -172,9 +189,19 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
     })
   }
 
+  async function handleToggleStatus(staff: Staff) {
+    const { toggleStatusStaff } = await import('@/app/actions/staff')
+    const result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
+    if (result.success) {
+      toast.success('Status toggled successfully')
+      fetchStaff()
+    } else {
+      toast.error('Failed to toggle status')
+    }
+  }
+
   function handleOpenEmailDialog(staff: Staff) {
     setSelectedStaff(staff)
-    setTargetEmail(staff.email || '')
     setEmailDialogOpen(true)
   }
 
@@ -182,14 +209,14 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
     if (!selectedStaff) return
     
     setSendingEmail(true)
-    const result = await sendStaffCredentials(projectId, selectedStaff.id, targetEmail)
+    const result = await sendStaffCredentials(projectId, selectedStaff.id)
     setSendingEmail(false)
     
     if (result.success) {
-      toast.success('Credentials sent successfully')
+      toast.success('Confirmation email sent successfully')
       setEmailDialogOpen(false)
     } else {
-      toast.error('Failed to send credentials')
+      toast.error('Failed to send confirmation')
     }
   }
 
@@ -220,6 +247,7 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
                 <TableHead>Full Name</TableHead>
                 <TableHead>Position</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -229,7 +257,7 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
                   <TableCell>
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
                   </TableCell>
-                  <TableCell>{staff.id}</TableCell>
+                  <TableCell>{staff.registrationCode || staff.id.substring(0, 8)}</TableCell>
                   <TableCell>{staff.title}</TableCell>
                   <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
                   <TableCell>{staff.position}</TableCell>
@@ -237,8 +265,16 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
                     <div className="text-sm">{staff.email}</div>
                     <div className="text-xs text-muted-foreground">{staff.mobile}</div>
                   </TableCell>
+                  <TableCell>
+                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${staff.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {staff.isActive ? 'Active' : 'Inactive'}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                       <Button variant="ghost" size="icon" title={staff.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(staff)}>
+                        <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
+                      </Button>
                        <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(staff)}>
                         <Mail className="h-4 w-4" />
                       </Button>

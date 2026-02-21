@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, deleteExhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, deleteExhibitor, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials } from '@/app/actions/exhibitor'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -24,8 +24,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Link as LinkIcon, Loader2, Mail } from 'lucide-react'
-import { toast } from 'sonner' // Using sonner as recommended by shadcn
+import { Plus, Pencil, Trash2, Key, Loader2, Mail, Power } from 'lucide-react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 
 export default function ExhibitorsPage() {
   const searchParams = useSearchParams()
@@ -34,23 +35,27 @@ export default function ExhibitorsPage() {
   const [exhibitors, setExhibitors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [selectedExhibitor, setSelectedExhibitor] = useState<any>(null)
-  const [targetEmail, setTargetEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
 
-  useEffect(() => {
+  // Wait for fetchExhibitors
+  const fetchExhibitors = async () => {
     if (!projectId) return
-
-    async function fetchExhibitors() {
-      setLoading(true)
-      const result = await getExhibitors(projectId!)
-      if (result.success && result.exhibitors) {
-        setExhibitors(result.exhibitors)
-      }
-      setLoading(false)
+    setLoading(true)
+    const result = await getExhibitors(projectId)
+    if (result.success && result.exhibitors) {
+      setExhibitors(result.exhibitors)
     }
+    setLoading(false)
+  }
+
+  useEffect(() => {
     fetchExhibitors()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   async function handleDelete(id: string) {
@@ -72,29 +77,59 @@ export default function ExhibitorsPage() {
     })
   }
 
+  async function handleToggleStatus(id: string) {
+    if (!projectId) return
+    const result = await toggleStatusExhibitor(projectId, id)
+    if (result.success) {
+      toast.success('Status toggled successfully')
+      fetchExhibitors()
+    } else {
+      toast.error('Failed to toggle status')
+    }
+  }
+
+  function handleOpenPasswordDialog(exhibitor: any) {
+    setSelectedExhibitor(exhibitor)
+    setNewPassword('')
+    setPasswordDialogOpen(true)
+  }
+
   function handleOpenEmailDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
-    setTargetEmail(exhibitor.email || '')
     setEmailDialogOpen(true)
   }
 
   async function handleSendCredentials() {
-    if (!selectedExhibitor) return
+    if (!selectedExhibitor || !projectId) return
     
     setSendingEmail(true)
-    const { sendExhibitorCredentials } = await import('@/app/actions/exhibitor')
-    if (projectId) {
-      const result = await sendExhibitorCredentials(projectId, selectedExhibitor.id, targetEmail)
-      setSendingEmail(false)
-      
-      if (result.success) {
-        toast.success('Credentials sent successfully')
-        setEmailDialogOpen(false)
-      } else {
-        toast.error('Failed to send credentials')
-      }
+    const result = await sendExhibitorCredentials(projectId, selectedExhibitor.id)
+    setSendingEmail(false)
+    
+    if (result.success) {
+      toast.success('Credentials sent successfully')
+      setEmailDialogOpen(false)
     } else {
-      setSendingEmail(false)
+      toast.error('Failed to send credentials')
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!selectedExhibitor || !projectId) return
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
+    
+    setSavingPassword(true)
+    const result = await forcePasswordResetExhibitor(projectId, selectedExhibitor.id, newPassword)
+    setSavingPassword(false)
+    
+    if (result.success) {
+      toast.success('Password reset successfully')
+      setPasswordDialogOpen(false)
+    } else {
+      toast.error(result.error || 'Failed to reset password')
     }
   }
 
@@ -140,53 +175,43 @@ export default function ExhibitorsPage() {
                 <TableRow>
                   <TableHead>Username</TableHead>
                   <TableHead>Company Name</TableHead>
-                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Event</TableHead>
                   <TableHead>Booth No.</TableHead>
-                  <TableHead>Quota</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Used Quota</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {exhibitors.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.registrationId || '-'}</TableCell>
-                    <TableCell className="font-medium">{item.companyName}</TableCell>
-                    <TableCell>{item.contactName || '-'}</TableCell>
+                {exhibitors.map((item, index) => (
+                  <TableRow key={`${item.id}-${index}`}>
+                    <TableCell className="font-medium">{item.username || '-'}</TableCell>
+                    <TableCell>{item.companyName}</TableCell>
+                    <TableCell>{item.eventName || '-'}</TableCell>
                     <TableCell>{item.boothNumber || '-'}</TableCell>
                     <TableCell>
-                      {item.quota} (+{item.overQuota})
+                      <Badge variant={item.isActive ? "default" : "secondary"} className={item.isActive ? 'bg-green-500 hover:bg-green-600' : ''}>
+                        {item.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
                     </TableCell>
+                    <TableCell>{item.usedQuota}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {item.inviteCode ? (
-                          <Button variant="ghost" size="icon" title="Copy Invite Link" onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/invite/${item.inviteCode}`)
-                            toast.success('Invite link copied')
-                          }}>
-                            <LinkIcon className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="icon" title="Generate Invite Code" onClick={async () => {
-                             const { generateInviteCode } = await import('@/app/actions/exhibitor')
-                             if (projectId) {
-                               const res = await generateInviteCode(projectId, item.id)
-                               if(res.success) {
-                                 toast.success('Code generated')
-                               }
-                             }
-                          }}>
-                            <Loader2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button variant="ghost" size="icon" title={item.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(item.id)}>
+                          <Power className={`h-4 w-4 ${item.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
+                        </Button>
                         <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(item)}>
-                          <Mail className="h-4 w-4" />
+                          <Mail className="h-4 w-4 text-purple-500" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Reset Password" onClick={() => handleOpenPasswordDialog(item)}>
+                          <Key className="h-4 w-4 text-blue-500" />
                         </Button>
                         <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" title="Edit/Manage">
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                        <Button variant="ghost" size="icon" title="Delete" onClick={() => handleDelete(item.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -199,26 +224,44 @@ export default function ExhibitorsPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {selectedExhibitor?.companyName} ({selectedExhibitor?.username}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">New Password</Label>
+              <Input 
+                id="password" 
+                type="text"
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)} 
+                className="col-span-3" 
+                placeholder="Min 6 characters"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleResetPassword} disabled={savingPassword}>
+              {savingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Key className="mr-2 h-4 w-4" />}
+              Save Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Send Credentials</DialogTitle>
             <DialogDescription>
-              Confirm the recipient email address for {selectedExhibitor?.companyName}.
+              Are you sure you want to send the login credentials to {selectedExhibitor?.companyName}? The email will be sent to their registered contact email.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">Email</Label>
-              <Input 
-                id="email" 
-                value={targetEmail} 
-                onChange={e => setTargetEmail(e.target.value)} 
-                className="col-span-3" 
-                placeholder="example@email.com"
-              />
-            </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSendCredentials} disabled={sendingEmail}>

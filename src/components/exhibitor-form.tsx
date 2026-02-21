@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { createExhibitor, updateExhibitor } from '@/app/actions/exhibitor'
+import { getEvents, type Event } from '@/app/actions/settings'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -16,16 +17,24 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { Loader2, Store, Shield, User, Mail, MapPin, Ticket, Globe, Phone, Printer } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Exhibitor } from '@/app/actions/exhibitor'
+import { type Exhibitor } from '@/app/actions/exhibitor'
 
 const exhibitorSchema = z.object({
+  eventId: z.string().min(1, 'Event is required'),
   companyName: z.string().min(2, 'Company name is required'),
-  registrationId: z.string().optional(),
+  username: z.string().min(1, 'Username is required'),
   password: z.string().optional(),
   boothNo: z.string().optional(),
   contactPerson: z.string().optional(),
@@ -52,14 +61,26 @@ interface ExhibitorFormProps {
 export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorFormProps>) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [events, setEvents] = useState<Event[]>([])
+
+  useEffect(() => {
+    async function loadEvents() {
+      const result = await getEvents(projectId)
+      if (result.success && result.events) {
+        setEvents(result.events.filter(e => e.is_active))
+      }
+    }
+    loadEvents()
+  }, [projectId])
 
   const defaultValues: Partial<ExhibitorFormValues> = initialData
     ? {
+        eventId: initialData.eventId || '',
         companyName: initialData.companyName,
-        registrationId: initialData.registrationId || '',
-        password: initialData.password || '',
+        username: initialData.username || '',
+        password: '', // Don't populate password on edit
         boothNo: initialData.boothNumber || '',
-        contactPerson: initialData.contactName || '',
+        contactPerson: initialData.contactPerson || '',
         email: initialData.email || '',
         phone: initialData.phone || '',
         fax: initialData.fax || '',
@@ -73,8 +94,9 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
         overQuota: initialData.overQuota,
       }
     : {
+        eventId: '',
         companyName: '',
-        registrationId: '',
+        username: '',
         password: '',
         boothNo: '',
         contactPerson: '',
@@ -99,14 +121,10 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
     
+    // Payload now correctly maps directly via the new actions
     const payload = {
       ...data,
-      name: data.companyName,
-      projectId,
-      boothNumber: data.boothNo || '',
-      contactName: data.contactPerson || '',
-      email: data.email || '',
-      phone: data.phone || '',
+      projectId, // Not required by API body, but let's conform
     }
 
     let result
@@ -142,6 +160,33 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
               <CardDescription>Basic information about the exhibitor.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
+              <FormField
+                control={form.control}
+                name="eventId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Assignment</FormLabel>
+                    <Select disabled={!!initialData} onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an event" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {events.map(e => (
+                          <SelectItem key={e.event_uuid} value={e.event_uuid}>
+                            {e.event_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The event this exhibitor belongs to (cannot be changed after creation).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="companyName"
@@ -188,7 +233,7 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
             <CardContent className="pt-6 space-y-4">
               <FormField
                 control={form.control}
-                name="registrationId"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Username (Registration ID)</FormLabel>
