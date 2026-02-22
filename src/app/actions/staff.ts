@@ -17,7 +17,9 @@ export interface Staff {
   type?: string
   isActive: boolean
   createdAt: string
-  // Add other fields as needed
+  companyName?: string
+  companyCountry?: string
+  companyTel?: string
 }
 
 // GET /v1/admin/project/exhibitors/staff
@@ -77,7 +79,10 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
       job_position: data.position,
       mobile_country_code: "66",
       mobile_number: data.mobile,
-      email: data.email
+      email: data.email,
+      company_name: data.companyName || "",
+      company_country: data.companyCountry || "TH",
+      company_tel: data.companyTel || ""
     }
 
     const response = await api.put('/v1/admin/project/exhibitors/members/', payload, {

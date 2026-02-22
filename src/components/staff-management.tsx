@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { CountrySelector } from './CountrySelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -57,7 +58,10 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
     title: '',
     position: '',
     email: '',
-    mobile: ''
+    mobile: '',
+    companyName: '',
+    companyCountry: 'TH',
+    companyTel: ''
   })
   const [isOtherTitle, setIsOtherTitle] = useState(false)
   const [customTitle, setCustomTitle] = useState('')
@@ -82,7 +86,10 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
         phone: m.mobile_number || '', // Mapping to mobile for now
         position: m.job_position || '',
         isActive: true, // Assuming active by default
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        companyName: m.company_name || '',
+        companyCountry: m.company_country || 'TH',
+        companyTel: m.company_tel || ''
       }))
       setStaffList(mappedStaff)
     } else {
@@ -113,7 +120,10 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
         title: displayTitle,
         position: staff.position || '',
         email: staff.email || '',
-        mobile: staff.mobile || ''
+        mobile: staff.mobile || '',
+        companyName: staff.companyName || '',
+        companyCountry: staff.companyCountry || 'TH',
+        companyTel: staff.companyTel || ''
       })
       
       if (!isStandard && staff.title) {
@@ -131,7 +141,10 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
         title: '',
         position: '',
         email: '',
-        mobile: ''
+        mobile: '',
+        companyName: '',
+        companyCountry: 'TH',
+        companyTel: ''
       })
       setIsOtherTitle(false)
       setCustomTitle('')
@@ -152,7 +165,10 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
       position: formData.position,
       email: formData.email,
       mobile: formData.mobile,
-      exhibitorId: exhibitorId
+      exhibitorId: exhibitorId,
+      companyName: formData.companyName,
+      companyCountry: formData.companyCountry,
+      companyTel: formData.companyTel
     }
 
     let result
@@ -358,6 +374,23 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="mobile" className="text-right">Mobile</Label>
                 <Input id="mobile" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="companyName" className="text-right">Company Name</Label>
+                <Input id="companyName" value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Company Country</Label>
+                <div className="col-span-3">
+                  <CountrySelector 
+                    value={formData.companyCountry} 
+                    onChange={(val) => setFormData({...formData, companyCountry: val})} 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="companyTel" className="text-right">Company Tel</Label>
+                <Input id="companyTel" value={formData.companyTel} onChange={e => setFormData({...formData, companyTel: e.target.value})} className="col-span-3" />
               </div>
             </div>
             <DialogFooter>
