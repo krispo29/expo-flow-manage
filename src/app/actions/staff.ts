@@ -1,7 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import api from '@/lib/api'
+
+// Helper function to get headers with auth
+async function getAuthHeaders(projectUuid: string) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('access_token')?.value
+  
+  return {
+    'X-Project-UUID': projectUuid,
+    ...(token && { Authorization: `Bearer ${token}` })
+  }
+}
 
 export interface Staff {
   id: string
@@ -25,8 +37,9 @@ export interface Staff {
 // GET /v1/admin/project/exhibitors/staff
 export async function getStaffByExhibitorId(projectUuid: string, exhibitorId: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/exhibitors/staff', {
-      headers: { 'X-Project-UUID': projectUuid },
+      headers,
       params: { exhibitor_uuid: exhibitorId }
     })
     return { success: true, staff: (response.data.data || []) as Staff[] }
@@ -39,6 +52,7 @@ export async function getStaffByExhibitorId(projectUuid: string, exhibitorId: st
 // POST /v1/admin/project/exhibitors/members
 export async function createStaff(projectUuid: string, data: any) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const payload = {
       exhibitor_uuid: data.exhibitorId,
       title: data.title,
@@ -54,9 +68,7 @@ export async function createStaff(projectUuid: string, data: any) {
       company_tel: data.companyTel || ""
     }
 
-    const response = await api.post('/v1/admin/project/exhibitors/members', payload, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const response = await api.post('/v1/admin/project/exhibitors/members', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, member: response.data.data }
   } catch (error: any) {
@@ -69,6 +81,7 @@ export async function createStaff(projectUuid: string, data: any) {
 // PUT /v1/admin/project/exhibitors/members/
 export async function updateStaff(projectUuid: string, memberUuid: string, data: any) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const payload = {
       exhibitor_uuid: data.exhibitorId, // Needs to be passed down or handled
       member_uuid: memberUuid,
@@ -85,9 +98,7 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
       company_tel: data.companyTel || ""
     }
 
-    const response = await api.put('/v1/admin/project/exhibitors/members/', payload, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const response = await api.put('/v1/admin/project/exhibitors/members/', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, member: response.data.data }
   } catch (error: any) {
@@ -100,8 +111,9 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
 // DELETE /v1/admin/project/exhibitors/members
 export async function deleteStaff(projectUuid: string, memberId: string, exhibitorId?: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.delete('/v1/admin/project/exhibitors/members', {
-      headers: { 'X-Project-UUID': projectUuid },
+      headers,
       data: { member_uuid: memberId, exhibitor_uuid: exhibitorId }
     })
     revalidatePath('/admin/exhibitors')
@@ -115,11 +127,10 @@ export async function deleteStaff(projectUuid: string, memberId: string, exhibit
 // POST /v1/admin/project/exhibitors/members/resend_email_comfirmation
 export async function sendStaffCredentials(projectUuid: string, memberId: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.post('/v1/admin/project/exhibitors/members/resend_email_comfirmation', [
       memberId
-    ], {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    ], { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error sending credentials:', error)
@@ -130,12 +141,11 @@ export async function sendStaffCredentials(projectUuid: string, memberId: string
 // PATCH /v1/admin/project/exhibitors/members/toggle_status
 export async function toggleStatusStaff(projectUuid: string, memberId: string, exhibitorId: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.patch('/v1/admin/project/exhibitors/members/toggle_status', {
       exhibitor_uuid: exhibitorId,
       member_uuid: memberId
-    }, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    }, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true }
   } catch (error: any) {

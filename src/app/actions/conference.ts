@@ -4,6 +4,18 @@ import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 
+// Helper function to get headers with auth
+async function getAuthHeaders() {
+  const cookieStore = await cookies()
+  const projectUuid = cookieStore.get('project_uuid')?.value
+  const token = cookieStore.get('access_token')?.value
+  
+  return {
+    'X-Project-UUID': projectUuid,
+    ...(token && { Authorization: `Bearer ${token}` })
+  }
+}
+
 export interface Conference {
   conference_uuid: string
   project_uuid: string
@@ -34,16 +46,26 @@ export interface ConferenceLog {
   attendee_name: string
 }
 
+export interface ShowDate {
+  label: string
+  value: string
+}
+
+export interface Room {
+  room_uuid: string
+  event_uuid: string
+  event_name: string
+  room_name: string
+  location_detail: string
+  capacity: number
+  is_active: boolean
+  scanner_id?: string
+}
+
 export async function getConferences(projectId: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value || projectId
-
-    const response = await api.get('/v1/admin/project/conferences', {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
+    const headers = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/conferences', { headers })
 
     return { success: true, data: response.data.data as Conference[] }
   } catch (error: unknown) {
@@ -55,14 +77,8 @@ export async function getConferences(projectId: string) {
 
 export async function getConferenceById(id: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
-    const response = await api.get(`/v1/admin/project/conferences/${id}`, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
+    const headers = await getAuthHeaders()
+    const response = await api.get(`/v1/admin/project/conferences/${id}`, { headers })
 
     return { success: true, conference: response.data.data as Conference }
   } catch (error: unknown) {
@@ -74,14 +90,8 @@ export async function getConferenceById(id: string) {
 
 export async function getConferenceLogs(conferenceUuid: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
-    const response = await api.get(`/v1/admin/project/conferences/${conferenceUuid}/logs`, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
+    const headers = await getAuthHeaders()
+    const response = await api.get(`/v1/admin/project/conferences/${conferenceUuid}/logs`, { headers })
 
     return { success: true, data: response.data.data as ConferenceLog[] }
   } catch (error: unknown) {
@@ -91,10 +101,33 @@ export async function getConferenceLogs(conferenceUuid: string) {
   }
 }
 
+export async function getProjectShowDates() {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/detail/show_dates', { headers })
+    return { success: true, data: response.data.data as ShowDate[] }
+  } catch (error: unknown) {
+    console.error('Error fetching project show dates:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch show dates'
+    return { error: errorMessage }
+  }
+}
+
+export async function getRooms() {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/rooms', { headers })
+    return { success: true, data: response.data.data as Room[] }
+  } catch (error: unknown) {
+    console.error('Error fetching rooms:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch rooms'
+    return { error: errorMessage }
+  }
+}
+
 export async function createConference(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const headers = await getAuthHeaders()
 
     const title = formData.get('title') as string
     const speakerName = formData.get('speaker_name') as string
@@ -118,11 +151,7 @@ export async function createConference(formData: FormData) {
       conference_type: conferenceType
     }
 
-    await api.post('/v1/admin/project/conferences', body, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
+    await api.post('/v1/admin/project/conferences', body, { headers })
 
     revalidatePath('/admin/conferences')
     return { success: true }
@@ -135,8 +164,7 @@ export async function createConference(formData: FormData) {
 
 export async function updateConference(conferenceUuid: string, formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const headers = await getAuthHeaders()
 
     const title = formData.get('title') as string
     const speakerName = formData.get('speaker_name') as string
@@ -161,37 +189,13 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
       conference_type: conferenceType
     }
 
-    await api.put('/v1/admin/project/conferences', body, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
+    await api.put('/v1/admin/project/conferences', body, { headers })
 
     revalidatePath('/admin/conferences')
     return { success: true }
   } catch (error: unknown) {
     console.error('Error updating conference:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to update conference'
-    return { error: errorMessage }
-  }
-}
-
-export async function deleteConference(id: string) {
-  try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
-    await api.delete(`/v1/admin/project/conferences/${id}`, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
-
-    revalidatePath('/admin/conferences')
-    return { success: true }
-  } catch (error: unknown) {
-    console.error('Error deleting conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete conference'
     return { error: errorMessage }
   }
 }
@@ -208,8 +212,7 @@ export async function importConferences(data: Array<{
   conference_type: 'public' | 'private'
 }>) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const headers = await getAuthHeaders()
 
     let successCount = 0
     for (const conf of data) {
@@ -224,11 +227,7 @@ export async function importConferences(data: Array<{
           location: conf.location,
           quota: conf.quota,
           conference_type: conf.conference_type
-        }, {
-          headers: {
-            'X-Project-UUID': projectUuid
-          }
-        })
+        }, { headers })
         successCount++
       } catch (error) {
         console.error('Error importing conference:', error)

@@ -8,9 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Printer, Upload, FileText, CheckCircle, Clock, Loader2, Search } from "lucide-react"
 import { useState, useEffect, useRef, Suspense } from "react"
-import { searchParticipantByCode, processScannerData, getRecentScannerImports } from "@/app/actions/participant"
+import { searchParticipantByCode, processScannerData, getRecentScannerImports, Participant as RealParticipant } from "@/app/actions/participant"
 import { toast } from "sonner"
-import { Participant, ImportHistory } from "@/lib/mock-service"
+import { ImportHistory } from "@/lib/mock-service"
 import { BadgePrint } from "@/components/badge-print"
 import { useSearchParams } from "next/navigation"
 
@@ -19,7 +19,7 @@ function UtilitiesContent() {
   const projectId = searchParams.get('projectId') || ""
   
   const [printSearch, setPrintSearch] = useState("")
-  const [participant, setParticipant] = useState<Participant | null>(null)
+  const [participant, setParticipant] = useState<RealParticipant | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   
   const [isImporting, setIsImporting] = useState(false)
@@ -50,7 +50,7 @@ function UtilitiesContent() {
       
       if (result.success) {
         if (result.data) {
-          setParticipant(result.data)
+          setParticipant(result.data as RealParticipant)
           toast.success("Participant found")
         } else {
           setParticipant(null)
@@ -150,16 +150,16 @@ function UtilitiesContent() {
                     <div className="mt-4 p-4 border rounded-md bg-muted/20 animate-in fade-in slide-in-from-top-2">
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <h4 className="font-semibold text-lg">{participant.firstName} {participant.lastName}</h4>
-                                <p className="text-sm text-muted-foreground">{participant.type} - {participant.company || 'N/A'}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Code: {participant.code}</p>
+                                <h4 className="font-semibold text-lg">{participant.first_name} {participant.last_name}</h4>
+                                <p className="text-sm text-muted-foreground">{participant.attendee_type_code} - {participant.company_name || 'N/A'}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Code: {participant.registration_code}</p>
                             </div>
                             <Badge variant="outline" className="bg-background">Found</Badge>
                         </div>
                         
                         <div className="border rounded-lg bg-white shadow-inner overflow-hidden h-[340px] relative">
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 scale-[0.52] origin-top print-area">
-                                <BadgePrint participant={participant} />
+                                <BadgePrint participant={participant as any} />
                             </div>
                         </div>
 

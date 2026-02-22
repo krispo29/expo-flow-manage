@@ -54,5 +54,18 @@ export async function loginAction(formData: FormData) {
 export async function logoutAction() {
   const cookieStore = await cookies()
   cookieStore.delete('access_token')
+  cookieStore.delete('project_uuid')
+  return { success: true }
+}
+
+export async function setProjectCookie(projectUuid: string) {
+  const cookieStore = await cookies()
+  cookieStore.set('project_uuid', projectUuid, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 604800, // 7 days
+    path: '/',
+  })
   return { success: true }
 }

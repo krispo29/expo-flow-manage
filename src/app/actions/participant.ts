@@ -4,6 +4,18 @@ import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 
+// Helper function to get headers with auth
+async function getAuthHeaders() {
+  const cookieStore = await cookies()
+  const projectUuid = cookieStore.get('project_uuid')?.value
+  const token = cookieStore.get('access_token')?.value
+  
+  return {
+    'X-Project-UUID': projectUuid,
+    ...(token && { Authorization: `Bearer ${token}` })
+  }
+}
+
 export interface Participant {
   registration_uuid: string
   registration_code: string
@@ -43,14 +55,9 @@ export interface ParticipantDetail extends Participant {
 
 export async function getParticipants(projectId: string, query?: string, type?: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value || projectId
+    const headers = await getAuthHeaders()
 
-    const response = await api.get('/v1/admin/project/participants', {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
-    })
+    const response = await api.get('/v1/admin/project/participants', { headers })
 
     let participants = response.data.data as Participant[]
 

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { setProjectCookie } from '@/app/actions/auth'
 
 interface ProjectGuardProps {
   children: React.ReactNode
@@ -14,6 +15,7 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
+  const lastProjectIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     // If we are on the projects page, do nothing
@@ -31,6 +33,12 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
 
       // Otherwise redirect to projects list
       router.push('/admin/projects')
+    } else if (projectId !== lastProjectIdRef.current) {
+      // Only set cookie if projectId has changed
+      lastProjectIdRef.current = projectId
+      setProjectCookie(projectId).catch(err => {
+        console.error('Failed to set project cookie:', err)
+      })
     }
   }, [projectId, pathname, router, projects])
 

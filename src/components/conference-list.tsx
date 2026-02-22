@@ -3,15 +3,13 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Conference, deleteConference } from '@/app/actions/conference'
+import { Conference } from '@/app/actions/conference'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, Users, Pencil, Trash2, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -26,8 +24,13 @@ interface ConferenceListProps {
   projectId: string
 }
 
-export function ConferenceList({ conferences, projectId }: Readonly<ConferenceListProps>) {
-  const router = useRouter()
+export function ConferenceList({ conferences: initialConferences, projectId }: Readonly<ConferenceListProps>) {
+  
+  // Deduplicate conferences based on conference_uuid to prevent key collisions
+  const conferences = Array.from(
+    new Map(initialConferences.map(c => [c.conference_uuid, c])).values()
+  )
+
   const [searchQuery, setSearchQuery] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -88,24 +91,6 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
     setSearchQuery('')
     setStartDate('')
     setEndDate('')
-  }
-
-  function handleDelete(conferenceUuid: string) {
-    toast("Delete this conference?", {
-      description: "This action cannot be undone.",
-      action: {
-        label: "Delete",
-        onClick: async () => {
-          const result = await deleteConference(conferenceUuid)
-          if (result.success) {
-            toast.success('Conference deleted')
-            router.refresh()
-          } else {
-            toast.error('Failed to delete conference')
-          }
-        },
-      },
-    })
   }
 
   if (conferences.length === 0) {
@@ -313,10 +298,6 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </Link>
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(conference.conference_uuid)} className="text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
                             </Button>
                           </div>
                         </div>

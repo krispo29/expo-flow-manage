@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { Conference, createConference, updateConference } from '@/app/actions/conference'
-import api from '@/lib/api'
+import { Conference, createConference, updateConference, getProjectShowDates, getRooms, Room, ShowDate } from '@/app/actions/conference'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,15 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { toast } from 'sonner'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-
-interface Room {
-  room_uuid: string
-  room_name: string
-}
-
-interface ShowDate {
-  show_date: string
-}
 
 interface ConferenceFormProps {
   projectId: string
@@ -41,17 +31,17 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
   useEffect(() => {
     async function fetchData() {
       try {
-        const [roomsRes, datesRes] = await Promise.all([
-          api.get('/v1/admin/project/rooms', {
-            headers: { 'X-Project-UUID': projectId }
-          }),
-          api.get('/v1/admin/project/show-dates', {
-            headers: { 'X-Project-UUID': projectId }
-          })
+        const [datesResult, roomsResult] = await Promise.all([
+          getProjectShowDates(),
+          getRooms()
         ])
         
-        setRooms(roomsRes.data.data || [])
-        setShowDates(datesRes.data.data || [])
+        if (roomsResult.success) {
+          setRooms(roomsResult.data || [])
+        }
+        if (datesResult.success) {
+          setShowDates(datesResult.data || [])
+        }
       } catch (error) {
         console.error('Error fetching data:', error)
         toast.error('Failed to load rooms and dates')
@@ -61,7 +51,7 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
     }
     
     fetchData()
-  }, [projectId])
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -171,8 +161,8 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
                   >
                     <option value="">Select date</option>
                     {showDates.map((date) => (
-                      <option key={date.show_date} value={date.show_date}>
-                        {format(new Date(date.show_date), 'MMMM dd, yyyy')}
+                      <option key={date.value} value={date.value}>
+                        {date.label}
                       </option>
                     ))}
                   </select>
@@ -189,7 +179,7 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
                     <option value="">Select room</option>
                     {rooms.map((room) => (
                       <option key={room.room_uuid} value={room.room_uuid}>
-                        {room.room_name}
+                        {room.room_name} - {room.location_detail}
                       </option>
                     ))}
                   </select>

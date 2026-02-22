@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import api from '@/lib/api'
 
 export interface Project {
@@ -22,24 +23,43 @@ export interface Project {
   updated_at: string
 }
 
-// GET /v1/admin/projects (No X-Project-UUID header)
+// GET /v1/admin/projects (No X-Project-UUID header, but needs Authorization)
 export async function getProjects() {
   try {
-    const response = await api.get('/v1/admin/projects')
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+    
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await api.get('/v1/admin/projects', { headers })
     const result = response.data
+    console.log('Projects API response:', result)
     return { success: true, projects: (result.data || []) as Project[] }
   } catch (error: any) {
     console.error('Error fetching projects:', error)
-    return { success: false, error: 'Failed to fetch projects', projects: [] as Project[] }
+    console.error('Error details:', error.response?.data)
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch projects'
+    return { success: false, error: errorMessage, projects: [] as Project[] }
   }
 }
 
 // GET /v1/admin/project/detail
 export async function getProjectDetail(uuid: string) {
   try {
-    const response = await api.get('/v1/admin/project/detail', {
-      headers: { 'X-Project-UUID': uuid }
-    })
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+    
+    const headers: Record<string, string> = {
+      'X-Project-UUID': uuid
+    }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await api.get('/v1/admin/project/detail', { headers })
     const result = response.data
     return { success: true, project: result.data as Project }
   } catch (error: any) {
@@ -48,26 +68,47 @@ export async function getProjectDetail(uuid: string) {
   }
 }
 
-// GET /v1/admin/project/show-dates
+export interface ShowDate {
+  label: string
+  value: string
+}
+
+// GET /v1/admin/project/detail/show_dates
 export async function getProjectShowDates(uuid: string) {
   try {
-    const response = await api.get('/v1/admin/project/show-dates', {
-      headers: { 'X-Project-UUID': uuid }
-    })
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+    
+    const headers: Record<string, string> = {
+      'X-Project-UUID': uuid
+    }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await api.get('/v1/admin/project/detail/show_dates', { headers })
     const result = response.data
-    return { success: true, showDates: (result.data || []) as string[] }
+    return { success: true, showDates: (result.data || []) as ShowDate[] }
   } catch (error: any) {
     console.error('Error fetching project show dates:', error)
-    return { success: false, error: 'Failed to fetch show dates', showDates: [] as string[] }
+    return { success: false, error: 'Failed to fetch show dates', showDates: [] as ShowDate[] }
   }
 }
 
 // PUT /v1/admin/project/detail
 export async function updateProject(projectData: Partial<Project> & { project_uuid: string }) {
   try {
-    const response = await api.put('/v1/admin/project/detail', projectData, {
-      headers: { 'X-Project-UUID': projectData.project_uuid }
-    })
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+    
+    const headers: Record<string, string> = {
+      'X-Project-UUID': projectData.project_uuid
+    }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await api.put('/v1/admin/project/detail', projectData, { headers })
     
     revalidatePath('/admin/projects')
     return { success: true, project: projectData }

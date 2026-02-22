@@ -26,12 +26,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Participant, createParticipant, updateParticipant, deleteParticipant } from '@/app/actions/participant'
 import { toast } from 'sonner'
 import { ParticipantExcelOperations } from './participant-excel'
 import { BadgePrint } from './badge-print'
 import { useReactToPrint } from 'react-to-print'
+
+const PAGE_SIZE = 10
 
 interface ParticipantListProps {
   participants: Participant[]
@@ -70,10 +72,23 @@ export function ParticipantList({
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Sliced participants for pagination
+  const totalPages = Math.ceil(participants.length / PAGE_SIZE)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const endIndex = startIndex + PAGE_SIZE
+  const currentParticipants = participants.slice(startIndex, endIndex)
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
+    setCurrentPage(1) // Reset to first page on search
     onSearch(searchQuery)
+  }
+
+  function handleTypeFilter(type: string) {
+    setCurrentPage(1) // Reset to first page on filter
+    onTypeFilter(type)
   }
 
   function openCreate() {
@@ -150,7 +165,7 @@ export function ParticipantList({
           </Button>
         </form>
         <div className="flex gap-2">
-          <Select value={currentType} onValueChange={onTypeFilter}>
+          <Select value={currentType} onValueChange={handleTypeFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by Type" />
             </SelectTrigger>
@@ -186,14 +201,14 @@ export function ParticipantList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {participants.length === 0 ? (
+            {currentParticipants.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No participants found.
                 </TableCell>
               </TableRow>
             ) : (
-              participants.map((p) => (
+              currentParticipants.map((p) => (
                 <TableRow key={p.registration_uuid}>
                   <TableCell className="font-medium">
                     <span className="px-2 py-1 rounded-full bg-secondary text-xs">{p.attendee_type_code}</span>
@@ -240,6 +255,45 @@ export function ParticipantList({
             )}
           </TableBody>
         </Table>
+        
+        {/* Pagination Controls */}
+        {participants.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t bg-muted/5">
+            <div className="text-sm text-muted-foreground italic">
+              Showing <span className="font-medium text-foreground">{Math.min(startIndex + 1, participants.length)}</span> to{' '}
+              <span className="font-medium text-foreground">{Math.min(endIndex, participants.length)}</span> of{' '}
+              <span className="font-medium text-foreground">{participants.length}</span> participants
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-1 min-w-[3rem] justify-center">
+                <span className="text-sm font-medium">{currentPage}</span>
+                <span className="text-sm text-muted-foreground mx-0.5">/</span>
+                <span className="text-sm text-muted-foreground">{totalPages || 1}</span>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="pt-8 border-t">

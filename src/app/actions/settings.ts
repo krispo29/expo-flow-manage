@@ -1,7 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import api from '@/lib/api'
+
+// Helper function to get headers with auth
+async function getAuthHeaders(projectUuid: string) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('access_token')?.value
+  
+  return {
+    'X-Project-UUID': projectUuid,
+    ...(token && { Authorization: `Bearer ${token}` })
+  }
+}
 
 // ==================== TYPES ====================
 
@@ -38,9 +50,8 @@ export interface Invitation {
 
 export async function getRooms(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/project/rooms', {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get('/v1/admin/project/rooms', { headers })
     const result = response.data
     return { success: true, rooms: (result.data || []) as Room[] }
   } catch (error: any) {
@@ -58,9 +69,8 @@ export async function createRoom(projectUuid: string, data: {
   scanner_id?: string
 }) {
   try {
-    await api.post('/v1/admin/project/rooms', data, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.post('/v1/admin/project/rooms', data, { headers })
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error: any) {
@@ -80,9 +90,8 @@ export async function updateRoom(projectUuid: string, data: {
   scanner_id?: string
 }) {
   try {
-    await api.put('/v1/admin/project/rooms', data, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.put('/v1/admin/project/rooms', data, { headers })
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error: any) {
@@ -96,9 +105,8 @@ export async function updateRoom(projectUuid: string, data: {
 
 export async function getEvents(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/project/events', {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get('/v1/admin/project/events', { headers })
     const result = response.data
     return { success: true, events: (result.data || []) as Event[] }
   } catch (error: any) {
@@ -113,9 +121,8 @@ export async function createEvent(projectUuid: string, data: {
   order_index: number
 }) {
   try {
-    await api.post('/v1/admin/project/events', data, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.post('/v1/admin/project/events', data, { headers })
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error: any) {
@@ -132,9 +139,8 @@ export async function updateEvent(projectUuid: string, data: {
   order_index: number
 }) {
   try {
-    await api.put('/v1/admin/project/events', data, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.put('/v1/admin/project/events', data, { headers })
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error: any) {
@@ -148,9 +154,8 @@ export async function updateEvent(projectUuid: string, data: {
 
 export async function getInvitations(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/project/invitations', {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get('/v1/admin/project/invitations', { headers })
     const result = response.data
     return { success: true, invitations: (result.data || []) as Invitation[] }
   } catch (error: any) {
@@ -163,9 +168,8 @@ export async function createInvitation(projectUuid: string, data: {
   company_name: string
 }) {
   try {
-    await api.post('/v1/admin/project/invitations', data, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.post('/v1/admin/project/invitations', data, { headers })
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error: any) {
@@ -182,9 +186,8 @@ export async function updateInvitation(projectUuid: string, data: {
   is_active: boolean
 }) {
   try {
-    await api.put('/v1/admin/project/invitations', data, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.put('/v1/admin/project/invitations', data, { headers })
     revalidatePath('/admin/settings')
     return { success: true }
   } catch (error: any) {

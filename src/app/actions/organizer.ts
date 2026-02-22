@@ -1,7 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import api from '@/lib/api'
+
+// Helper function to get headers with auth
+async function getAuthHeaders(projectUuid: string) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('access_token')?.value
+  
+  return {
+    'X-Project-UUID': projectUuid,
+    ...(token && { Authorization: `Bearer ${token}` })
+  }
+}
 
 export interface Organizer {
   organizer_uuid: string
@@ -17,9 +29,10 @@ export interface Organizer {
 // GET /v1/admin/project/organizers
 export async function getOrganizers(projectUuid: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/organizers', {
-      headers: { 'X-Project-UUID': projectUuid },
-      params: { project_uuid: projectUuid }, // Keep query param if API creates filtered list based on this too, or just to be safe
+      headers,
+      params: { project_uuid: projectUuid },
     })
     const result = response.data
     return { success: true, data: (result.data || []) as Organizer[] }
@@ -36,12 +49,11 @@ export async function createOrganizer(projectUuid: string, data: {
   full_name: string
 }) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.post('/v1/admin/project/organizers', {
       project_uuid: projectUuid,
       ...data,
-    }, {
-      headers: { 'X-Project-UUID': projectUuid },
-    })
+    }, { headers })
     revalidatePath('/admin/organizers')
     return { success: true }
   } catch (error: any) {
@@ -58,9 +70,8 @@ export async function updateOrganizer(projectUuid: string, data: {
   is_active: boolean
 }) {
   try {
-    await api.put('/v1/admin/project/organizers', data, {
-      headers: { 'X-Project-UUID': projectUuid },
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.put('/v1/admin/project/organizers', data, { headers })
     revalidatePath('/admin/organizers')
     return { success: true }
   } catch (error: any) {
@@ -76,9 +87,8 @@ export async function forceResetPassword(projectUuid: string, data: {
   new_password: string
 }) {
   try {
-    await api.patch('/v1/admin/project/organizers/force_reset_password', data, {
-      headers: { 'X-Project-UUID': projectUuid },
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    await api.patch('/v1/admin/project/organizers/force_reset_password', data, { headers })
     revalidatePath('/admin/organizers')
     return { success: true }
   } catch (error: any) {
@@ -91,11 +101,10 @@ export async function forceResetPassword(projectUuid: string, data: {
 // PATCH /v1/admin/project/organizers/toggle_status
 export async function toggleOrganizerStatus(projectUuid: string, organizerUuid: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.patch('/v1/admin/project/organizers/toggle_status', {
       organizer_uuid: organizerUuid,
-    }, {
-      headers: { 'X-Project-UUID': projectUuid },
-    })
+    }, { headers })
     revalidatePath('/admin/organizers')
     return { success: true }
   } catch (error: any) {

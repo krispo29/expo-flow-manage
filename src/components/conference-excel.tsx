@@ -43,8 +43,14 @@ function downloadTemplate() {
   XLSX.writeFile(workbook, "Conference_Template.xlsx")
 }
 
-export function ConferenceExcelOperations({ conferences, projectId }: Readonly<ConferenceExcelOperationsProps>) {
+export function ConferenceExcelOperations({ conferences: initialConferences, projectId }: Readonly<ConferenceExcelOperationsProps>) {
   const router = useRouter()
+  
+  // Deduplicate conferences based on conference_uuid to prevent duplicate entries in export
+  const conferences = Array.from(
+    new Map(initialConferences.map(c => [c.conference_uuid, c])).values()
+  )
+
   const [loading, setLoading] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
@@ -101,7 +107,7 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
         end_time: row.EndTime || '10:00',
         location: row.Location || '',
         quota: Number.parseInt(row.Quota || '0'),
-        conference_type: row.ConferenceType === 'private' ? 'private' : 'public'
+        conference_type: (row.ConferenceType === 'private' ? 'private' : 'public') as 'public' | 'private'
       }))
 
       const result = await importConferences(payload)

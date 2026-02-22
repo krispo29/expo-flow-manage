@@ -1,7 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import api from '@/lib/api'
+
+// Helper function to get headers with auth
+async function getAuthHeaders(projectUuid: string) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('access_token')?.value
+  
+  return {
+    'X-Project-UUID': projectUuid,
+    ...(token && { Authorization: `Bearer ${token}` })
+  }
+}
 
 export interface Exhibitor {
   id: string
@@ -35,9 +47,8 @@ export interface Exhibitor {
 // GET /v1/admin/project/exhibitors
 export async function getExhibitors(projectUuid: string) {
   try {
-    const response = await api.get('/v1/admin/project/exhibitors', {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get('/v1/admin/project/exhibitors', { headers })
     
     // The API returns an array directly in data.data
     const exhibitorsList = response.data.data || []
@@ -67,6 +78,7 @@ export async function getExhibitors(projectUuid: string) {
 // POST /v1/admin/project/exhibitors
 export async function createExhibitor(projectUuid: string, data: any) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const payload = {
       event_uuid: data.eventId,
       username: data.username,
@@ -87,9 +99,7 @@ export async function createExhibitor(projectUuid: string, data: any) {
       over_quota: data.overQuota
     }
 
-    const response = await api.post('/v1/admin/project/exhibitors', payload, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const response = await api.post('/v1/admin/project/exhibitors', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, exhibitor: response.data.data }
   } catch (error: any) {
@@ -102,6 +112,7 @@ export async function createExhibitor(projectUuid: string, data: any) {
 // PUT /v1/admin/project/exhibitors
 export async function updateExhibitor(projectUuid: string, exhibitorUuid: string, data: any) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const payload = {
       exhibitor_uuid: exhibitorUuid,
       company_name: data.companyName,
@@ -120,9 +131,7 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       over_quota: data.overQuota
     }
 
-    const response = await api.put('/v1/admin/project/exhibitors', payload, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const response = await api.put('/v1/admin/project/exhibitors', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, exhibitor: response.data.data }
   } catch (error: any) {
@@ -135,10 +144,9 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
 // DELETE /v1/admin/project/exhibitors
 export async function deleteExhibitor(projectUuid: string, exhibitorId: string) {
   try {
-    // Left as is, assuming it uses query param or body
+    const headers = await getAuthHeaders(projectUuid)
     await api.delete('/v1/admin/project/exhibitors', {
-      headers: { 'X-Project-UUID': projectUuid },
-      // Most DELETE requests pass via URL, but if the API expects it in body:
+      headers,
       data: { exhibitor_uuid: exhibitorId }
     })
     revalidatePath('/admin/exhibitors')
@@ -152,9 +160,8 @@ export async function deleteExhibitor(projectUuid: string, exhibitorId: string) 
 // GET /v1/admin/project/exhibitors/:id (Get One)
 export async function getExhibitorById(projectUuid: string, exhibitorId: string) {
   try {
-    const response = await api.get(`/v1/admin/project/exhibitors/${exhibitorId}`, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get(`/v1/admin/project/exhibitors/${exhibitorId}`, { headers })
     
     // API returns { data: { info: {...}, members: [...] } }
     const rawData = response.data.data.info
@@ -198,11 +205,10 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
 // Custom action for generating invite code
 export async function generateInviteCode(projectUuid: string, exhibitorId: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     const response = await api.post('/v1/admin/project/exhibitors/generate_invite_code', {
       exhibitor_uuid: exhibitorId
-    }, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    }, { headers })
     return { success: true, inviteCode: response.data.data?.inviteCode }
   } catch (error: any) {
     console.error('Error generating invite code:', error)
@@ -213,12 +219,10 @@ export async function generateInviteCode(projectUuid: string, exhibitorId: strin
 // Custom action for sending credentials
 export async function sendExhibitorCredentials(projectUuid: string, exhibitorId: string) {
   try {
-    // API expects an array of UUIDs
+    const headers = await getAuthHeaders(projectUuid)
     await api.post('/v1/admin/project/exhibitors/send_mail_credential', [
       exhibitorId
-    ], {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    ], { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error sending credentials:', error)
@@ -229,9 +233,8 @@ export async function sendExhibitorCredentials(projectUuid: string, exhibitorId:
 // GET /v1/admin/project/exhibitors/:id/members (Get Members subset)
 export async function getExhibitorMembers(projectUuid: string, exhibitorId: string) {
   try {
-    const response = await api.get(`/v1/admin/project/exhibitors/${exhibitorId}/members/`, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get(`/v1/admin/project/exhibitors/${exhibitorId}/members/`, { headers })
     return { success: true, members: response.data.data }
   } catch (error: any) {
     console.error('Error fetching exhibitor members:', error)
@@ -242,12 +245,11 @@ export async function getExhibitorMembers(projectUuid: string, exhibitorId: stri
 // PATCH /v1/admin/project/exhibitors/force_reset_password
 export async function forcePasswordResetExhibitor(projectUuid: string, exhibitorId: string, newPassword: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.patch('/v1/admin/project/exhibitors/force_reset_password', {
       exhibitor_uuid: exhibitorId,
       new_password: newPassword
-    }, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    }, { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error resetting password:', error)
@@ -259,11 +261,10 @@ export async function forcePasswordResetExhibitor(projectUuid: string, exhibitor
 // PATCH /v1/admin/project/exhibitors/toggle_status
 export async function toggleStatusExhibitor(projectUuid: string, exhibitorId: string) {
   try {
+    const headers = await getAuthHeaders(projectUuid)
     await api.patch('/v1/admin/project/exhibitors/toggle_status', {
       exhibitor_uuid: exhibitorId
-    }, {
-      headers: { 'X-Project-UUID': projectUuid }
-    })
+    }, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true }
   } catch (error: any) {

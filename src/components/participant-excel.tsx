@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { 
   Download, 
   Upload, 
@@ -20,6 +21,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table"
 
 interface ParticipantImportProps {
   projectId: string
@@ -28,6 +45,8 @@ interface ParticipantImportProps {
 export function ParticipantExcelOperations({ projectId }: ParticipantImportProps) {
   const [loading, setLoading] = useState(false)
   const [defaultType, setDefaultType] = useState('VI')
+  const [confirmData, setConfirmData] = useState<any[] | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   function handleDownloadTemplate() {
     const template = [
@@ -85,23 +104,40 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
           invitation_Code: row.InvitationCode || ''
         }))
 
-        const result = await importParticipants(transformedData)
+          setConfirmData(transformedData)
+          setShowConfirm(true)
+        } catch (error) {
+          console.error('Import Error:', error)
+          toast.error('Failed to parse Excel file')
+        } finally {
+          setLoading(false)
+          e.target.value = ''
+        }
+      }
+
+      reader.readAsBinaryString(file)
+    }
+
+    async function executeImport() {
+      if (!confirmData) return
+
+      setLoading(true)
+      try {
+        const result = await importParticipants(confirmData)
         if (result.success) {
           toast.success(`Successfully imported ${result.count} participants`)
+          setShowConfirm(false)
+          setConfirmData(null)
         } else {
           toast.error(result.error)
         }
       } catch (error) {
-        console.error('Import Error:', error)
-        toast.error('Failed to parse Excel file')
+        console.error('Execute Import Error:', error)
+        toast.error('An unexpected error occurred during import')
       } finally {
         setLoading(false)
-        e.target.value = ''
       }
     }
-
-    reader.readAsBinaryString(file)
-  }
 
   return (
     <div className="border rounded-lg p-6 bg-muted/20">
@@ -160,6 +196,71 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
           </div>
         </div>
       </div>
+
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Confirm Participant Import</DialogTitle>
+            <DialogDescription>
+              We found {confirmData?.length || 0} participants in the file. Please review the preview below before confirming the import.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto border rounded-md my-4">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[120px]">Type</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Company</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {confirmData?.slice(0, 10).map((row, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Badge variant="secondary">{row.attendee_type_code}</Badge></TableCell>
+                    <TableCell className="font-medium text-xs">{row.first_name} {row.last_name}</TableCell>
+                    <TableCell className="text-xs">{row.email}</TableCell>
+                    <TableCell className="text-xs">{row.company_name}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {confirmData && confirmData.length > 10 && (
+              <div className="p-3 text-center text-xs text-muted-foreground border-t bg-muted/5">
+                And {confirmData.length - 10} more rows...
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirm(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={executeImport}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Confirm Import
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
