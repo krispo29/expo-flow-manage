@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Participant } from '@/lib/mock-service'
+import { Participant } from '@/app/actions/participant'
 import { QRCodeSVG } from 'qrcode.react'
 
 interface BadgePrintProps {
@@ -24,28 +24,28 @@ export function BadgePrint({ participant }: BadgePrintProps) {
       {/* Participant Info */}
       <div className="w-full flex-1 flex flex-col justify-center gap-2">
         <h1 className="text-4xl font-extrabold text-slate-900 break-words leading-tight">
-          {participant.firstName} {participant.lastName}
+          {participant.first_name} {participant.last_name}
         </h1>
         <h2 className="text-xl text-slate-600 font-medium mt-2">
-          {participant.position || 'Visitor'}
+          {participant.job_position || 'Visitor'}
         </h2>
         <h3 className="text-lg text-slate-500 font-medium">
-          {participant.company || 'N/A'}
+          {participant.company_name || 'N/A'}
         </h3>
       </div>
 
       {/* Footer / QR / Type */}
       <div className="w-full flex flex-col items-center gap-4 pb-8">
         <div className="border-4 border-slate-900 p-2 rounded-lg">
-           <QRCodeSVG value={participant.code || participant.id} size={120} />
+           <QRCodeSVG value={participant.registration_code || participant.registration_uuid} size={120} />
         </div>
         
         <div className="w-full border-t-2 border-slate-200 pt-4 mt-2">
              <span className="inline-block bg-slate-900 text-white text-xl font-bold px-6 py-2 rounded-full uppercase tracking-widest">
-                {participant.type}
+                {participant.attendee_type_code}
             </span>
              <div className="text-xs text-slate-400 mt-2 font-mono">
-                {participant.code}
+                {participant.registration_code}
             </div>
         </div>
       </div>

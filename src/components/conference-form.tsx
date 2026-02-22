@@ -1,38 +1,69 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { Conference } from '@/lib/mock-service'
-import { createConference, updateConference } from '@/app/actions/conference'
+import { Conference, createConference, updateConference } from '@/app/actions/conference'
+import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { ArrowLeft, Save, Loader2, Image as ImageIcon, X } from 'lucide-react'
+import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+
+interface Room {
+  room_uuid: string
+  room_name: string
+}
+
+interface ShowDate {
+  show_date: string
+}
 
 interface ConferenceFormProps {
   projectId: string
-  // If provided, we are in "Edit" mode
   conference?: Conference
 }
 
 export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFormProps>) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [showDates, setShowDates] = useState<ShowDate[]>([])
+  const [isLoadingData, setIsLoadingData] = useState(true)
 
-  // Initialize states based on conference data or defaults
-  const [isPublic, setIsPublic] = useState(conference?.isPublic ?? true)
-  const [showOnReg, setShowOnReg] = useState(conference?.showOnReg ?? true)
-  const [allowPreReg, setAllowPreReg] = useState(conference?.allowPreReg ?? true)
-  const [photoUrl, setPhotoUrl] = useState(conference?.photoUrl ?? '')
+  const [conferenceType, setConferenceType] = useState<'public' | 'private'>(conference?.conference_type ?? 'public')
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [roomsRes, datesRes] = await Promise.all([
+          api.get('/v1/admin/project/rooms', {
+            headers: { 'X-Project-UUID': projectId }
+          }),
+          api.get('/v1/admin/project/show-dates', {
+            headers: { 'X-Project-UUID': projectId }
+          })
+        ])
+        
+        setRooms(roomsRes.data.data || [])
+        setShowDates(datesRes.data.data || [])
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Failed to load rooms and dates')
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+    
+    fetchData()
+  }, [projectId])
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
 
@@ -40,7 +71,7 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
       const formData = new FormData(event.currentTarget)
       
       const result = conference 
-        ? await updateConference(conference.id, formData)
+        ? await updateConference(conference.conference_uuid, formData)
         : await createConference(formData)
 
       if (result.success) {
@@ -58,43 +89,16 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      // Check file type
-      const validTypes = ['image/jpeg', 'image/png']
-      if (!validTypes.includes(file.type)) {
-        toast.error('Invalid file type. Please upload .jpg or .png')
-        e.target.value = ''
-        return
-      }
-
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const img = new Image()
-        img.onload = () => {
-          if (img.width !== 300 || img.height !== 300) {
-            toast.error('Image must be exactly 300x300 px')
-            e.target.value = ''
-            return
-          }
-          setPhotoUrl(reader.result as string)
-        }
-        img.src = reader.result as string
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const removeImage = () => {
-    setPhotoUrl('')
+  if (isLoadingData) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-          {/* Hidden field for projectId is required for create */}
-          <input type="hidden" name="projectId" value={projectId} />
-          <input type="hidden" name="photoUrl" value={photoUrl} />
 
           <div className="mb-6">
             <Button variant="ghost" type="button" asChild className="mb-2 pl-0 hover:bg-transparent hover:text-primary">
@@ -122,196 +126,131 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
             </CardHeader>
             <CardContent className="space-y-6">
               
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <Label>Conference Image</Label>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Remark: .jpg, .png (300x300 px)
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-4">
-                  {photoUrl ? (
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted">
-                      <img 
-                        src={photoUrl} 
-                        alt="Preview" 
-                        className="w-full h-full object-contain"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 size-8 rounded-full shadow-lg"
-                        onClick={removeImage}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-video rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 bg-muted/50 text-muted-foreground transition-colors hover:bg-muted/80">
-                      <ImageIcon className="size-10 opacity-50" />
-                      <p className="text-sm font-medium">Click to upload 300x300 image</p>
-                      <p className="text-xs">Supports: .jpg, .png (Strict 300x300 px)</p>
-                      <Input
-                        type="file"
-                        accept=".jpg,.jpeg,.png"
-                        className="hidden"
-                        id="image-upload"
-                        onChange={handleImageChange}
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => document.getElementById('image-upload')?.click()}
-                      >
-                        Select Image
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label htmlFor="topic">Topic *</Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input 
-                  id="topic" 
-                  name="topic" 
-                  defaultValue={conference?.topic} 
+                  id="title" 
+                  name="title" 
+                  defaultValue={conference?.title} 
                   placeholder="e.g. Future of AgriTech 2024" 
                   required 
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="speaker_name">Speaker Name *</Label>
+                <Input 
+                  id="speaker_name" 
+                  name="speaker_name" 
+                  defaultValue={conference?.speaker_name} 
+                  placeholder="e.g. John Doe" 
+                  required 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="speaker_info">Speaker Information</Label>
+                <Textarea 
+                  id="speaker_info" 
+                  name="speaker_info" 
+                  defaultValue={conference?.speaker_info} 
+                  placeholder="Title, Company, Bio..." 
+                  rows={3}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date *</Label>
-                  <Input 
-                    id="date" 
-                    name="date" 
-                    type="date"
-                    defaultValue={conference?.date ? format(new Date(conference.date), 'yyyy-MM-dd') : ''} 
-                    required 
-                  />
+                  <Label htmlFor="show_date">Show Date *</Label>
+                  <select 
+                    id="show_date" 
+                    name="show_date" 
+                    defaultValue={conference?.show_date}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  >
+                    <option value="">Select date</option>
+                    {showDates.map((date) => (
+                      <option key={date.show_date} value={date.show_date}>
+                        {format(new Date(date.show_date), 'MMMM dd, yyyy')}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="room">Room</Label>
-                  <Input 
-                    id="room" 
-                    name="room" 
-                    defaultValue={conference?.room} 
-                    placeholder="e.g. Grand Ballroom" 
-                  />
+                  <Label htmlFor="location">Room *</Label>
+                  <select 
+                    id="location" 
+                    name="location" 
+                    defaultValue={conference?.location}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  >
+                    <option value="">Select room</option>
+                    {rooms.map((room) => (
+                      <option key={room.room_uuid} value={room.room_uuid}>
+                        {room.room_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time *</Label>
+                  <Label htmlFor="start_time">Start Time *</Label>
                   <Input 
-                    id="startTime" 
-                    name="startTime" 
+                    id="start_time" 
+                    name="start_time" 
                     type="time" 
-                    defaultValue={conference?.startTime} 
+                    defaultValue={conference?.start_time?.substring(0, 5)} 
                     required 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="endTime">End Time *</Label>
+                  <Label htmlFor="end_time">End Time *</Label>
                   <Input 
-                    id="endTime" 
-                    name="endTime" 
+                    id="end_time" 
+                    name="end_time" 
                     type="time" 
-                    defaultValue={conference?.endTime} 
+                    defaultValue={conference?.end_time?.substring(0, 5)} 
                     required 
                   />
                 </div>
                  <div className="space-y-2">
-                  <Label htmlFor="capacity">Limit Seats</Label>
+                  <Label htmlFor="quota">Quota *</Label>
                   <Input 
-                    id="capacity" 
-                    name="capacity" 
+                    id="quota" 
+                    name="quota" 
                     type="number" 
-                    min="0"
-                    defaultValue={conference?.capacity} 
+                    min="1"
+                    defaultValue={conference?.quota} 
                     placeholder="e.g. 100" 
+                    required
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="detail">Description</Label>
-                <Textarea 
-                  id="detail" 
-                  name="detail" 
-                  defaultValue={conference?.detail} 
-                  placeholder="Provide a brief description of the session..." 
-                  rows={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="speakerInfo">Speaker Information</Label>
-                <Textarea 
-                  id="speakerInfo" 
-                  name="speakerInfo" 
-                  defaultValue={conference?.speakerInfo} 
-                  placeholder="Name, Title, Company of the speaker(s)..." 
-                  rows={3}
-                />
               </div>
               
               <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-sm font-medium text-muted-foreground">Conference Type & Visibility</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">Conference Type</h3>
                 
                 <div className="space-y-3">
-                  <Label>Conference Type</Label>
+                  <Label>Type</Label>
                   <RadioGroup 
-                    defaultValue={isPublic ? 'on' : 'off'} 
-                    onValueChange={(value: string) => setIsPublic(value === 'on')}
+                    defaultValue={conferenceType} 
+                    onValueChange={(value) => setConferenceType(value as 'public' | 'private')}
                     className="flex flex-col space-y-1"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="on" id="public" />
+                      <RadioGroupItem value="public" id="public" />
                       <Label htmlFor="public" className="font-normal cursor-pointer">Public</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="off" id="private" />
+                      <RadioGroupItem value="private" id="private" />
                       <Label htmlFor="private" className="font-normal cursor-pointer">Private</Label>
                     </div>
                   </RadioGroup>
-                  <input type="hidden" name="isPublic" value={isPublic ? 'on' : 'off'} />
-                </div>
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox 
-                    id="showOnReg" 
-                    checked={showOnReg} 
-                    onCheckedChange={(checked) => setShowOnReg(checked === true)}
-                  />
-                  <input type="hidden" name="showOnReg" value={showOnReg ? 'on' : 'off'} />
-                  <div className="grid gap-1.5 leading-none">
-                     <Label htmlFor="showOnReg" className="cursor-pointer">Show on Registration Form</Label>
-                     <p className="text-xs text-muted-foreground">
-                      Enable to allow users to see this session during registration.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="allowPreReg" 
-                    checked={allowPreReg} 
-                    onCheckedChange={(checked) => setAllowPreReg(checked === true)}
-                  />
-                  <input type="hidden" name="allowPreReg" value={allowPreReg ? 'on' : 'off'} />
-                  <div className="grid gap-1.5 leading-none">
-                     <Label htmlFor="allowPreReg" className="cursor-pointer">Allow Pre-Registration</Label>
-                     <p className="text-xs text-muted-foreground">
-                      Allow users to book/register for this specific session in advance.
-                    </p>
-                  </div>
+                  <input type="hidden" name="conference_type" value={conferenceType} />
                 </div>
               </div>
 

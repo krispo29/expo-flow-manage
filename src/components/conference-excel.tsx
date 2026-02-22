@@ -4,9 +4,8 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { Conference } from '@/lib/mock-service'
+import { Conference, importConferences } from '@/app/actions/conference'
 import { toast } from 'sonner'
-import { importConferences } from '@/app/actions/conference'
 import {
   Dialog,
   DialogContent,
@@ -27,17 +26,15 @@ interface ConferenceExcelOperationsProps {
 
 function downloadTemplate() {
   const template = [{
-    Topic: 'Future of AI',
-    Date: '2024-12-01',
+    Title: 'Future of AI',
+    SpeakerName: 'John Doe',
+    SpeakerInfo: 'CEO of Tech Corp',
+    ShowDate: '2024-12-01',
     StartTime: '09:00',
     EndTime: '10:00',
-    Room: 'Hall A',
-    Capacity: 100,
-    Details: 'Description here',
-    SpeakerInfo: 'Speaker Bio',
-    IsPublic: 'Yes',
-    ShowOnReg: 'Yes',
-    AllowPreReg: 'No'
+    Location: 'room-uuid-here',
+    Quota: 100,
+    ConferenceType: 'public'
   }]
   
   const worksheet = XLSX.utils.json_to_sheet(template)
@@ -55,17 +52,19 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
     try {
       // Prepare data for export
       const data = conferences.map(conf => ({
-        Topic: conf.topic,
-        Date: new Date(conf.date).toLocaleDateString(),
-        StartTime: conf.startTime,
-        EndTime: conf.endTime,
-        Room: conf.room,
-        Capacity: conf.capacity,
-        Details: conf.detail,
-        SpeakerInfo: conf.speakerInfo,
-        IsPublic: conf.isPublic ? 'Yes' : 'No',
-        ShowOnReg: conf.showOnReg ? 'Yes' : 'No',
-        AllowPreReg: conf.allowPreReg ? 'Yes' : 'No'
+        Title: conf.title,
+        SpeakerName: conf.speaker_name,
+        SpeakerInfo: conf.speaker_info,
+        ShowDate: conf.show_date,
+        StartTime: conf.start_time?.substring(0, 5),
+        EndTime: conf.end_time?.substring(0, 5),
+        Location: conf.location,
+        Quota: conf.quota,
+        RemainingSeats: conf.remaining_seats,
+        ReservedCount: conf.reserved_count,
+        ConferenceType: conf.conference_type,
+        Status: conf.status,
+        CanBook: conf.can_book ? 'Yes' : 'No'
       }))
 
       const worksheet = XLSX.utils.json_to_sheet(data)
@@ -90,22 +89,19 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
       const workbook = XLSX.read(arrayBuffer)
       const worksheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[worksheetName]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[]
+      const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
       // Transform data
-      const payload = jsonData.map(row => ({
-        projectId,
-        topic: row.Topic || 'Untitled',
-        date: row.Date ? new Date(row.Date) : new Date(),
-        startTime: row.StartTime || '09:00',
-        endTime: row.EndTime || '10:00',
-        room: row.Room || '',
-        capacity: Number.parseInt(row.Capacity || '0'),
-        detail: row.Details || '',
-        speakerInfo: row.SpeakerInfo || '',
-        isPublic: row.IsPublic === 'Yes',
-        showOnReg: row.ShowOnReg === 'Yes',
-        allowPreReg: row.AllowPreReg === 'Yes'
+      const payload = jsonData.map((row: any) => ({
+        title: row.Title || 'Untitled',
+        speaker_name: row.SpeakerName || '',
+        speaker_info: row.SpeakerInfo || '',
+        show_date: row.ShowDate || new Date().toISOString().split('T')[0],
+        start_time: row.StartTime || '09:00',
+        end_time: row.EndTime || '10:00',
+        location: row.Location || '',
+        quota: Number.parseInt(row.Quota || '0'),
+        conference_type: row.ConferenceType === 'private' ? 'private' : 'public'
       }))
 
       const result = await importConferences(payload)
@@ -115,7 +111,7 @@ export function ConferenceExcelOperations({ conferences, projectId }: Readonly<C
         setIsDialogOpen(false)
         router.refresh()
       } else {
-        toast.error('Import failed')
+        toast.error(result.error || 'Import failed')
       }
     } catch (error) {
       console.error(error)

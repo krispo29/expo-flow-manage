@@ -8,8 +8,7 @@ import {
   Download, 
   Upload, 
   FileSpreadsheet,
-  Loader2,
-  AlertCircle
+  Loader2
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
@@ -28,20 +27,23 @@ interface ParticipantImportProps {
 
 export function ParticipantExcelOperations({ projectId }: ParticipantImportProps) {
   const [loading, setLoading] = useState(false)
-  const [defaultType, setDefaultType] = useState('INDIVIDUAL')
+  const [defaultType, setDefaultType] = useState('VI')
 
   function handleDownloadTemplate() {
     const template = [
       {
-        Type: 'INDIVIDUAL',
-        Code: 'VIP0001',
+        EventUUID: '6109decb-d4e4-44e2-bb16-22eb0548e414',
+        Title: 'Mr',
         FirstName: 'John',
         LastName: 'Doe',
         Email: 'john@example.com',
-        Mobile: '0812345678',
+        MobileCountryCode: '+66',
+        MobileNumber: '812345678',
         Company: 'Example Corp',
         Position: 'Manager',
-        Room: 'Room A'
+        ResidenceCountry: 'Thailand',
+        AttendeeTypeCode: 'VI',
+        InvitationCode: ''
       }
     ]
 
@@ -64,20 +66,23 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
         const wb = XLSX.read(bstr, { type: 'binary' })
         const wsname = wb.SheetNames[0]
         const ws = wb.Sheets[wsname]
-        const data = XLSX.utils.sheet_to_json(ws) as any[]
+        const data = XLSX.utils.sheet_to_json(ws)
 
         // Transform data
-        const transformedData = data.map((row) => ({
-          projectId,
-          type: row.Type || defaultType, // Use default type if not specified
-          firstName: row.FirstName,
-          lastName: row.LastName,
+        const transformedData = data.map((row: any) => ({
+          event_uuid: row.EventUUID || '6109decb-d4e4-44e2-bb16-22eb0548e414',
+          title: row.Title || 'Mr',
+          title_other: row.TitleOther || '',
+          first_name: row.FirstName,
+          last_name: row.LastName,
           email: row.Email,
-          mobile: row.Mobile,
-          company: row.Company,
-          position: row.Position,
-          code: row.Code,
-          room: row.Room
+          mobile_country_code: row.MobileCountryCode || '+66',
+          mobile_number: row.MobileNumber,
+          company_name: row.Company,
+          job_position: row.Position,
+          residence_country: row.ResidenceCountry || 'Thailand',
+          attendee_type_code: row.AttendeeTypeCode || defaultType,
+          invitation_Code: row.InvitationCode || ''
         }))
 
         const result = await importParticipants(transformedData)
@@ -91,7 +96,6 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
         toast.error('Failed to parse Excel file')
       } finally {
         setLoading(false)
-        // Reset file input
         e.target.value = ''
       }
     }
@@ -133,13 +137,13 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INDIVIDUAL">Individual</SelectItem>
-                  <SelectItem value="GROUP">Group</SelectItem>
-                  <SelectItem value="ONSITE">Onsite</SelectItem>
-                  <SelectItem value="VIP">VIP</SelectItem>
-                  <SelectItem value="BUY">Buyer (BY)</SelectItem>
-                  <SelectItem value="SPEAKER">Speaker</SelectItem>
-                  <SelectItem value="PRESS">Press</SelectItem>
+                  <SelectItem value="VI">Visitor (VI)</SelectItem>
+                  <SelectItem value="VP">VIP (VP)</SelectItem>
+                  <SelectItem value="EX">Exhibitor (EX)</SelectItem>
+                  <SelectItem value="VG">VIP Group (VG)</SelectItem>
+                  <SelectItem value="BY">Buyer (BY)</SelectItem>
+                  <SelectItem value="SP">Speaker (SP)</SelectItem>
+                  <SelectItem value="PR">Press (PR)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

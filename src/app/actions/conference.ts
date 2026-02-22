@@ -1,142 +1,245 @@
 'use server'
 
-import { mockService } from '@/lib/mock-service'
+import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
+
+export interface Conference {
+  conference_uuid: string
+  project_uuid: string
+  title: string
+  speaker_name: string
+  speaker_info: string
+  show_date: string
+  start_time: string
+  end_time: string
+  location: string
+  quota: number
+  remaining_seats: number
+  conference_type: 'public' | 'private'
+  reserved_count: number
+  status: string
+  created_at: string
+  can_book: boolean
+}
+
+export interface ConferenceLog {
+  log_id: number
+  conference_uuid: string
+  registration_uuid: string
+  action: string
+  performed_by: string
+  details: string
+  created_at: string
+  attendee_name: string
+}
 
 export async function getConferences(projectId: string) {
   try {
-    const conferences = await mockService.getConferences(projectId)
-    return { success: true, data: conferences }
-  } catch (error) {
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value || projectId
+
+    const response = await api.get('/v1/admin/project/conferences', {
+      headers: {
+        'X-Project-UUID': projectUuid
+      }
+    })
+
+    return { success: true, data: response.data.data as Conference[] }
+  } catch (error: unknown) {
     console.error('Error fetching conferences:', error)
-    return { error: 'Failed to fetch conferences' }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conferences'
+    return { error: errorMessage }
   }
 }
 
 export async function getConferenceById(id: string) {
   try {
-    const conference = await mockService.getConferenceById(id)
-    return { success: true, conference }
-  } catch (error) {
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+
+    const response = await api.get(`/v1/admin/project/conferences/${id}`, {
+      headers: {
+        'X-Project-UUID': projectUuid
+      }
+    })
+
+    return { success: true, conference: response.data.data as Conference }
+  } catch (error: unknown) {
     console.error('Error fetching conference:', error)
-    return { error: 'Failed to fetch conference' }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference'
+    return { error: errorMessage }
+  }
+}
+
+export async function getConferenceLogs(conferenceUuid: string) {
+  try {
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+
+    const response = await api.get(`/v1/admin/project/conferences/${conferenceUuid}/logs`, {
+      headers: {
+        'X-Project-UUID': projectUuid
+      }
+    })
+
+    return { success: true, data: response.data.data as ConferenceLog[] }
+  } catch (error: unknown) {
+    console.error('Error fetching conference logs:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference logs'
+    return { error: errorMessage }
   }
 }
 
 export async function createConference(formData: FormData) {
   try {
-    const projectId = formData.get('projectId') as string
-    const topic = formData.get('topic') as string
-    const dateStr = formData.get('date') as string
-    const startTime = formData.get('startTime') as string
-    const endTime = formData.get('endTime') as string
-    const room = formData.get('room') as string
-    const capacityVal = formData.get('capacity') as string
-    const detail = formData.get('detail') as string
-    const speakerInfo = formData.get('speakerInfo') as string
-    const isPublic = formData.get('isPublic') === 'on'
-    const showOnReg = formData.get('showOnReg') === 'on'
-    const allowPreReg = formData.get('allowPreReg') === 'on'
-    const photoUrl = formData.get('photoUrl') as string
-    
-    await mockService.createConference({
-        projectId,
-        topic,
-        date: new Date(dateStr),
-        startTime,
-        endTime,
-        room,
-        capacity: capacityVal ? Number.parseInt(capacityVal, 10) : undefined,
-        detail,
-        speakerInfo,
-        photoUrl: photoUrl || '',
-        isPublic,
-        showOnReg,
-        allowPreReg
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+
+    const title = formData.get('title') as string
+    const speakerName = formData.get('speaker_name') as string
+    const speakerInfo = formData.get('speaker_info') as string
+    const showDate = formData.get('show_date') as string
+    const startTime = formData.get('start_time') as string
+    const endTime = formData.get('end_time') as string
+    const location = formData.get('location') as string
+    const quota = formData.get('quota') as string
+    const conferenceType = formData.get('conference_type') as string
+
+    const body = {
+      title,
+      speaker_name: speakerName,
+      speaker_info: speakerInfo,
+      show_date: showDate,
+      start_time: startTime,
+      end_time: endTime,
+      location,
+      quota: quota ? Number.parseInt(quota, 10) : 0,
+      conference_type: conferenceType
+    }
+
+    await api.post('/v1/admin/project/conferences', body, {
+      headers: {
+        'X-Project-UUID': projectUuid
+      }
     })
 
     revalidatePath('/admin/conferences')
     return { success: true }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating conference:', error)
-    return { error: 'Failed to create conference' }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create conference'
+    return { error: errorMessage }
   }
 }
 
-export async function updateConference(id: string, formData: FormData) {
+export async function updateConference(conferenceUuid: string, formData: FormData) {
   try {
-    const topic = formData.get('topic') as string
-    const dateStr = formData.get('date') as string
-    const startTime = formData.get('startTime') as string
-    const endTime = formData.get('endTime') as string
-    const room = formData.get('room') as string
-    const capacityVal = formData.get('capacity') as string
-    const detail = formData.get('detail') as string
-    const speakerInfo = formData.get('speakerInfo') as string
-    const isPublic = formData.get('isPublic') === 'on'
-    const showOnReg = formData.get('showOnReg') === 'on'
-    const allowPreReg = formData.get('allowPreReg') === 'on'
-    const photoUrl = formData.get('photoUrl') as string
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
 
-    await mockService.updateConference(id, {
-        topic,
-        date: new Date(dateStr),
-        startTime,
-        endTime,
-        room,
-        capacity: capacityVal ? Number.parseInt(capacityVal, 10) : undefined,
-        detail,
-        speakerInfo,
-        photoUrl: photoUrl || '',
-        isPublic,
-        showOnReg,
-        allowPreReg
+    const title = formData.get('title') as string
+    const speakerName = formData.get('speaker_name') as string
+    const speakerInfo = formData.get('speaker_info') as string
+    const showDate = formData.get('show_date') as string
+    const startTime = formData.get('start_time') as string
+    const endTime = formData.get('end_time') as string
+    const location = formData.get('location') as string
+    const quota = formData.get('quota') as string
+    const conferenceType = formData.get('conference_type') as string
+
+    const body = {
+      conference_uuid: conferenceUuid,
+      title,
+      speaker_name: speakerName,
+      speaker_info: speakerInfo,
+      show_date: showDate,
+      start_time: startTime,
+      end_time: endTime,
+      location,
+      quota: quota ? Number.parseInt(quota, 10) : 0,
+      conference_type: conferenceType
+    }
+
+    await api.put('/v1/admin/project/conferences', body, {
+      headers: {
+        'X-Project-UUID': projectUuid
+      }
     })
 
     revalidatePath('/admin/conferences')
     return { success: true }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating conference:', error)
-    return { error: 'Failed to update conference' }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update conference'
+    return { error: errorMessage }
   }
 }
 
 export async function deleteConference(id: string) {
   try {
-    await mockService.deleteConference(id)
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+
+    await api.delete(`/v1/admin/project/conferences/${id}`, {
+      headers: {
+        'X-Project-UUID': projectUuid
+      }
+    })
+
     revalidatePath('/admin/conferences')
     return { success: true }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting conference:', error)
-    return { error: 'Failed to delete conference' }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete conference'
+    return { error: errorMessage }
   }
 }
 
-export async function importConferences(data: any[]) {
+export async function importConferences(data: Array<{
+  title: string
+  speaker_name: string
+  speaker_info: string
+  show_date: string
+  start_time: string
+  end_time: string
+  location: string
+  quota: number
+  conference_type: 'public' | 'private'
+}>) {
   try {
-    // Basic validation could go here
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+
+    let successCount = 0
     for (const conf of data) {
-        await mockService.createConference({
-             projectId: conf.projectId,
-             topic: conf.topic,
-             date: new Date(conf.date),
-             startTime: conf.startTime,
-             endTime: conf.endTime,
-             room: conf.room,
-             capacity: conf.capacity,
-             detail: conf.detail,
-             speakerInfo: conf.speakerInfo,
-             photoUrl: conf.photoUrl || '',
-             isPublic: conf.isPublic,
-             showOnReg: conf.showOnReg,
-             allowPreReg: conf.allowPreReg
+      try {
+        await api.post('/v1/admin/project/conferences', {
+          title: conf.title,
+          speaker_name: conf.speaker_name,
+          speaker_info: conf.speaker_info,
+          show_date: conf.show_date,
+          start_time: conf.start_time,
+          end_time: conf.end_time,
+          location: conf.location,
+          quota: conf.quota,
+          conference_type: conf.conference_type
+        }, {
+          headers: {
+            'X-Project-UUID': projectUuid
+          }
         })
+        successCount++
+      } catch (error) {
+        console.error('Error importing conference:', error)
+      }
     }
     
     revalidatePath('/admin/conferences')
-    return { success: true, count: data.length }
-  } catch (error) {
+    return { success: true, count: successCount }
+  } catch (error: unknown) {
     console.error('Error importing conferences:', error)
-    return { error: 'Failed to import conferences' }
+    const errorMessage = error instanceof Error ? error.message : 'Failed to import conferences'
+    return { error: errorMessage }
   }
 }

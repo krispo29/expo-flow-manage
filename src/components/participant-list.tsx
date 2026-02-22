@@ -27,13 +27,11 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Pencil, Trash2, Plus, Search, Loader2, Printer } from 'lucide-react'
-import { createParticipant, updateParticipant, deleteParticipant } from '@/app/actions/participant'
+import { Participant, createParticipant, updateParticipant, deleteParticipant } from '@/app/actions/participant'
 import { toast } from 'sonner'
 import { ParticipantExcelOperations } from './participant-excel'
 import { BadgePrint } from './badge-print'
 import { useReactToPrint } from 'react-to-print'
-
-import { Participant } from '@/lib/mock-service'
 
 interface ParticipantListProps {
   participants: Participant[]
@@ -60,13 +58,11 @@ export function ParticipantList({
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: "Participant Badge",
-    onAfterPrint: () => setPrintParticipant(null), // Optional cleanup
+    onAfterPrint: () => setPrintParticipant(null),
   })
 
-  // Trigger print when a user is selected for printing
   const onPrintClick = (p: Participant) => {
     setPrintParticipant(p)
-     // Wait for state to update and render the badge off-screen before printing
     setTimeout(() => {
         handlePrint()
     }, 100)
@@ -90,14 +86,14 @@ export function ParticipantList({
     setIsDialogOpen(true)
   }
 
-  async function handleDelete(id: string) {
+  function handleDelete(registrationUuid: string) {
     toast("Delete this participant?", {
       description: "This action cannot be undone.",
       action: {
         label: "Delete",
         onClick: async () => {
           setLoading(true)
-          const result = await deleteParticipant(id)
+          const result = await deleteParticipant(registrationUuid)
           setLoading(false)
 
           if (result.success) {
@@ -115,11 +111,10 @@ export function ParticipantList({
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    formData.append('projectId', projectId)
 
     let result
     if (selectedParticipant) {
-      result = await updateParticipant(selectedParticipant.id, formData)
+      result = await updateParticipant(selectedParticipant.registration_uuid, formData)
     } else {
       result = await createParticipant(formData)
     }
@@ -161,13 +156,13 @@ export function ParticipantList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All Types</SelectItem>
-              <SelectItem value="INDIVIDUAL">Individual</SelectItem>
-              <SelectItem value="GROUP">Group</SelectItem>
-              <SelectItem value="ONSITE">Onsite</SelectItem>
-              <SelectItem value="VIP">VIP</SelectItem>
+              <SelectItem value="VI">Visitor (VI)</SelectItem>
+              <SelectItem value="VP">VIP (VP)</SelectItem>
+              <SelectItem value="EX">Exhibitor (EX)</SelectItem>
+              <SelectItem value="VG">VIP Group (VG)</SelectItem>
               <SelectItem value="BY">Buyer (BY)</SelectItem>
-              <SelectItem value="SPEAKER">Speaker</SelectItem>
-              <SelectItem value="PRESS">Press</SelectItem>
+              <SelectItem value="SP">Speaker (SP)</SelectItem>
+              <SelectItem value="PR">Press (PR)</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={openCreate}>
@@ -186,7 +181,7 @@ export function ParticipantList({
               <TableHead>Name</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Contact</TableHead>
-              <TableHead>Room</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -199,23 +194,34 @@ export function ParticipantList({
               </TableRow>
             ) : (
               participants.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.registration_uuid}>
                   <TableCell className="font-medium">
-                    <span className="px-2 py-1 rounded-full bg-secondary text-xs">{p.type}</span>
+                    <span className="px-2 py-1 rounded-full bg-secondary text-xs">{p.attendee_type_code}</span>
                   </TableCell>
-                  <TableCell>{p.code}</TableCell>
+                  <TableCell>{p.registration_code}</TableCell>
                   <TableCell>
-                    {p.firstName} {p.lastName}
-                    <div className="text-xs text-muted-foreground">{p.position}</div>
+                    {p.first_name} {p.last_name}
+                    <div className="text-xs text-muted-foreground">{p.job_position}</div>
                   </TableCell>
-                  <TableCell>{p.company}</TableCell>
+                  <TableCell>{p.company_name}</TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="text-xs">{p.email}</div>
-                      <div className="text-xs">{p.mobile}</div>
+                      <div className="text-xs">Conferences: {p.conference_count}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{p.room}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-1 rounded-full text-xs ${p.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {p.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                      {p.is_email_sent && (
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
+                          Email Sent
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                        <Button variant="outline" size="icon" onClick={() => onPrintClick(p)} title="Print Badge">
@@ -224,7 +230,7 @@ export function ParticipantList({
                       <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(p.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(p.registration_uuid)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -242,61 +248,80 @@ export function ParticipantList({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
+            
             <div className="grid grid-cols-2 gap-4">
-               {/* Same form fields as before */}
               <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
-                <Select name="type" defaultValue={selectedParticipant?.type || 'INDIVIDUAL'} required>
+                <Label htmlFor="attendee_type_code">Type</Label>
+                <Select name="attendee_type_code" defaultValue={selectedParticipant?.attendee_type_code || 'VI'} required>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INDIVIDUAL">Individual</SelectItem>
-                    <SelectItem value="GROUP">Group</SelectItem>
-                    <SelectItem value="ONSITE">Onsite</SelectItem>
-                    <SelectItem value="VIP">VIP</SelectItem>
-                    <SelectItem value="BUY">Buyer (BY)</SelectItem>
-                    <SelectItem value="SPEAKER">Speaker</SelectItem>
-                    <SelectItem value="PRESS">Press</SelectItem>
+                    <SelectItem value="VI">Visitor (VI)</SelectItem>
+                    <SelectItem value="VP">VIP (VP)</SelectItem>
+                    <SelectItem value="EX">Exhibitor (EX)</SelectItem>
+                    <SelectItem value="VG">VIP Group (VG)</SelectItem>
+                    <SelectItem value="BY">Buyer (BY)</SelectItem>
+                    <SelectItem value="SP">Speaker (SP)</SelectItem>
+                    <SelectItem value="PR">Press (PR)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="code">Code (VIP/Badge No)</Label>
-                <Input id="code" name="code" defaultValue={selectedParticipant?.code || ''} />
+                <Label htmlFor="title">Title</Label>
+                <Select name="title" defaultValue="Mr" required>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mr">Mr</SelectItem>
+                    <SelectItem value="Mrs">Mrs</SelectItem>
+                    <SelectItem value="Ms">Ms</SelectItem>
+                    <SelectItem value="Dr">Dr</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" name="firstName" defaultValue={selectedParticipant?.firstName || ''} required />
+                <Label htmlFor="first_name">First Name *</Label>
+                <Input id="first_name" name="first_name" defaultValue={selectedParticipant?.first_name || ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" name="lastName" defaultValue={selectedParticipant?.lastName || ''} required />
+                <Label htmlFor="last_name">Last Name *</Label>
+                <Input id="last_name" name="last_name" defaultValue={selectedParticipant?.last_name || ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" defaultValue={selectedParticipant?.email || ''} />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile</Label>
-                <Input id="mobile" name="mobile" defaultValue={selectedParticipant?.mobile || ''} />
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" name="email" type="email" defaultValue={selectedParticipant?.email || ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
-                <Input id="company" name="company" defaultValue={selectedParticipant?.company || ''} />
+                <Label htmlFor="mobile_country_code">Country Code *</Label>
+                <Input id="mobile_country_code" name="mobile_country_code" defaultValue="+66" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="position">Position</Label>
-                <Input id="position" name="position" defaultValue={selectedParticipant?.position || ''} />
+                <Label htmlFor="mobile_number">Mobile Number *</Label>
+                <Input id="mobile_number" name="mobile_number" defaultValue="" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company_name">Company *</Label>
+                <Input id="company_name" name="company_name" defaultValue={selectedParticipant?.company_name || ''} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="job_position">Position *</Label>
+                <Input id="job_position" name="job_position" defaultValue={selectedParticipant?.job_position || ''} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="residence_country">Residence Country *</Label>
+                <Input id="residence_country" name="residence_country" defaultValue="Thailand" required />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="room">Room (For Pre-Reg)</Label>
-                <Input id="room" name="room" defaultValue={selectedParticipant?.room || ''} />
+                <Label htmlFor="invitation_code">Invitation Code (Optional)</Label>
+                <Input id="invitation_code" name="invitation_code" defaultValue="" />
               </div>
             </div>
             <DialogFooter>

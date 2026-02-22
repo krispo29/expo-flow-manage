@@ -48,6 +48,20 @@ export async function getProjectDetail(uuid: string) {
   }
 }
 
+// GET /v1/admin/project/show-dates
+export async function getProjectShowDates(uuid: string) {
+  try {
+    const response = await api.get('/v1/admin/project/show-dates', {
+      headers: { 'X-Project-UUID': uuid }
+    })
+    const result = response.data
+    return { success: true, showDates: (result.data || []) as string[] }
+  } catch (error: any) {
+    console.error('Error fetching project show dates:', error)
+    return { success: false, error: 'Failed to fetch show dates', showDates: [] as string[] }
+  }
+}
+
 // PUT /v1/admin/project/detail
 export async function updateProject(projectData: Partial<Project> & { project_uuid: string }) {
   try {

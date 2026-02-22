@@ -3,14 +3,13 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Conference } from '@/lib/mock-service'
+import { Conference, deleteConference } from '@/app/actions/conference'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, MapPin, Users, Pencil, Trash2, Image as ImageIcon, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
-import { deleteConference } from '@/app/actions/conference'
+import { Search, X, Clock, Users, Pencil, Trash2, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import {
@@ -40,11 +39,11 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
 
   const filteredConferences = conferences.filter(conf => {
     const matchesSearch = 
-      conf.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conf.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conf.detail?.toLowerCase().includes(searchQuery.toLowerCase())
+      conf.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conf.speaker_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conf.speaker_info?.toLowerCase().includes(searchQuery.toLowerCase())
     
-    const confDate = format(new Date(conf.date), 'yyyy-MM-dd')
+    const confDate = conf.show_date
     const matchesStartDate = !startDate || confDate >= startDate
     const matchesEndDate = !endDate || confDate <= endDate
 
@@ -62,7 +61,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
 
   // Group PAGINATED conferences by date
   const groupedConferences = paginatedConferences.reduce((acc, conf) => {
-    const dateKey = format(new Date(conf.date), 'yyyy-MM-dd')
+    const dateKey = conf.show_date
     if (!acc[dateKey]) {
       acc[dateKey] = []
     }
@@ -91,13 +90,13 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
     setEndDate('')
   }
 
-  async function handleDelete(id: string) {
+  function handleDelete(conferenceUuid: string) {
     toast("Delete this conference?", {
       description: "This action cannot be undone.",
       action: {
         label: "Delete",
         onClick: async () => {
-          const result = await deleteConference(id)
+          const result = await deleteConference(conferenceUuid)
           if (result.success) {
             toast.success('Conference deleted')
             router.refresh()
@@ -254,71 +253,47 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
             <div className="grid gap-4">
               {groupedConferences[dateKey].map((conference) => {
                 return (
-                  <Card key={conference.id} className="overflow-hidden hover:shadow-md transition-shadow group">
+                  <Card key={conference.conference_uuid} className="overflow-hidden hover:shadow-md transition-shadow group">
                     <CardContent className="p-0">
                       <div className="flex flex-col md:flex-row">
-                        <div className="p-3 w-full md:w-52 shrink-0">
-                          <div className="w-full md:w-48 aspect-video bg-muted relative overflow-hidden flex-shrink-0 border-r border-border/50">
-                            {conference.photoUrl ? (
-                              <img 
-                                src={conference.photoUrl} 
-                                alt={conference.topic}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
-                                <ImageIcon className="size-8 opacity-20" />
-                                <span className="text-xs font-medium opacity-50 uppercase tracking-wider">No Image</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
                         <div className="flex-1 p-4 flex flex-col justify-between">
                           <div className="space-y-2">
                             <div className="flex justify-between items-start gap-4">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-lg">{conference.topic}</h3>
+                                <h3 className="font-semibold text-lg">{conference.title}</h3>
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-1">
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    {conference.startTime} - {conference.endTime}
+                                    {conference.start_time?.substring(0, 5)} - {conference.end_time?.substring(0, 5)}
                                   </span>
-                                  {conference.room && (
-                                    <span className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      {conference.room}
-                                    </span>
-                                  )}
-                                  {conference.capacity && (
-                                    <span className="flex items-center gap-1">
-                                      <Users className="h-3 w-3" />
-                                      {conference.capacity} Limit Seats
-                                    </span>
-                                  )}
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {conference.remaining_seats}/{conference.quota} seats
+                                  </span>
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2 justify-end">
-                                {conference.isPublic ? (
-                                  <Badge variant="secondary">Public</Badge>
-                                ) : (
-                                  <Badge variant="outline">Private</Badge>
-                                )}
-                                {conference.showOnReg && <Badge variant="default">Show on Registration</Badge>}
-                                {conference.allowPreReg && <Badge variant="outline">Pre-Registration</Badge>}
+                                <Badge variant={conference.conference_type === 'public' ? 'secondary' : 'outline'}>
+                                  {conference.conference_type}
+                                </Badge>
+                                <Badge variant={conference.status === 'available' ? 'default' : 'destructive'}>
+                                  {conference.status}
+                                </Badge>
+                                {conference.can_book && <Badge variant="outline">Can Book</Badge>}
                               </div>
                             </div>
 
                             <div className="pt-3 space-y-3">
-                              {conference.detail && (
+                              {conference.speaker_name && (
                                 <div className="text-sm">
-                                  <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Description</p>
-                                  <p className="text-foreground/90 line-clamp-2">{conference.detail}</p>
+                                  <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker</p>
+                                  <p className="text-foreground/90 line-clamp-1">{conference.speaker_name}</p>
                                 </div>
                               )}
-                              {conference.speakerInfo && (
+                              {conference.speaker_info && (
                                 <div className="text-sm">
                                   <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker Information</p>
-                                  <p className="text-foreground/90 line-clamp-1">{conference.speakerInfo}</p>
+                                  <p className="text-foreground/90 line-clamp-2">{conference.speaker_info}</p>
                                 </div>
                               )}
                             </div>
@@ -334,12 +309,12 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
                               View Details
                             </Button>
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/conferences/${conference.id}?projectId=${projectId}`}>
+                              <Link href={`/admin/conferences/${conference.conference_uuid}?projectId=${projectId}`}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </Link>
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(conference.id)} className="text-destructive hover:text-destructive">
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(conference.conference_uuid)} className="text-destructive hover:text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </Button>
@@ -364,76 +339,53 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
               <DialogHeader>
                 <div className="flex justify-between items-start pr-8">
                   <div>
-                    <DialogTitle className="text-2xl font-bold">{previewConference.topic}</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold">{previewConference.title}</DialogTitle>
                     <DialogDescription className="mt-1 flex flex-wrap gap-3">
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        {previewConference.startTime} - {previewConference.endTime}
+                        {previewConference.start_time?.substring(0, 5)} - {previewConference.end_time?.substring(0, 5)}
                       </span>
-                      {previewConference.room && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {previewConference.room}
-                        </span>
-                      )}
                     </DialogDescription>
                   </div>
                 </div>
               </DialogHeader>
 
               <div className="space-y-6 py-4">
-                {previewConference.photoUrl && (
-                  <div className="w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted">
-                    <img 
-                      src={previewConference.photoUrl} 
-                      alt={previewConference.topic}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                )}
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
                       <div className="flex flex-wrap gap-2">
-                        {previewConference.isPublic ? (
-                          <Badge variant="secondary">Public</Badge>
-                        ) : (
-                          <Badge variant="outline">Private</Badge>
-                        )}
-                        {previewConference.showOnReg && <Badge variant="default">Show on Registration</Badge>}
-                        {previewConference.allowPreReg && <Badge variant="outline">Pre-Registration</Badge>}
+                        <Badge variant={previewConference.conference_type === 'public' ? 'secondary' : 'outline'}>
+                          {previewConference.conference_type}
+                        </Badge>
+                        <Badge variant={previewConference.status === 'available' ? 'default' : 'destructive'}>
+                          {previewConference.status}
+                        </Badge>
+                        {previewConference.can_book && <Badge variant="outline">Can Book</Badge>}
                       </div>
                     </div>
 
-                    {previewConference.capacity && (
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Capacity</p>
-                        <p className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-primary" />
-                          {previewConference.capacity} Limit Seats
-                        </p>
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Capacity</p>
+                      <p className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        {previewConference.remaining_seats}/{previewConference.quota} seats available
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Reserved: {previewConference.reserved_count}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Location</p>
-                      <p className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        {previewConference.room || 'Not specified'}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1">
                       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Schedule</p>
                       <p className="flex items-center gap-2 text-sm">
-                        {format(new Date(previewConference.date), 'EEEE, MMMM do, yyyy')}
+                        {format(new Date(previewConference.show_date), 'EEEE, MMMM do, yyyy')}
                       </p>
                       <p className="flex items-center gap-2 font-medium">
-                        {previewConference.startTime} - {previewConference.endTime}
+                        {previewConference.start_time?.substring(0, 5)} - {previewConference.end_time?.substring(0, 5)}
                       </p>
                     </div>
                   </div>
@@ -441,13 +393,11 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
 
                 <Separator />
 
-                <Separator />
-
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Description</p>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker</p>
                   <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
-                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                      {previewConference.detail || 'No description provided.'}
+                    <p className="text-foreground font-medium">
+                      {previewConference.speaker_name || 'No speaker assigned'}
                     </p>
                   </div>
                 </div>
@@ -456,7 +406,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
                   <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker Information</p>
                   <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
                     <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                      {previewConference.speakerInfo || 'No speaker information provided.'}
+                      {previewConference.speaker_info || 'No speaker information provided.'}
                     </p>
                   </div>
                 </div>
@@ -467,7 +417,7 @@ export function ConferenceList({ conferences, projectId }: Readonly<ConferenceLi
                   Close
                 </Button>
                 <Button asChild>
-                  <Link href={`/admin/conferences/${previewConference.id}?projectId=${projectId}`}>
+                  <Link href={`/admin/conferences/${previewConference.conference_uuid}?projectId=${projectId}`}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Edit Conference
                   </Link>
