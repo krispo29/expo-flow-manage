@@ -26,14 +26,19 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail } from '@/app/actions/participant'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar } from 'lucide-react'
+import { 
+  Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
+  resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation
+} from '@/app/actions/participant'
+import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { ParticipantExcelOperations } from './participant-excel'
 import { BadgePrint } from './badge-print'
 import { useReactToPrint } from 'react-to-print'
 
 const PAGE_SIZE = 10
+const CONF_PAGE_SIZE = 9
 
 interface ParticipantListProps {
   participants: Participant[]
@@ -53,6 +58,16 @@ export function ParticipantList({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   
+  // Conference Dialog State
+  const [isConfDialogOpen, setIsConfDialogOpen] = useState(false)
+  const [confParticipant, setConfParticipant] = useState<Participant | null>(null)
+  const [conferences, setConferences] = useState<Conference[]>([])
+  const [reservations, setReservations] = useState<{conference_uuid: string}[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [confLoading, setConfLoading] = useState(false)
+  const [confSearchQuery, setConfSearchQuery] = useState('')
+  const [confCurrentPage, setConfCurrentPage] = useState(1)
+  
   // Print State
   const [printParticipant, setPrintParticipant] = useState<Participant | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
@@ -60,8 +75,7 @@ export function ParticipantList({
   
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
-  const [title, setTitle] = useState('Mr.')
-  const [titleOther, setTitleOther] = useState('')
+  const [title, setTitle] = useState('Mr')
   
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -100,8 +114,7 @@ export function ParticipantList({
   function openCreate() {
     setSelectedParticipant(null)
     setAttendeeType('VI')
-    setTitle('Mr.')
-    setTitleOther('')
+    setTitle('Mr')
     setIsDialogOpen(true)
   }
 
@@ -113,14 +126,12 @@ export function ParticipantList({
     if (result.success && result.data) {
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
-      setTitle(result.data.title || 'Mr.')
-      setTitleOther(result.data.title_other || '')
+      setTitle(result.data.title || 'Mr')
     } else {
       // Fallback to participant data if detail fetch fails
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
-      setTitle(p.title || 'Mr.')
-      setTitleOther('')
+      setTitle(p.title || 'Mr')
     }
     setIsDialogOpen(true)
   }
@@ -167,6 +178,80 @@ export function ParticipantList({
     }
   }
 
+  function handleResendEmail(p: Participant) {
+    toast(`Resend email confirmation to ${p.email}?`, {
+      action: {
+        label: "Send",
+        onClick: () => {
+          (async () => {
+            setLoading(true)
+            const result = await resendEmailConfirmation([p.registration_uuid])
+            setLoading(false)
+
+            if (result.success) {
+              toast.success('Email confirmation sent')
+            } else {
+              toast.error(result.error || 'Failed to resend email')
+            }
+          })()
+        },
+      },
+    })
+  }
+
+  async function openConferenceDialog(p: Participant) {
+    setConfParticipant(p)
+    setConfSearchQuery('')
+    setConfCurrentPage(1)
+    setIsConfDialogOpen(true)
+    setConfLoading(true)
+    
+    try {
+      const [confRes, resRes, roomRes] = await Promise.all([
+        getConferences(projectId),
+        getMyReservations(p.registration_uuid),
+        rooms.length > 0 ? Promise.resolve({ success: true, data: rooms }) : getRooms()
+      ])
+      
+      if (confRes.success) setConferences(confRes.data || [])
+      if (resRes.success) setReservations(resRes.data || [])
+      if (roomRes.success) setRooms(roomRes.data || [])
+    } catch (error) {
+      console.error('Failed to load conference data:', error)
+      toast.error('Failed to load conference data')
+    } finally {
+      setConfLoading(false)
+    }
+  }
+
+  async function handleReserve(confUuid: string) {
+    if (!confParticipant) return
+    setConfLoading(true)
+    const result = await reserveConference(confUuid, confParticipant.registration_uuid)
+    if (result.success) {
+      toast.success('Reserved successfully')
+      const resRes = await getMyReservations(confParticipant.registration_uuid)
+      if (resRes.success) setReservations(resRes.data || [])
+    } else {
+      toast.error(result.error || 'Failed to reserve')
+    }
+    setConfLoading(false)
+  }
+
+  async function handleCancelReserve(confUuid: string) {
+    if (!confParticipant) return
+    setConfLoading(true)
+    const result = await cancelConferenceReservation(confUuid, confParticipant.registration_uuid)
+    if (result.success) {
+      toast.success('Reservation cancelled successfully')
+      const resRes = await getMyReservations(confParticipant.registration_uuid)
+      if (resRes.success) setReservations(resRes.data || [])
+    } else {
+      toast.error(result.error || 'Failed to cancel reservation')
+    }
+    setConfLoading(false)
+  }
+
   function fillMockData() {
     const form = formRef.current
     if (!form) return
@@ -192,8 +277,7 @@ export function ParticipantList({
  
     // Update Select States
     setAttendeeType('VI')
-    setTitle('Mr.')
-    setTitleOther('')
+    setTitle('Mr')
 
     toast.success('Mock data filled')
   }
@@ -294,6 +378,12 @@ export function ParticipantList({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                       <Button variant="outline" size="icon" onClick={() => handleResendEmail(p)} title="Resend Email">
+                         <Mail className="h-4 w-4 text-blue-500" />
+                       </Button>
+                       <Button variant="outline" size="icon" onClick={() => openConferenceDialog(p)} title="Manage Conferences">
+                         <Calendar className="h-4 w-4 text-green-600" />
+                       </Button>
                        <Button variant="outline" size="icon" onClick={() => onPrintClick(p)} title="Print Badge">
                         <Printer className="h-4 w-4" />
                       </Button>
@@ -396,26 +486,12 @@ export function ParticipantList({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mr.">Mr.</SelectItem>
-                    <SelectItem value="Mrs.">Mrs.</SelectItem>
-                    <SelectItem value="Ms.">Ms.</SelectItem>
-                    <SelectItem value="Dr.">Dr.</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    {Array.from(new Set(['Mr', 'Mr.', 'Mrs', 'Mrs.', 'Ms', 'Ms.', 'Dr', 'Dr.', 'Prof', 'Prof.', title])).filter(Boolean).map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              {title === 'Other' && (
-                <div className="space-y-2">
-                  <Label htmlFor="title_other">Please specify *</Label>
-                  <Input 
-                    id="title_other" 
-                    name="title_other" 
-                    value={titleOther} 
-                    onChange={(e) => setTitleOther(e.target.value)} 
-                    required 
-                  />
-                </div>
-              )}
               <div className="space-y-2">
                 <Label htmlFor="first_name">First Name *</Label>
                 <Input id="first_name" name="first_name" defaultValue={selectedParticipant?.first_name || ''} required />
@@ -461,6 +537,169 @@ export function ParticipantList({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfDialogOpen} onOpenChange={setIsConfDialogOpen}>
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1000px] xl:max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col w-[95vw]">
+          <DialogHeader>
+            <DialogTitle className="text-xl md:text-2xl">Manage Conferences for <span className="text-primary">{confParticipant?.first_name} {confParticipant?.last_name}</span></DialogTitle>
+          </DialogHeader>
+          <div className="pt-2 pb-0">
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+               <Input 
+                 placeholder="Search conferences by title, speaker, or room..." 
+                 value={confSearchQuery}
+                 onChange={(e) => {
+                   setConfSearchQuery(e.target.value)
+                   setConfCurrentPage(1)
+                 }}
+                 className="pl-9 bg-muted/30 border-muted-foreground/20 focus-visible:ring-primary/50"
+               />
+             </div>
+          </div>
+          <div className="space-y-4 mt-2 overflow-y-auto flex-1 p-1">
+            {confLoading && conferences.length === 0 ? (
+               <div className="flex justify-center p-12"><Loader2 className="h-10 w-10 animate-spin text-muted-foreground" /></div>
+            ) : (
+               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                 {conferences.length === 0 ? (
+                   <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border">
+                     No conferences available at this time.
+                   </div>
+                 ) : (
+                   (() => {
+                     let filtered = Array.from(new Map(conferences.map(c => [c.conference_uuid, c])).values());
+                     if (confSearchQuery.trim()) {
+                       const query = confSearchQuery.toLowerCase();
+                       filtered = filtered.filter(conf => {
+                         const room = rooms.find(r => r.room_uuid === conf.location);
+                         const locationName = room ? room.room_name.toLowerCase() : conf.location.toLowerCase();
+                         return (
+                           conf.title.toLowerCase().includes(query) ||
+                           conf.speaker_name.toLowerCase().includes(query) ||
+                           locationName.includes(query)
+                         );
+                       });
+                     }
+                     
+                     if (filtered.length === 0) {
+                       return (
+                         <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
+                           No conferences found matching &quot;{confSearchQuery}&quot;
+                         </div>
+                       );
+                     }
+                   
+                     const totalConfPages = Math.ceil(filtered.length / CONF_PAGE_SIZE)
+                     const startIdx = (confCurrentPage - 1) * CONF_PAGE_SIZE
+                     const currentConfs = filtered.slice(startIdx, startIdx + CONF_PAGE_SIZE)
+
+                     return (
+                       <>
+                         <div className="col-span-full grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                           {currentConfs.map((conf, index) => {
+                             const reserved = (reservations || []).some(r => r.conference_uuid === conf.conference_uuid);
+                             const room = rooms.find(r => r.room_uuid === conf.location);
+                             const locationName = room ? room.room_name : conf.location;
+                             
+                             return (
+                               <div key={`${conf.conference_uuid}-${index}`} className={`relative p-5 rounded-xl border transition-all duration-200 flex flex-col h-full ${reserved ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-card hover:shadow-md'}`}>
+                                 {reserved && (
+                                   <div className="absolute top-3 right-3 z-10">
+                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
+                                       Reserved
+                                     </span>
+                                   </div>
+                                 )}
+                                 <div className="space-y-4 flex-1 flex flex-col">
+                                   <div>
+                                     <h4 className="font-semibold text-lg line-clamp-2 pr-16 leading-tight" title={conf.title}>{conf.title}</h4>
+                                     <p className="text-sm text-primary/80 font-medium mt-1">By {conf.speaker_name}</p>
+                                   </div>
+                                   
+                                   <div className="grid gap-2.5 text-sm text-muted-foreground mt-auto pt-2">
+                                     <div className="flex items-center gap-2">
+                                       <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+                                       <span>{conf.show_date} • {conf.start_time.substring(0, 5)} - {conf.end_time.substring(0, 5)}</span>
+                                     </div>
+                                     <div className="flex items-center gap-2">
+                                       <div className="h-4 w-4 shrink-0 flex items-center justify-center opacity-70">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                       </div>
+                                       <span className="truncate" title={locationName}>{locationName}</span>
+                                     </div>
+                                   </div>
+                                   
+                                   <div className="pt-3 mt-1 flex items-center justify-between border-t border-border/50">
+                                     <div className="text-sm flex flex-col">
+                                       <div className="flex items-baseline gap-1">
+                                         <span className={`font-semibold ${conf.remaining_seats > 0 ? 'text-foreground' : 'text-destructive'}`}>{conf.remaining_seats}</span>
+                                         <span className="text-muted-foreground text-xs">/ {conf.quota}</span>
+                                       </div>
+                                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">seats left</span>
+                                     </div>
+                                     <div>
+                                       {reserved ? (
+                                         <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200 w-full shadow-sm" size="sm" onClick={() => handleCancelReserve(conf.conference_uuid)} disabled={confLoading}>
+                                           Cancel
+                                         </Button>
+                                       ) : (
+                                         <Button variant={conf.remaining_seats > 0 && conf.can_book ? "default" : "secondary"} className="w-full shadow-sm" size="sm" onClick={() => handleReserve(conf.conference_uuid)} disabled={confLoading || !conf.can_book || conf.remaining_seats <= 0}>
+                                           {conf.remaining_seats > 0 ? 'Reserve Seat' : 'Full'}
+                                         </Button>
+                                       )}
+                                     </div>
+                                   </div>
+                                 </div>
+                               </div>
+                             );
+                           })}
+                         </div>
+                         
+                         {totalConfPages > 1 && (
+                           <div className="col-span-full flex items-center justify-between pt-4 mt-2 border-t text-sm">
+                             <div className="text-muted-foreground">
+                               Showing <span className="font-medium text-foreground">{startIdx + 1}</span> to <span className="font-medium text-foreground">{Math.min(startIdx + CONF_PAGE_SIZE, filtered.length)}</span> of <span className="font-medium text-foreground">{filtered.length}</span> results
+                             </div>
+                             <div className="flex gap-2">
+                               <Button
+                                 type="button"
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => setConfCurrentPage(prev => Math.max(1, prev - 1))}
+                                 disabled={confCurrentPage === 1}
+                               >
+                                 <ChevronLeft className="h-4 w-4 mr-1" />
+                                 Previous
+                               </Button>
+                               <div className="flex items-center px-4 font-medium">
+                                 {confCurrentPage} / {totalConfPages}
+                               </div>
+                               <Button
+                                 type="button"
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => setConfCurrentPage(prev => Math.min(totalConfPages, prev + 1))}
+                                 disabled={confCurrentPage === totalConfPages}
+                               >
+                                 Next
+                                 <ChevronRight className="h-4 w-4 ml-1" />
+                               </Button>
+                             </div>
+                           </div>
+                         )}
+                       </>
+                     );
+                   })()
+                 )}
+               </div>
+            )}
+          </div>
+          <DialogFooter className="mt-2 pt-4 border-t">
+             <Button variant="outline" onClick={() => setIsConfDialogOpen(false)}>Close Window</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

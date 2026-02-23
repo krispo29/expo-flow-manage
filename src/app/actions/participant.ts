@@ -251,13 +251,9 @@ export async function processScannerData(formData: FormData) {
 
 export async function searchParticipantByCode(code: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
     const response = await api.get('/v1/admin/project/participants', {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     const participants = response.data.data as Participant[]
@@ -284,13 +280,9 @@ export async function getRecentScannerImports() {
 
 export async function resendEmailConfirmation(registrationUuids: string[]) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
     await api.post('/v1/admin/project/participants/send_email_comfirmation', registrationUuids, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     return { success: true }
@@ -303,13 +295,9 @@ export async function resendEmailConfirmation(registrationUuids: string[]) {
 
 export async function getMyReservations(registrationUuid: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
     const response = await api.get(`/v1/admin/project/participants/${registrationUuid}/my-reservation`, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     return { success: true, data: response.data.data }
@@ -322,16 +310,12 @@ export async function getMyReservations(registrationUuid: string) {
 
 export async function reserveConference(conferenceUuid: string, registrationUuid: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
     await api.post('/v1/admin/project/participants/reserve', {
       conference_uuid: conferenceUuid,
       registration_uuid: registrationUuid
     }, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     revalidatePath('/admin/participants')
@@ -346,16 +330,12 @@ export async function reserveConference(conferenceUuid: string, registrationUuid
 
 export async function cancelConferenceReservation(conferenceUuid: string, registrationUuid: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
     await api.post('/v1/admin/project/participants/cancel_reserve', {
       conference_uuid: conferenceUuid,
       registration_uuid: registrationUuid
     }, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     revalidatePath('/admin/participants')
@@ -379,13 +359,9 @@ export interface AttendeeType {
 
 export async function getAllAttendeeTypes() {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
     const response = await api.get('/v1/admin/project/participants/attendee_types', {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     return { success: true, data: response.data.data as AttendeeType[] }
