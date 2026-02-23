@@ -60,7 +60,8 @@ export function ParticipantList({
   
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
-  const [title, setTitle] = useState('Mr')
+  const [title, setTitle] = useState('Mr.')
+  const [titleOther, setTitleOther] = useState('')
   
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -99,7 +100,8 @@ export function ParticipantList({
   function openCreate() {
     setSelectedParticipant(null)
     setAttendeeType('VI')
-    setTitle('Mr')
+    setTitle('Mr.')
+    setTitleOther('')
     setIsDialogOpen(true)
   }
 
@@ -111,12 +113,14 @@ export function ParticipantList({
     if (result.success && result.data) {
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
-      setTitle(result.data.title || 'Mr')
+      setTitle(result.data.title || 'Mr.')
+      setTitleOther(result.data.title_other || '')
     } else {
       // Fallback to participant data if detail fetch fails
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
-      setTitle(p.title || 'Mr')
+      setTitle(p.title || 'Mr.')
+      setTitleOther('')
     }
     setIsDialogOpen(true)
   }
@@ -188,7 +192,8 @@ export function ParticipantList({
  
     // Update Select States
     setAttendeeType('VI')
-    setTitle('Mr')
+    setTitle('Mr.')
+    setTitleOther('')
 
     toast.success('Mock data filled')
   }
@@ -391,13 +396,26 @@ export function ParticipantList({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mr">Mr</SelectItem>
-                    <SelectItem value="Mrs">Mrs</SelectItem>
-                    <SelectItem value="Ms">Ms</SelectItem>
-                    <SelectItem value="Dr">Dr</SelectItem>
+                    <SelectItem value="Mr.">Mr.</SelectItem>
+                    <SelectItem value="Mrs.">Mrs.</SelectItem>
+                    <SelectItem value="Ms.">Ms.</SelectItem>
+                    <SelectItem value="Dr.">Dr.</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {title === 'Other' && (
+                <div className="space-y-2">
+                  <Label htmlFor="title_other">Please specify *</Label>
+                  <Input 
+                    id="title_other" 
+                    name="title_other" 
+                    value={titleOther} 
+                    onChange={(e) => setTitleOther(e.target.value)} 
+                    required 
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="first_name">First Name *</Label>
                 <Input id="first_name" name="first_name" defaultValue={selectedParticipant?.first_name || ''} required />

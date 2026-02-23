@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
-import { CountrySelector } from './CountrySelector'
 import { countries } from '@/lib/countries'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -70,10 +69,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
     title: '',
     position: '',
     email: '',
-    mobile: '',
-    companyName: exhibitor?.companyName || '',
-    companyCountry: getInitialCountry(),
-    companyTel: exhibitor?.phone || ''
+    mobile: ''
   })
   const [isOtherTitle, setIsOtherTitle] = useState(false)
   const [customTitle, setCustomTitle] = useState('')
@@ -132,10 +128,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         title: displayTitle,
         position: staff.position || '',
         email: staff.email || '',
-        mobile: staff.mobile || '',
-        companyName: staff.companyName || '',
-        companyCountry: staff.companyCountry || 'TH',
-        companyTel: staff.companyTel || ''
+        mobile: staff.mobile || ''
       })
       
       if (!isStandard && staff.title) {
@@ -153,10 +146,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         title: '',
         position: '',
         email: '',
-        mobile: '',
-        companyName: exhibitor?.companyName || '',
-        companyCountry: getInitialCountry(),
-        companyTel: exhibitor?.phone || ''
+        mobile: ''
       })
       setIsOtherTitle(false)
       setCustomTitle('')
@@ -178,9 +168,9 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
       email: formData.email,
       mobile: formData.mobile,
       exhibitorId: exhibitorId,
-      companyName: formData.companyName,
-      companyCountry: formData.companyCountry,
-      companyTel: formData.companyTel
+      companyName: exhibitor?.companyName || '',
+      companyCountry: getInitialCountry(),
+      companyTel: exhibitor?.phone || ''
     }
 
     let result
@@ -386,23 +376,6 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="mobile" className="text-right">Mobile</Label>
                 <Input id="mobile" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="companyName" className="text-right">Company Name</Label>
-                <Input id="companyName" value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Company Country</Label>
-                <div className="col-span-3">
-                  <CountrySelector 
-                    value={formData.companyCountry} 
-                    onChange={(val) => setFormData({...formData, companyCountry: val})} 
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="companyTel" className="text-right">Company Tel</Label>
-                <Input id="companyTel" value={formData.companyTel} onChange={e => setFormData({...formData, companyTel: e.target.value})} className="col-span-3" />
               </div>
             </div>
             <DialogFooter>

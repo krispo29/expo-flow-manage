@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Key, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -253,7 +253,7 @@ export default function ExhibitorsPage() {
                               <Mail className="h-4 w-4 text-purple-500" />
                             </Button>
                             <Button variant="ghost" size="icon" title="Reset Password" onClick={() => handleOpenPasswordDialog(item)}>
-                              <Key className="h-4 w-4 text-blue-500" />
+                              <KeyRound className="h-4 w-4 text-blue-500" />
                             </Button>
                             <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
                               <Button variant="ghost" size="icon" title="Edit/Manage">
@@ -344,7 +344,7 @@ export default function ExhibitorsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleResetPassword} disabled={savingPassword}>
-              {savingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Key className="mr-2 h-4 w-4" />}
+              {savingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Save Password
             </Button>
           </DialogFooter>

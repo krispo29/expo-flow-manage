@@ -469,7 +469,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetOrg(null)}>Cancel</Button>
             <Button onClick={handleResetPassword} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Reset Password
             </Button>
           </DialogFooter>

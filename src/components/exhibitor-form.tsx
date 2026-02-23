@@ -30,6 +30,7 @@ import { Loader2, Store, Shield, User, Mail, MapPin, Ticket, Globe, Phone, Print
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { type Exhibitor } from '@/app/actions/exhibitor'
+import { CountrySelector } from '@/components/CountrySelector'
 
 const exhibitorSchema = z.object({
   eventId: z.string().min(1, 'Event is required'),
@@ -159,7 +160,7 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
       address: '123 Innovation Park, Rama IV Rd',
       city: 'Bangkok',
       province: 'Bangkok',
-      country: 'Thailand',
+      country: 'TH',
       postalCode: '10330',
       quota: 5,
       overQuota: 2,
@@ -424,11 +425,12 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
                   control={form.control}
                   name="country"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input placeholder="USA" className="h-11" {...field} />
-                      </FormControl>
+                    <FormItem className="flex flex-col mt-2">
+                      <FormLabel className="mb-[2px]">Country</FormLabel>
+                      <CountrySelector 
+                        value={field.value || ''} 
+                        onChange={field.onChange} 
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

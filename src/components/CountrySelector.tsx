@@ -40,7 +40,9 @@ export function CountrySelector({
 
   const sortedCountries = useMemo(() => {
     return [...countries].sort((a, b) => {
-      // Prioritize some countries if needed, or just sort alphabetically
+      // Prioritize Vietnam first, then Thailand
+      if (a.code === 'VN') return -1;
+      if (b.code === 'VN') return 1;
       if (a.code === 'TH') return -1;
       if (b.code === 'TH') return 1;
       return a[displayProperty].localeCompare(b[displayProperty]);
