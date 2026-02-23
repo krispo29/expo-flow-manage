@@ -36,7 +36,7 @@ import { getConferences, getRooms, type Conference, type Room } from '@/app/acti
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries } from '@/lib/countries'
-import { ParticipantExcelOperations } from './participant-excel'
+// import { ParticipantExcelOperations } from './participant-excel'
 import { BadgePrint } from './badge-print'
 import { useReactToPrint } from 'react-to-print'
 
@@ -400,7 +400,7 @@ export function ParticipantList({
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                        <Button variant="outline" size="icon" onClick={() => handleResendEmail(p)} title="Resend Email">
-                         <Mail className="h-4 w-4 text-blue-500" />
+                         <Mail className="h-4 w-4 text-purple-500" />
                        </Button>
                        <Button variant="outline" size="icon" onClick={() => openConferenceDialog(p)} title="Manage Conferences">
                          <Calendar className="h-4 w-4 text-green-600" />
@@ -462,10 +462,10 @@ export function ParticipantList({
         )}
       </div>
 
-      <div className="pt-8 border-t">
+      {/* <div className="pt-8 border-t">
         <h2 className="text-lg font-semibold mb-4">Data Management</h2>
         <ParticipantExcelOperations projectId={projectId} />
-      </div>
+      </div> */}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

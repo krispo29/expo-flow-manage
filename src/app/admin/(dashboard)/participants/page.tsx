@@ -1,4 +1,4 @@
-import { ScannerImport } from '@/components/scanner-import'
+// import { ScannerImport } from '@/components/scanner-import'
 import { getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
 import { redirect } from 'next/navigation'
@@ -32,7 +32,7 @@ export default async function ParticipantsPage({
       </div>
 
       {/* Scanner Import Section */}
-      <ScannerImport projectId={projectId} />
+      {/* <ScannerImport projectId={projectId} /> */}
 
       <ParticipantList 
         participants={participants} 

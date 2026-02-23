@@ -250,22 +250,21 @@ export default function ExhibitorsPage() {
                         <TableCell>{item.usedQuota}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" title={item.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(item.id)}>
-                              <Power className={`h-4 w-4 ${item.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
-                            </Button>
+                          
                             <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(item)}>
                               <Mail className="h-4 w-4 text-purple-500" />
                             </Button>
-                            <Button variant="ghost" size="icon" title="Reset Password" onClick={() => handleOpenPasswordDialog(item)}>
-                              <KeyRound className="h-4 w-4 text-blue-500" />
-                            </Button>
+                          
                             <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
                               <Button variant="ghost" size="icon" title="Edit/Manage">
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </Link>
-                            <Button variant="ghost" size="icon" title="Delete" onClick={() => handleDelete(item.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Button variant="ghost" size="icon" title="Reset Password" onClick={() => handleOpenPasswordDialog(item)}>
+                              <KeyRound className="h-4 w-4 text-blue-500" />
+                            </Button>
+                             <Button variant="ghost" size="icon" title={item.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(item.id)}>
+                              <Power className={`h-4 w-4 ${item.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
                             </Button>
                           </div>
                         </TableCell>

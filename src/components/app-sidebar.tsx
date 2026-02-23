@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { cn } from "@/lib/utils"
 import {
   Users,
   Contact,
@@ -124,7 +125,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                 <SidebarMenuButton 
                   asChild 
                   tooltip="Dashboard" 
-                  className="h-10 text-[15px] font-medium px-4"
+                  className={cn(
+                    "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                    isActive('/admin') 
+                      ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                      : "hover:bg-sidebar-accent/50"
+                  )}
                   isActive={isActive('/admin')}
                 >
                   <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
@@ -149,7 +155,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Exhibitors" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/exhibitors') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/exhibitors')}
                     >
                       <Link href={projectId ? `/admin/exhibitors?projectId=${projectId}` : "/admin/exhibitors"}>
@@ -165,7 +176,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Participants" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/participants') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/participants')}
                     >
                       <Link href={projectId ? `/admin/participants?projectId=${projectId}` : "/admin/participants"}>
@@ -180,7 +196,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Organizers" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/organizers') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/organizers')}
                     >
                       <Link href={projectId ? `/admin/organizers?projectId=${projectId}` : "/admin/organizers"}>
@@ -196,7 +217,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Conferences" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/conferences') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/conferences')}
                     >
                       <Link href={projectId ? `/admin/conferences?projectId=${projectId}` : "/admin/conferences"}>
@@ -212,7 +238,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Rooms" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/rooms') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/rooms')}
                     >
                       <Link href={projectId ? `/admin/rooms?projectId=${projectId}` : "/admin/rooms"}>
@@ -228,7 +259,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Events" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/events') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/events')}
                     >
                       <Link href={projectId ? `/admin/events?projectId=${projectId}` : "/admin/events"}>
@@ -244,7 +280,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Invitation Codes" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/invitation-codes') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/invitation-codes')}
                     >
                       <Link href={projectId ? `/admin/invitation-codes?projectId=${projectId}` : "/admin/invitation-codes"}>
@@ -271,7 +312,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Reports" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/reports') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/reports')}
                     >
                       <Link href={projectId ? `/admin/reports?projectId=${projectId}` : "/admin/reports"}>
@@ -286,7 +332,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Utility" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/utilities') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/utilities')}
                     >
                       <Link href={projectId ? `/admin/utilities?projectId=${projectId}` : "/admin/utilities"}>
@@ -301,7 +352,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Settings" 
-                      className="h-10 text-[15px] font-medium px-4"
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive('/admin/settings') 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
                       isActive={isActive('/admin/settings')}
                     >
                       <Link href={projectId ? `/admin/settings?projectId=${projectId}` : "/admin/settings"}>

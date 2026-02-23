@@ -234,6 +234,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                 <TableRow>
                   <TableHead className="font-semibold text-foreground">Username</TableHead>
                   <TableHead className="font-semibold text-foreground">Full Name</TableHead>
+                  <TableHead className="font-semibold text-foreground">Project</TableHead>
                   <TableHead className="font-semibold text-foreground">Status</TableHead>
                   <TableHead className="font-semibold text-foreground">Last Login</TableHead>
                   <TableHead className="font-semibold text-foreground">Created</TableHead>
@@ -243,7 +244,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
               <TableBody>
                 {filteredOrganizers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                       {searchQuery ? "No results matching your search terms." : "No organizers found."}
                     </TableCell>
                   </TableRow>
@@ -252,6 +253,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                     <TableRow key={org.organizer_uuid}>
                       <TableCell className="font-medium">{org.username}</TableCell>
                       <TableCell>{org.full_name}</TableCell>
+                      <TableCell>{org.project_name}</TableCell>
                       <TableCell>
                         <Badge variant={org.is_active ? "default" : "secondary"}>
                           {org.is_active ? 'Active' : 'Inactive'}
@@ -277,7 +279,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                             title="Reset Password"
                             onClick={() => { setResetOrg(org); setNewPassword(''); setShowPassword(false); }}
                           >
-                            <KeyRound className="h-4 w-4" />
+                            <KeyRound className="h-4 w-4 text-blue-500" />
                           </Button>
                           <Button
                             variant="ghost"
