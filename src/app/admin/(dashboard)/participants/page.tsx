@@ -3,14 +3,16 @@ import { getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
 import { redirect } from 'next/navigation'
 
+import { cookies } from 'next/headers'
+ 
 export default async function ParticipantsPage({ 
   searchParams 
 }: { 
-  searchParams: Promise<{ q?: string; type?: string }> 
+  searchParams: Promise<{ q?: string; type?: string; projectId?: string }> 
 }) {
   const resolvedSearchParams = await searchParams
-  // TODO: Dynamic Project ID from context/auth
-  const projectId = 'horti-agri' 
+  const cookieStore = await cookies()
+  const projectId = resolvedSearchParams.projectId || cookieStore.get('project_uuid')?.value || 'horti-agri'
   const query = resolvedSearchParams.q || ''
   const type = resolvedSearchParams.type || 'ALL'
 
@@ -38,11 +40,11 @@ export default async function ParticipantsPage({
         currentType={type}
         onSearch={async (q) => {
           'use server'
-          redirect(`/admin/participants?q=${q}&type=${type}`)
+          redirect(`/admin/participants?q=${q}&type=${type}&projectId=${projectId}`)
         }}
         onTypeFilter={async (t) => {
             'use server'
-            redirect(`/admin/participants?q=${query}&type=${t}`)
+            redirect(`/admin/participants?q=${query}&type=${t}&projectId=${projectId}`)
         }}
       />
     </div>

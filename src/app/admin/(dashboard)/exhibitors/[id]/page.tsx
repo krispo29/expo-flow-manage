@@ -62,7 +62,7 @@ export default function EditExhibitorPage() {
       </div>
       
       {exhibitor && projectId && (
-        <StaffManagement exhibitorId={exhibitor.id} projectId={projectId} />
+        <StaffManagement exhibitorId={exhibitor.id} projectId={projectId} exhibitor={exhibitor} />
       )}
     </div>
   )

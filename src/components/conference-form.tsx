@@ -79,6 +79,36 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
     }
   }
 
+  function fillMockData() {
+    const form = document.querySelector('form')
+    if (!form) return
+
+    const mockData = {
+      title: 'Advanced AI Strategies for Business 2024',
+      speaker_name: 'Dr. Sarah Connor',
+      speaker_info: 'Chief AI Researcher at Cyberdyne Systems. Author of "The Future of Machines".',
+      show_date: showDates[0]?.value || '',
+      location: rooms[0]?.room_uuid || '',
+      start_time: '14:00',
+      end_time: '15:30',
+      quota: '120',
+      conference_type: 'public'
+    }
+
+    // Set form values
+    Object.entries(mockData).forEach(([key, value]) => {
+      const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      if (input) {
+        input.value = value
+      }
+    })
+
+    // Special handling for RadioGroup/Manual state
+    setConferenceType('public')
+    
+    toast.success('Mock data filled')
+  }
+
   if (isLoadingData) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -97,14 +127,23 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
                 Back to Conferences
               </Link>
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {conference ? 'Edit Conference' : 'New Conference'}
-            </h1>
-            <p className="text-muted-foreground">
-              {conference 
-                ? 'Update the details of the existing conference session.' 
-                : 'Create a new conference session for the event.'}
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {conference ? 'Edit Conference' : 'New Conference'}
+                </h1>
+                <p className="text-muted-foreground">
+                  {conference 
+                    ? 'Update the details of the existing conference session.' 
+                    : 'Create a new conference session for the event.'}
+                </p>
+              </div>
+              {!conference && (
+                <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
+                  Fill Mock Data
+                </Button>
+              )}
+            </div>
           </div>
 
           <Card>

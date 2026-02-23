@@ -101,7 +101,7 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
           job_position: row.Position,
           residence_country: row.ResidenceCountry || 'Thailand',
           attendee_type_code: row.AttendeeTypeCode || defaultType,
-          invitation_Code: row.InvitationCode || ''
+          invitation_code: row.InvitationCode || ''
         }))
 
           setConfirmData(transformedData)

@@ -79,7 +79,7 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
         companyName: initialData.companyName,
         username: initialData.username || '',
         password: '', // Don't populate password on edit
-        boothNo: initialData.boothNumber || '',
+        boothNo: initialData.boothNo || '',
         contactPerson: initialData.contactPerson || '',
         email: initialData.email || '',
         phone: initialData.phone || '',
@@ -142,6 +142,29 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
       toast.error(result.error || 'Something went wrong')
     }
     setLoading(false)
+  }
+
+  function fillMockData() {
+    form.reset({
+      eventId: events[0]?.event_uuid || '',
+      companyName: 'Global Tech Solutions',
+      username: `GT-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      password: 'password123',
+      boothNo: 'B-205',
+      contactPerson: 'Alice Smith',
+      email: 'alice@globaltech.com',
+      phone: '+66 81 234 5678',
+      fax: '+66 2 123 4567',
+      website: 'https://globaltech-solutions.example.com',
+      address: '123 Innovation Park, Rama IV Rd',
+      city: 'Bangkok',
+      province: 'Bangkok',
+      country: 'Thailand',
+      postalCode: '10330',
+      quota: 5,
+      overQuota: 2,
+    })
+    toast.success('Mock data filled')
   }
 
   return (
@@ -490,9 +513,16 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
         <Separator className="my-8" />
 
         <div className="flex items-center justify-between">
-          <Button type="button" variant="ghost" onClick={() => router.back()}>
-            Cancel
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" onClick={() => router.back()}>
+              Cancel
+            </Button>
+            {!initialData && (
+              <Button type="button" variant="outline" onClick={fillMockData}>
+                Fill Mock Data
+              </Button>
+            )}
+          </div>
           <Button type="submit" size="lg" className="min-w-[200px] h-12 shadow-md hover:shadow-lg transition-all" disabled={loading}>
             {loading ? (
               <>

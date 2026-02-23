@@ -5,13 +5,12 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 
 // Helper function to get headers with auth
-async function getAuthHeaders() {
+async function getAuthHeaders(projectUuid?: string) {
   const cookieStore = await cookies()
-  const projectUuid = cookieStore.get('project_uuid')?.value
   const token = cookieStore.get('access_token')?.value
   
   return {
-    'X-Project-UUID': projectUuid,
+    'X-Project-UUID': projectUuid || cookieStore.get('project_uuid')?.value,
     ...(token && { Authorization: `Bearer ${token}` })
   }
 }
@@ -29,6 +28,7 @@ export interface Participant {
   is_active: boolean
   conference_count: number
   is_email_sent: boolean
+  title?: string
 }
 
 export interface ParticipantDetail extends Participant {
@@ -55,11 +55,11 @@ export interface ParticipantDetail extends Participant {
 
 export async function getParticipants(projectId: string, query?: string, type?: string) {
   try {
-    const headers = await getAuthHeaders()
-
+    const headers = await getAuthHeaders(projectId)
+ 
     const response = await api.get('/v1/admin/project/participants', { headers })
 
-    let participants = response.data.data as Participant[]
+    let participants = (response.data.data as Participant[]) || []
 
     // Client-side filtering for query and type
     if (query) {
@@ -87,13 +87,10 @@ export async function getParticipants(projectId: string, query?: string, type?: 
 
 export async function getParticipantById(id: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
+ 
     const response = await api.get(`/v1/admin/project/participants/${id}`, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     return { success: true, data: response.data.data as ParticipantDetail }
@@ -106,8 +103,6 @@ export async function getParticipantById(id: string) {
 
 export async function createParticipant(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
     const eventUuid = formData.get('event_uuid') as string
 
     const body = {
@@ -122,14 +117,14 @@ export async function createParticipant(formData: FormData) {
       mobile_country_code: formData.get('mobile_country_code') as string,
       mobile_number: formData.get('mobile_number') as string,
       email: formData.get('email') as string,
-      invitation_Code: formData.get('invitation_code') as string || '',
+      invitation_code: formData.get('invitation_code') as string || '',
       attendee_type_code: formData.get('attendee_type_code') as string
     }
 
+    const headers = await getAuthHeaders()
+ 
     await api.post('/v1/admin/project/participants', body, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     revalidatePath('/admin/participants')
@@ -143,9 +138,6 @@ export async function createParticipant(formData: FormData) {
 
 export async function updateParticipant(registrationUuid: string, formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
     const body = {
       registration_uuid: registrationUuid,
       title: formData.get('title') as string,
@@ -157,13 +149,15 @@ export async function updateParticipant(registrationUuid: string, formData: Form
       residence_country: formData.get('residence_country') as string,
       mobile_country_code: formData.get('mobile_country_code') as string,
       mobile_number: formData.get('mobile_number') as string,
-      email: formData.get('email') as string
+      email: formData.get('email') as string,
+      invitation_code: formData.get('invitation_code') as string || '',
+      attendee_type_code: formData.get('attendee_type_code') as string
     }
 
+    const headers = await getAuthHeaders()
+ 
     await api.put('/v1/admin/project/participants', body, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     revalidatePath('/admin/participants')
@@ -177,13 +171,10 @@ export async function updateParticipant(registrationUuid: string, formData: Form
 
 export async function deleteParticipant(registrationUuid: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
+ 
     await api.delete(`/v1/admin/project/participants/${registrationUuid}/delete`, {
-      headers: {
-        'X-Project-UUID': projectUuid
-      }
+      headers
     })
 
     revalidatePath('/admin/participants')
@@ -207,20 +198,17 @@ export async function importParticipants(data: Array<{
   mobile_country_code: string
   mobile_number: string
   email: string
-  invitation_Code?: string
+  invitation_code?: string
   attendee_type_code: string
 }>) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
-
+    const headers = await getAuthHeaders()
+ 
     let successCount = 0
     for (const participant of data) {
       try {
         await api.post('/v1/admin/project/participants', participant, {
-          headers: {
-            'X-Project-UUID': projectUuid
-          }
+          headers
         })
         successCount++
       } catch (error) {

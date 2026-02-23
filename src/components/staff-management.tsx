@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
 import { CountrySelector } from './CountrySelector'
+import { countries } from '@/lib/countries'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -36,9 +37,10 @@ import { toast } from 'sonner'
 interface StaffManagementProps {
   readonly exhibitorId: string
   readonly projectId: string
+  readonly exhibitor?: any
 }
 
-export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps) {
+export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffManagementProps) {
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -52,6 +54,16 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
   // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
   // but for production consistency, RHF + Zod is better. 
   // I'll stick to controlled inputs for now to save setup time unless complex validation is needed.
+  // Resolve exhibitor country name to code if possible
+  const getInitialCountry = () => {
+    if (!exhibitor?.country) return 'TH'
+    const country = countries.find(
+      c => c.code.toLowerCase() === exhibitor.country.toLowerCase() || 
+           c.name.toLowerCase() === exhibitor.country.toLowerCase()
+    )
+    return country ? country.code : 'TH'
+  }
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -59,9 +71,9 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
     position: '',
     email: '',
     mobile: '',
-    companyName: '',
-    companyCountry: 'TH',
-    companyTel: ''
+    companyName: exhibitor?.companyName || '',
+    companyCountry: getInitialCountry(),
+    companyTel: exhibitor?.phone || ''
   })
   const [isOtherTitle, setIsOtherTitle] = useState(false)
   const [customTitle, setCustomTitle] = useState('')
@@ -142,9 +154,9 @@ export function StaffManagement({ exhibitorId, projectId }: StaffManagementProps
         position: '',
         email: '',
         mobile: '',
-        companyName: '',
-        companyCountry: 'TH',
-        companyTel: ''
+        companyName: exhibitor?.companyName || '',
+        companyCountry: getInitialCountry(),
+        companyTel: exhibitor?.phone || ''
       })
       setIsOtherTitle(false)
       setCustomTitle('')

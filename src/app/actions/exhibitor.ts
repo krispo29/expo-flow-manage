@@ -21,7 +21,7 @@ export interface Exhibitor {
   eventName: string
   companyName: string
   username?: string // Registration ID
-  boothNumber?: string
+  boothNo?: string
   zone?: string
   email?: string
   phone?: string
@@ -61,7 +61,7 @@ export async function getExhibitors(projectUuid: string) {
       companyName: item.company_name,
       username: item.username,
       address: item.address,
-      boothNumber: item.booth_no,
+      boothNo: item.booth_no,
       isActive: item.is_active,
       usedQuota: item.used_quota || 0,
       quota: 0, // Not provided in list
@@ -94,7 +94,7 @@ export async function createExhibitor(projectUuid: string, data: any) {
       contact_person: data.contactPerson,
       contact_email: data.email,
       website: data.website,
-      booth_no: data.boothNumber,
+      booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota
     }
@@ -126,7 +126,7 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       contact_person: data.contactPerson,
       contact_email: data.email,
       website: data.website,
-      booth_no: data.boothNumber,
+      booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota
     }
@@ -187,7 +187,7 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
       contactPerson: rawData.contact_person,
       email: rawData.contact_email,
       website: rawData.website,
-      boothNumber: rawData.booth_no,
+      boothNo: rawData.booth_no,
       quota: rawData.quota,
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,

@@ -54,7 +54,7 @@ export default function ExhibitorsPage() {
     (item.username && item.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (item.companyName && item.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (item.eventName && item.eventName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.boothNumber && item.boothNumber.toLowerCase().includes(searchQuery.toLowerCase()))
+    (item.boothNo && item.boothNo.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   // Calculate pagination based on FILTERED data
@@ -237,7 +237,7 @@ export default function ExhibitorsPage() {
                         <TableCell className="font-medium">{item.username || '-'}</TableCell>
                         <TableCell>{item.companyName}</TableCell>
                         <TableCell>{item.eventName || '-'}</TableCell>
-                        <TableCell>{item.boothNumber || '-'}</TableCell>
+                        <TableCell>{item.boothNo || '-'}</TableCell>
                         <TableCell>
                           <Badge variant={item.isActive ? "default" : "secondary"} className={item.isActive ? 'bg-green-500 hover:bg-green-600' : ''}>
                             {item.isActive ? 'Active' : 'Inactive'}

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Participant, createParticipant, updateParticipant, deleteParticipant } from '@/app/actions/participant'
+import { Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail } from '@/app/actions/participant'
 import { toast } from 'sonner'
 import { ParticipantExcelOperations } from './participant-excel'
 import { BadgePrint } from './badge-print'
@@ -51,11 +51,16 @@ export function ParticipantList({
   currentType 
 }: ParticipantListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   
   // Print State
   const [printParticipant, setPrintParticipant] = useState<Participant | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  
+  // Dialog Form State for controlled components
+  const [attendeeType, setAttendeeType] = useState('VI')
+  const [title, setTitle] = useState('Mr')
   
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -93,11 +98,26 @@ export function ParticipantList({
 
   function openCreate() {
     setSelectedParticipant(null)
+    setAttendeeType('VI')
+    setTitle('Mr')
     setIsDialogOpen(true)
   }
 
-  function openEdit(p: Participant) {
-    setSelectedParticipant(p)
+  async function openEdit(p: Participant) {
+    setLoading(true)
+    const result = await getParticipantById(p.registration_uuid)
+    setLoading(false)
+
+    if (result.success && result.data) {
+      setSelectedParticipant(result.data)
+      setAttendeeType(result.data.attendee_type_code || 'VI')
+      setTitle(result.data.title || 'Mr')
+    } else {
+      // Fallback to participant data if detail fetch fails
+      setSelectedParticipant(p)
+      setAttendeeType(p.attendee_type_code || 'VI')
+      setTitle(p.title || 'Mr')
+    }
     setIsDialogOpen(true)
   }
 
@@ -141,6 +161,36 @@ export function ParticipantList({
     } else {
       toast.error(result.error)
     }
+  }
+
+  function fillMockData() {
+    const form = formRef.current
+    if (!form) return
+ 
+    const mockData = {
+      first_name: 'John',
+      last_name: 'Wick',
+      email: `john.wick.${Math.floor(Math.random() * 1000)}@continental.com`,
+      mobile_country_code: '+66',
+      mobile_number: '0812345678',
+      company_name: 'The Continental',
+      job_position: 'Legendary Assassin',
+      residence_country: 'Thailand',
+      invitation_code: 'EXPO2024'
+    }
+ 
+    Object.entries(mockData).forEach(([key, value]) => {
+      const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement
+      if (input) {
+        input.value = value
+      }
+    })
+ 
+    // Update Select States
+    setAttendeeType('VI')
+    setTitle('Mr')
+
+    toast.success('Mock data filled')
   }
 
   return (
@@ -304,15 +354,22 @@ export function ParticipantList({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
+            <div className="flex justify-between items-center pr-8">
+              <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
+              {!selectedParticipant && (
+                <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
+                  Fill Mock Data
+                </Button>
+              )}
+            </div>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="attendee_type_code">Type</Label>
-                <Select name="attendee_type_code" defaultValue={selectedParticipant?.attendee_type_code || 'VI'} required>
+                <Select name="attendee_type_code" value={attendeeType} onValueChange={setAttendeeType} required>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -329,7 +386,7 @@ export function ParticipantList({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Select name="title" defaultValue="Mr" required>
+                <Select name="title" value={title} onValueChange={setTitle} required>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -355,11 +412,11 @@ export function ParticipantList({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mobile_country_code">Country Code *</Label>
-                <Input id="mobile_country_code" name="mobile_country_code" defaultValue="+66" required />
+                <Input id="mobile_country_code" name="mobile_country_code" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_country_code || "+66"} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mobile_number">Mobile Number *</Label>
-                <Input id="mobile_number" name="mobile_number" defaultValue="" required />
+                <Input id="mobile_number" name="mobile_number" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_number || ""} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company_name">Company *</Label>
@@ -371,11 +428,11 @@ export function ParticipantList({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="residence_country">Residence Country *</Label>
-                <Input id="residence_country" name="residence_country" defaultValue="Thailand" required />
+                <Input id="residence_country" name="residence_country" defaultValue={(selectedParticipant as ParticipantDetail)?.residence_country || "Thailand"} required />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="invitation_code">Invitation Code (Optional)</Label>
-                <Input id="invitation_code" name="invitation_code" defaultValue="" />
+                <Input id="invitation_code" name="invitation_code" defaultValue={(selectedParticipant as ParticipantDetail)?.invitation_code || ""} />
               </div>
             </div>
             <DialogFooter>

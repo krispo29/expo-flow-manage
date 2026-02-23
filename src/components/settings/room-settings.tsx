@@ -74,6 +74,18 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectUuid])
 
+  function fillMockData() {
+    setNewRoom({
+      event_uuid: events[0]?.event_uuid || '',
+      room_name: 'Main Ballroom',
+      location_detail: 'Level 2, East Wing',
+      capacity: 500,
+      is_active: true,
+      scanner_id: 'SCAN-01'
+    })
+    toast.success('Mock data filled')
+  }
+
   async function handleCreate() {
     if (!newRoom.event_uuid || !newRoom.room_name) {
       toast.error("Please fill in Event and Room Name")
@@ -275,7 +287,12 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Room</DialogTitle>
+            <div className="flex justify-between items-center pr-8">
+              <DialogTitle>Add New Room</DialogTitle>
+              <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
+                Fill Mock Data
+              </Button>
+            </div>
             <DialogDescription>Create a new room for this project.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
