@@ -9,6 +9,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -33,6 +34,8 @@ import {
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
+import { CountrySelector } from '@/components/CountrySelector'
+import { countries } from '@/lib/countries'
 import { ParticipantExcelOperations } from './participant-excel'
 import { BadgePrint } from './badge-print'
 import { useReactToPrint } from 'react-to-print'
@@ -67,6 +70,7 @@ export function ParticipantList({
   const [confLoading, setConfLoading] = useState(false)
   const [confSearchQuery, setConfSearchQuery] = useState('')
   const [confCurrentPage, setConfCurrentPage] = useState(1)
+  const [showOnlyReserved, setShowOnlyReserved] = useState(false)
   
   // Print State
   const [printParticipant, setPrintParticipant] = useState<Participant | null>(null)
@@ -76,6 +80,8 @@ export function ParticipantList({
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
   const [title, setTitle] = useState('Mr')
+  const [residenceCountry, setResidenceCountry] = useState('VN')
+  const [mobileCountryCode, setMobileCountryCode] = useState('VN')
   
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -115,6 +121,8 @@ export function ParticipantList({
     setSelectedParticipant(null)
     setAttendeeType('VI')
     setTitle('Mr')
+    setResidenceCountry('VN')
+    setMobileCountryCode('VN')
     setIsDialogOpen(true)
   }
 
@@ -127,11 +135,23 @@ export function ParticipantList({
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
       setTitle(result.data.title || 'Mr')
+      const resCountryRaw = result.data.residence_country || 'Thailand'
+      const found = countries.find(c =>
+        c.name.toLowerCase() === resCountryRaw.toLowerCase() ||
+        c.code.toLowerCase() === resCountryRaw.toLowerCase()
+      )
+      setResidenceCountry(found ? found.code : 'VN')
+
+      const mccRaw = result.data.mobile_country_code || '84'
+      const mccClean = mccRaw.startsWith('+') ? mccRaw : `+${mccRaw}`
+      const foundMcc = countries.find(c => c.phoneCode === mccClean || c.phoneCode === mccRaw)
+      setMobileCountryCode(foundMcc ? foundMcc.code : 'VN')
     } else {
-      // Fallback to participant data if detail fetch fails
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
       setTitle(p.title || 'Mr')
+      setResidenceCountry('VN')
+      setMobileCountryCode('VN')
     }
     setIsDialogOpen(true)
   }
@@ -203,6 +223,7 @@ export function ParticipantList({
     setConfParticipant(p)
     setConfSearchQuery('')
     setConfCurrentPage(1)
+    setShowOnlyReserved(false)
     setIsConfDialogOpen(true)
     setConfLoading(true)
     
@@ -505,8 +526,19 @@ export function ParticipantList({
                 <Input id="email" name="email" type="email" defaultValue={selectedParticipant?.email || ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mobile_country_code">Country Code *</Label>
-                <Input id="mobile_country_code" name="mobile_country_code" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_country_code || "+66"} required />
+                <Label>Country Code *</Label>
+                <CountrySelector
+                  value={mobileCountryCode}
+                  onChange={setMobileCountryCode}
+                  label=""
+                  placeholder="Select"
+                  displayProperty="phoneCode"
+                />
+                <input
+                  type="hidden"
+                  name="mobile_country_code"
+                  value={countries.find(c => c.code === mobileCountryCode)?.phoneCode || mobileCountryCode}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mobile_number">Mobile Number *</Label>
@@ -521,12 +553,28 @@ export function ParticipantList({
                 <Input id="job_position" name="job_position" defaultValue={selectedParticipant?.job_position || ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="residence_country">Residence Country *</Label>
-                <Input id="residence_country" name="residence_country" defaultValue={(selectedParticipant as ParticipantDetail)?.residence_country || "Thailand"} required />
+                <Label>Residence Country *</Label>
+                <CountrySelector
+                  value={residenceCountry}
+                  onChange={setResidenceCountry}
+                  label=""
+                  placeholder="Select country"
+                />
+                <input
+                  type="hidden"
+                  name="residence_country"
+                  value={countries.find(c => c.code === residenceCountry)?.name || residenceCountry}
+                />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="invitation_code">Invitation Code (Optional)</Label>
-                <Input id="invitation_code" name="invitation_code" defaultValue={(selectedParticipant as ParticipantDetail)?.invitation_code || ""} />
+                <Label htmlFor="invitation_code">Invitation Code {selectedParticipant ? "(Cannot be changed)" : "(Optional)"}</Label>
+                <Input 
+                  id="invitation_code" 
+                  name="invitation_code" 
+                  defaultValue={(selectedParticipant as ParticipantDetail)?.invitation_code || ""} 
+                  disabled={!!selectedParticipant}
+                  className={selectedParticipant ? "bg-muted cursor-not-allowed" : ""}
+                />
               </div>
             </div>
             <DialogFooter>
@@ -545,18 +593,36 @@ export function ParticipantList({
           <DialogHeader>
             <DialogTitle className="text-xl md:text-2xl">Manage Conferences for <span className="text-primary">{confParticipant?.first_name} {confParticipant?.last_name}</span></DialogTitle>
           </DialogHeader>
-          <div className="pt-2 pb-0">
-             <div className="relative">
-               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-               <Input 
-                 placeholder="Search conferences by title, speaker, or room..." 
-                 value={confSearchQuery}
-                 onChange={(e) => {
-                   setConfSearchQuery(e.target.value)
-                   setConfCurrentPage(1)
-                 }}
-                 className="pl-9 bg-muted/30 border-muted-foreground/20 focus-visible:ring-primary/50"
-               />
+          <div className="pt-2 pb-0 space-y-3">
+             <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+               <div className="relative flex-1 w-full">
+                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                 <Input 
+                   placeholder="Search conferences by title, speaker, or room..." 
+                   value={confSearchQuery}
+                   onChange={(e) => {
+                     setConfSearchQuery(e.target.value)
+                     setConfCurrentPage(1)
+                   }}
+                   className="pl-9 bg-muted/30 border-muted-foreground/20 focus-visible:ring-primary/50"
+                 />
+               </div>
+               <div className="flex items-center space-x-2 bg-muted/20 px-3 py-2 rounded-md border border-muted-foreground/10 h-10 shrink-0">
+                 <Checkbox 
+                   id="show-only-reserved" 
+                   checked={showOnlyReserved}
+                   onCheckedChange={(checked) => {
+                     setShowOnlyReserved(checked as boolean)
+                     setConfCurrentPage(1)
+                   }}
+                 />
+                 <Label 
+                   htmlFor="show-only-reserved" 
+                   className="text-sm font-medium leading-none cursor-pointer select-none"
+                 >
+                   Show Only Reserved
+                 </Label>
+               </div>
              </div>
           </div>
           <div className="space-y-4 mt-2 overflow-y-auto flex-1 p-1">
@@ -571,6 +637,14 @@ export function ParticipantList({
                  ) : (
                    (() => {
                      let filtered = Array.from(new Map(conferences.map(c => [c.conference_uuid, c])).values());
+                     
+                     // Filter by reservation status
+                     if (showOnlyReserved) {
+                       filtered = filtered.filter(conf => 
+                         (reservations || []).some(r => r.conference_uuid === conf.conference_uuid)
+                       );
+                     }
+
                      if (confSearchQuery.trim()) {
                        const query = confSearchQuery.toLowerCase();
                        filtered = filtered.filter(conf => {

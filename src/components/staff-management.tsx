@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
 import { countries } from '@/lib/countries'
+import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -69,7 +70,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
     title: '',
     position: '',
     email: '',
-    mobile: ''
+    mobile: '',
+    companyName: '',
+    companyCountry: 'TH',
+    companyTel: ''
   })
   const [isOtherTitle, setIsOtherTitle] = useState(false)
   const [customTitle, setCustomTitle] = useState('')
@@ -128,7 +132,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         title: displayTitle,
         position: staff.position || '',
         email: staff.email || '',
-        mobile: staff.mobile || ''
+        mobile: staff.mobile || '',
+        companyName: exhibitor?.companyName || '',
+        companyCountry: getInitialCountry(),
+        companyTel: exhibitor?.phone || ''
       })
       
       if (!isStandard && staff.title) {
@@ -146,7 +153,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         title: '',
         position: '',
         email: '',
-        mobile: ''
+        mobile: '',
+        companyName: exhibitor?.companyName || '',
+        companyCountry: getInitialCountry(),
+        companyTel: exhibitor?.phone || ''
       })
       setIsOtherTitle(false)
       setCustomTitle('')
@@ -168,9 +178,9 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
       email: formData.email,
       mobile: formData.mobile,
       exhibitorId: exhibitorId,
-      companyName: exhibitor?.companyName || '',
-      companyCountry: getInitialCountry(),
-      companyTel: exhibitor?.phone || ''
+      companyName: formData.companyName,
+      companyCountry: formData.companyCountry,
+      companyTel: formData.companyTel
     }
 
     let result
@@ -376,6 +386,37 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="mobile" className="text-right">Mobile</Label>
                 <Input id="mobile" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Company Name</Label>
+                <Input
+                  id="companyName"
+                  value={formData.companyName}
+                  onChange={e => setFormData({...formData, companyName: e.target.value})}
+                  className="col-span-3"
+                  placeholder="Company name"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Company Country</Label>
+                <div className="col-span-3">
+                  <CountrySelector
+                    value={formData.companyCountry}
+                    onChange={(code) => setFormData({...formData, companyCountry: code})}
+                    label=""
+                    placeholder="Select country"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Company Tel</Label>
+                <Input
+                  id="companyTel"
+                  value={formData.companyTel}
+                  onChange={e => setFormData({...formData, companyTel: e.target.value})}
+                  className="col-span-3"
+                  placeholder="Company telephone"
+                />
               </div>
             </div>
             <DialogFooter>

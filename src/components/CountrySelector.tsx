@@ -24,7 +24,7 @@ interface CountrySelectorProps {
   onChange: (countryCode: string) => void;
   label?: string;
   placeholder?: string;
-  displayProperty?: 'name' | 'nationality';
+  displayProperty?: 'name' | 'nationality' | 'phoneCode';
   required?: boolean;
 }
 
@@ -45,7 +45,10 @@ export function CountrySelector({
       if (b.code === 'VN') return 1;
       if (a.code === 'TH') return -1;
       if (b.code === 'TH') return 1;
-      return a[displayProperty].localeCompare(b[displayProperty]);
+      
+      const valA = a[displayProperty as keyof typeof a] as string;
+      const valB = b[displayProperty as keyof typeof b] as string;
+      return valA.localeCompare(valB);
     });
   }, [displayProperty]);
 

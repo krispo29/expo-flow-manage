@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Conference } from '@/app/actions/conference'
+import { Conference, getConferenceLogs, ConferenceLog } from '@/app/actions/conference'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,11 @@ export function ConferenceList({ conferences: initialConferences, projectId }: R
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [previewConference, setPreviewConference] = useState<Conference | null>(null)
+  
+  // Logs state
+  const [logsConference, setLogsConference] = useState<Conference | null>(null)
+  const [logs, setLogs] = useState<ConferenceLog[]>([])
+  const [loadingLogs, setLoadingLogs] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -91,6 +97,26 @@ export function ConferenceList({ conferences: initialConferences, projectId }: R
     setSearchQuery('')
     setStartDate('')
     setEndDate('')
+  }
+
+  async function handleViewLogs(conference: Conference) {
+    setLogsConference(conference)
+    setLoadingLogs(true)
+    setLogs([])
+    
+    try {
+      const result = await getConferenceLogs(conference.conference_uuid)
+      if (result.success && result.data) {
+        setLogs(result.data)
+      } else {
+        toast.error('Failed to load conference logs')
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error)
+      toast.error('An error occurred while fetching logs')
+    } finally {
+      setLoadingLogs(false)
+    }
   }
 
   if (conferences.length === 0) {
@@ -288,6 +314,15 @@ export function ConferenceList({ conferences: initialConferences, projectId }: R
                             <Button 
                               variant="outline" 
                               size="sm" 
+                              onClick={() => handleViewLogs(conference)}
+                              className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300"
+                            >
+                              <History className="h-4 w-4 mr-2" />
+                              Logs
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
                               onClick={() => setPreviewConference(conference)}
                             >
                               <Eye className="h-4 w-4 mr-2" />
@@ -406,6 +441,111 @@ export function ConferenceList({ conferences: initialConferences, projectId }: R
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Logs Modal */}
+      <Dialog open={!!logsConference} onOpenChange={(open) => !open && setLogsConference(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <DialogHeader className="p-6 pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-full">
+                <History className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold">Conference Logs</DialogTitle>
+                <DialogDescription className="text-sm font-medium text-slate-500 line-clamp-1">
+                  {logsConference?.title}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <Separator className="mx-6 w-auto" />
+
+          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+            {loadingLogs ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground animate-pulse font-medium">Fetching history...</p>
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="text-center py-16 space-y-3">
+                <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-slate-100 mb-2">
+                  <History className="h-8 w-8 text-slate-300" />
+                </div>
+                <p className="text-slate-500 font-medium">No activity logs found for this conference.</p>
+                <p className="text-xs text-slate-400">Activity will appear here when participants register or cancel.</p>
+              </div>
+            ) : (
+              <div className="relative pl-6 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                {logs.map((log, index) => (
+                  <div key={log.log_id || index} className="relative">
+                    {/* Timeline Node */}
+                    <div className={`absolute -left-[31px] top-1 h-5 w-5 rounded-full border-4 border-white shadow-sm z-10 ${
+                      log.action === 'RESERVE' ? 'bg-emerald-500' : 'bg-rose-500'
+                    }`} />
+                    
+                    <div className="space-y-3">
+                      {/* Meta Info */}
+                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarDays className="h-3 w-3" />
+                          {format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}
+                        </div>
+                        <div className={`px-2 py-0.5 rounded-full text-[10px] ${
+                          log.action === 'RESERVE' 
+                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+                            : 'bg-rose-100 text-rose-700 border border-rose-200'
+                        }`}>
+                          {log.action}
+                        </div>
+                      </div>
+
+                      {/* Content Card */}
+                      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3 hover:border-slate-300 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-slate-100 p-1.5 rounded-lg">
+                              <User className="h-4 w-4 text-slate-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900 leading-none mb-1">
+                                {log.attendee_name || 'Unknown Attendee'}
+                              </p>
+                              <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                                <ShieldCheck className="h-3 w-3" />
+                                Performed by: <span className="font-semibold text-slate-700">{log.performed_by}</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {log.details && (
+                          <div className="bg-slate-50/80 rounded-lg p-2.5 border border-dashed border-slate-200 flex items-start gap-2">
+                            <ArrowRight className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
+                            <p className="text-xs text-slate-600 italic leading-relaxed">
+                              {log.details}
+                            </p>
+                          </div>
+                        )}
+                        
+                        <div className="text-[10px] text-slate-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
+                          ID: {log.registration_uuid}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-slate-50 border-t flex justify-end">
+            <Button variant="ghost" className="h-9 px-6 font-semibold text-slate-600" onClick={() => setLogsConference(null)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

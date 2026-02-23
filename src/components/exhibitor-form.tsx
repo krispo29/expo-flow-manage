@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Loader2, Store, Shield, User, Mail, MapPin, Ticket, Globe, Phone, Printer } from 'lucide-react'
+import { Loader2, Store, Shield, User, Mail, MapPin, Ticket, Globe, Phone, Printer, Eye, EyeOff } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { type Exhibitor } from '@/app/actions/exhibitor'
@@ -36,7 +36,7 @@ const exhibitorSchema = z.object({
   eventId: z.string().min(1, 'Event is required'),
   companyName: z.string().min(2, 'Company name is required'),
   username: z.string().min(1, 'Username is required'),
-  password: z.string().optional(),
+  password: z.string().optional().refine(val => !val || val.length >= 6, { message: 'Password must be at least 6 characters' }),
   boothNo: z.string().optional(),
   contactPerson: z.string().optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
@@ -63,6 +63,7 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     async function loadEvents() {
@@ -276,10 +277,31 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="text" placeholder="••••••••" className="h-11" {...field} />
+                      <div className="relative">
+                        <Input 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="••••••••" 
+                          className="h-11 pr-10" 
+                          {...field} 
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="size-4 text-slate-400" />
+                          ) : (
+                            <Eye className="size-4 text-slate-400" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
-                    <FormDescription className="text-[11px]">
-                      {initialData ? "Leave blank to keep existing." : "Initial password for login."}
+                    <FormDescription className="text-[11px] flex justify-between">
+                      <span>{initialData ? "Leave blank to keep existing." : "Initial password for login."}</span>
+                      <span className="italic">Minimum 6 characters</span>
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

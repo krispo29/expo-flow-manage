@@ -150,7 +150,6 @@ export async function updateParticipant(registrationUuid: string, formData: Form
       mobile_country_code: formData.get('mobile_country_code') as string,
       mobile_number: formData.get('mobile_number') as string,
       email: formData.get('email') as string,
-      invitation_code: formData.get('invitation_code') as string || '',
       attendee_type_code: formData.get('attendee_type_code') as string
     }
 

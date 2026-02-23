@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -44,6 +44,9 @@ export default function ExhibitorsPage() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Show/Hide password state
+  const [showPassword, setShowPassword] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -121,6 +124,7 @@ export default function ExhibitorsPage() {
   function handleOpenPasswordDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
     setNewPassword('')
+    setShowPassword(false)
     setPasswordDialogOpen(true)
   }
 
@@ -331,19 +335,37 @@ export default function ExhibitorsPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="password" className="text-right">New Password</Label>
-              <Input 
-                id="password" 
-                type="text"
-                value={newPassword} 
-                onChange={e => setNewPassword(e.target.value)} 
-                className="col-span-3" 
-                placeholder="Min 6 characters"
-              />
+              <div className="col-span-3 relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword} 
+                  onChange={e => setNewPassword(e.target.value)} 
+                  className="pr-10" 
+                  placeholder="Min 6 characters"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <div className="col-start-2 col-span-3">
+                <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleResetPassword} disabled={savingPassword}>
+            <Button onClick={handleResetPassword} disabled={savingPassword || newPassword.length < 6}>
               {savingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Save Password
             </Button>

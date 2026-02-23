@@ -28,7 +28,7 @@ import {
   toggleOrganizerStatus,
   type Organizer,
 } from '@/app/actions/organizer'
-import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
@@ -59,7 +59,10 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
   // Exposed handle for parent component
   useImperativeHandle(ref, () => ({
-    openCreateDialog: () => setIsCreateOpen(true)
+    openCreateDialog: () => {
+      setShowPassword(false)
+      setIsCreateOpen(true)
+    }
   }))
 
   // Edit dialog
@@ -70,6 +73,9 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Show/Hide password state
+  const [showPassword, setShowPassword] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -126,6 +132,10 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
       toast.error('Please fill in all fields')
       return
     }
+    if (newOrg.password.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
     setSaving(true)
     const result = await createOrganizer(projectUuid, newOrg)
     setSaving(false)
@@ -171,6 +181,10 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   async function handleResetPassword() {
     if (!resetOrg || !newPassword) {
       toast.error('Please enter a new password')
+      return
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters')
       return
     }
     setSaving(true)
@@ -261,7 +275,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                             variant="ghost"
                             size="icon"
                             title="Reset Password"
-                            onClick={() => { setResetOrg(org); setNewPassword(''); }}
+                            onClick={() => { setResetOrg(org); setNewPassword(''); setShowPassword(false); }}
                           >
                             <KeyRound className="h-4 w-4" />
                           </Button>
@@ -388,18 +402,35 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-password">Password</Label>
-              <Input
-                id="create-password"
-                type="password"
-                value={newOrg.password}
-                onChange={(e) => setNewOrg({ ...newOrg, password: e.target.value })}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="create-password"
+                  type={showPassword ? "text" : "password"}
+                  value={newOrg.password}
+                  onChange={(e) => setNewOrg({ ...newOrg, password: e.target.value })}
+                  className="pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving}>
+            <Button onClick={handleCreate} disabled={saving || newOrg.password.length < 6}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create
             </Button>
@@ -457,18 +488,35 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetOrg(null)}>Cancel</Button>
-            <Button onClick={handleResetPassword} disabled={saving}>
+            <Button onClick={handleResetPassword} disabled={saving || newPassword.length < 6}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Reset Password
             </Button>
