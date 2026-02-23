@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
 import { countries } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
@@ -95,9 +95,9 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         lastName: m.last_name || '',
         email: m.email || '',
         mobile: m.mobile_number || '',
-        phone: m.mobile_number || '', // Mapping to mobile for now
+        phone: m.mobile_number || '',
         position: m.job_position || '',
-        isActive: true, // Assuming active by default
+        isActive: m.is_active ?? true,
         createdAt: new Date().toISOString(),
         companyName: m.company_name || '',
         companyCountry: m.company_country || 'TH',
@@ -133,9 +133,9 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         position: staff.position || '',
         email: staff.email || '',
         mobile: staff.mobile || '',
-        companyName: exhibitor?.companyName || '',
-        companyCountry: getInitialCountry(),
-        companyTel: exhibitor?.phone || ''
+        companyName: staff.companyName || exhibitor?.companyName || '',
+        companyCountry: staff.companyCountry || getInitialCountry(),
+        companyTel: staff.companyTel || exhibitor?.phone || ''
       })
       
       if (!isStandard && staff.title) {
