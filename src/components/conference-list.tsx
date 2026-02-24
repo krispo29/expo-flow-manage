@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { Conference, getConferenceLogs, ConferenceLog } from '@/app/actions/conference'
+import { getOrganizerConferenceLogs } from '@/app/actions/organizer-conference'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,9 +24,11 @@ import { Separator } from '@/components/ui/separator'
 interface ConferenceListProps {
   conferences: Conference[]
   projectId: string
+  userRole?: string
 }
 
-export function ConferenceList({ conferences: initialConferences, projectId }: Readonly<ConferenceListProps>) {
+export function ConferenceList({ conferences: initialConferences, projectId, userRole }: Readonly<ConferenceListProps>) {
+  const isOrganizer = userRole === 'ORGANIZER'
   
   // Deduplicate conferences based on conference_uuid to prevent key collisions
   const conferences = Array.from(
@@ -105,7 +108,9 @@ export function ConferenceList({ conferences: initialConferences, projectId }: R
     setLogs([])
     
     try {
-      const result = await getConferenceLogs(conference.conference_uuid)
+      const result = isOrganizer
+        ? await getOrganizerConferenceLogs(conference.conference_uuid)
+        : await getConferenceLogs(conference.conference_uuid)
       if (result.success && result.data) {
         setLogs(result.data)
       } else {

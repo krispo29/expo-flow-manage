@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getConferences } from '@/app/actions/conference'
+import { getOrganizerConferences } from '@/app/actions/organizer-conference'
 import { ConferenceExcelOperations } from '@/components/conference-excel'
+import { getUserRole } from '@/app/actions/auth'
 
 export default async function ConferencesPage({
   searchParams,
@@ -14,7 +16,12 @@ export default async function ConferencesPage({
 }>) {
   const resolvedSearchParams = await searchParams;
   const projectId = resolvedSearchParams.projectId || "horti-agri";
-  const { data: conferences } = await getConferences(projectId);
+  const userRole = await getUserRole();
+
+  // Use organizer endpoint if role is ORGANIZER
+  const { data: conferences } = userRole === 'ORGANIZER'
+    ? await getOrganizerConferences()
+    : await getConferences(projectId);
 
   return (
     <div className="space-y-6">
@@ -36,7 +43,7 @@ export default async function ConferencesPage({
         </div>
       </div>
 
-      <ConferenceList conferences={conferences || []} projectId={projectId} />
+      <ConferenceList conferences={conferences || []} projectId={projectId} userRole={userRole} />
     </div>
   )
 }

@@ -2,6 +2,8 @@
 
 import { ConferenceForm } from '@/components/conference-form'
 import { getConferenceById } from '@/app/actions/conference'
+import { getOrganizerConferenceById } from '@/app/actions/organizer-conference'
+import { getUserRole } from '@/app/actions/auth'
 import { notFound } from 'next/navigation'
 
 interface PageProps {
@@ -16,8 +18,12 @@ export default async function EditConferencePage({
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
   const projectId = resolvedSearchParams.projectId || "horti-agri";
+  const userRole = await getUserRole();
   
-  const { conference } = await getConferenceById(id)
+  // Use organizer endpoint if role is ORGANIZER
+  const { conference } = userRole === 'ORGANIZER'
+    ? await getOrganizerConferenceById(id)
+    : await getConferenceById(id)
   
   if (!conference) {
     notFound()
@@ -25,7 +31,7 @@ export default async function EditConferencePage({
 
   return (
     <div className="py-6">
-      <ConferenceForm projectId={projectId} conference={conference} />
+      <ConferenceForm projectId={projectId} conference={conference} userRole={userRole} />
     </div>
   )
 }

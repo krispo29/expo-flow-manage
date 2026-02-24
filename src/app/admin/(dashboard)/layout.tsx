@@ -15,20 +15,25 @@ import {
 } from "@/components/ui/sidebar"
 import { ProjectGuard } from "@/components/project-guard"
 import { getProjects } from "@/app/actions/project"
+import { getUserRole } from "@/app/actions/auth"
 import { CommandPalette } from "@/components/command-palette"
 
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Fetch projects from server action
-  const { projects } = await getProjects()
+export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const userRole = await getUserRole()
   
-  // Map to sidebar format
-  const sidebarProjects = projects?.map(p => ({
-    name: p.project_name,
-    id: p.project_uuid,
-    url: '/admin/projects',
-  })) || []
+  // Organizers don't need project selection — the backend knows their project from the token
+  let sidebarProjects: { name: string; id: string; url: string }[] = []
+  
+  if (userRole !== 'ORGANIZER') {
+    const { projects } = await getProjects()
+    sidebarProjects = projects?.map(p => ({
+      name: p.project_name,
+      id: p.project_uuid,
+      url: '/admin/projects',
+    })) || []
+  }
 
   return (
     <ProjectGuard projects={sidebarProjects}>

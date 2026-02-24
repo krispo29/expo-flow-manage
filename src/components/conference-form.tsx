@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { format } from 'date-fns'
 import { Conference, createConference, updateConference, getProjectShowDates, getRooms, Room, ShowDate } from '@/app/actions/conference'
+import { createOrganizerConference, updateOrganizerConference, getOrganizerProjectShowDates, getOrganizerRooms } from '@/app/actions/organizer-conference'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,9 +17,11 @@ import Link from 'next/link'
 interface ConferenceFormProps {
   projectId: string
   conference?: Conference
+  userRole?: string
 }
 
-export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFormProps>) {
+export function ConferenceForm({ projectId, conference, userRole }: Readonly<ConferenceFormProps>) {
+  const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
@@ -32,8 +34,8 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
     async function fetchData() {
       try {
         const [datesResult, roomsResult] = await Promise.all([
-          getProjectShowDates(),
-          getRooms()
+          isOrganizer ? getOrganizerProjectShowDates() : getProjectShowDates(),
+          isOrganizer ? getOrganizerRooms() : getRooms()
         ])
         
         if (roomsResult.success) {
@@ -51,7 +53,7 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
     }
     
     fetchData()
-  }, [])
+  }, [isOrganizer])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -61,8 +63,8 @@ export function ConferenceForm({ projectId, conference }: Readonly<ConferenceFor
       const formData = new FormData(event.currentTarget)
       
       const result = conference 
-        ? await updateConference(conference.conference_uuid, formData)
-        : await createConference(formData)
+        ? (isOrganizer ? await updateOrganizerConference(conference.conference_uuid, formData) : await updateConference(conference.conference_uuid, formData))
+        : (isOrganizer ? await createOrganizerConference(formData) : await createConference(formData))
 
       if (result.success) {
         toast.success(conference ? 'Conference updated' : 'Conference created')
