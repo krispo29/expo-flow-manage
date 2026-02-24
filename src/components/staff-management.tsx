@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { getOrganizerExhibitorMembers } from '@/app/actions/organizer-exhibitor'
 import { countries } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
@@ -38,9 +39,11 @@ interface StaffManagementProps {
   readonly exhibitorId: string
   readonly projectId: string
   readonly exhibitor?: any
+  readonly userRole?: string
 }
 
-export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffManagementProps) {
+export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }: StaffManagementProps) {
+  const isOrganizer = userRole === 'ORGANIZER'
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -82,8 +85,15 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
 
   const fetchStaff = useCallback(async () => {
     setLoading(true)
-    const { getExhibitorMembers } = await import('@/app/actions/exhibitor')
-    const result = await getExhibitorMembers(projectId, exhibitorId)
+    
+    let result
+    if (isOrganizer) {
+      result = await getOrganizerExhibitorMembers(exhibitorId)
+    } else {
+      const { getExhibitorMembers } = await import('@/app/actions/exhibitor')
+      result = await getExhibitorMembers(projectId, exhibitorId)
+    }
+    
     if (result.success && result.members) {
       // Map members to Staff format
       const mappedStaff: Staff[] = result.members.map((m: any) => ({
@@ -97,7 +107,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         mobile: m.mobile_number || '',
         phone: m.mobile_number || '', // Mapping to mobile for now
         position: m.job_position || '',
-        isActive: true, // Assuming active by default
+        isActive: m.is_active !== undefined ? m.is_active : true,
         createdAt: new Date().toISOString(),
         companyName: m.company_name || '',
         companyCountry: m.company_country || 'TH',
@@ -108,7 +118,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
       setStaffList([])
     }
     setLoading(false)
-  }, [exhibitorId, projectId])
+  }, [exhibitorId, projectId, isOrganizer])
 
   useEffect(() => {
     fetchStaff()

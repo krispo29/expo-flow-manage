@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { createExhibitor, updateExhibitor } from '@/app/actions/exhibitor'
+import { createOrganizerExhibitor, updateOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { getEvents, type Event } from '@/app/actions/settings'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,9 +58,11 @@ type ExhibitorFormValues = z.infer<typeof exhibitorSchema>
 interface ExhibitorFormProps {
   initialData?: Exhibitor
   projectId: string
+  userRole?: string
 }
 
-export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorFormProps>) {
+export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
+  const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
@@ -130,15 +133,23 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
     }
 
     let result
-    if (initialData) {
-      result = await updateExhibitor(projectId, initialData.id, payload as any)
+    if (isOrganizer) {
+      if (initialData) {
+        result = await updateOrganizerExhibitor(initialData.id, payload as any)
+      } else {
+        result = await createOrganizerExhibitor(payload as any)
+      }
     } else {
-      result = await createExhibitor(projectId, payload as any)
+      if (initialData) {
+        result = await updateExhibitor(projectId, initialData.id, payload as any)
+      } else {
+        result = await createExhibitor(projectId, payload as any)
+      }
     }
 
     if (result.success) {
       toast.success(initialData ? 'Exhibitor updated successfully' : 'Exhibitor created successfully')
-      router.push(`/admin/exhibitors?projectId=${projectId}`)
+      router.push(isOrganizer ? '/admin/exhibitors' : `/admin/exhibitors?projectId=${projectId}`)
       router.refresh()
     } else {
       toast.error(result.error || 'Something went wrong')
