@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams, useParams } from 'next/navigation' // Corrected import
+import { useSearchParams, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getExhibitorById } from '@/app/actions/exhibitor'
+import { getOrganizerExhibitorById } from '@/app/actions/organizer-exhibitor'
+import { useAuthStore } from '@/store/useAuthStore'
 import { ExhibitorForm } from '@/components/exhibitor-form'
 import { StaffManagement } from '@/components/staff-management'
 import { Button } from '@/components/ui/button'
@@ -14,23 +16,33 @@ export default function EditExhibitorPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const id = params?.id as string
+  const { user } = useAuthStore()
+  const isOrganizer = user?.role === 'ORGANIZER'
   
   const [exhibitor, setExhibitor] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchExhibitor() {
-      if (!id || !projectId) return
-      const result = await getExhibitorById(projectId, id)
+      if (!id) return
+      if (!isOrganizer && !projectId) return
+      
+      let result
+      if (isOrganizer) {
+        result = await getOrganizerExhibitorById(id)
+      } else {
+        result = await getExhibitorById(projectId!, id)
+      }
+      
       if (result.success) {
         setExhibitor(result.exhibitor)
       }
       setLoading(false)
     }
     fetchExhibitor()
-  }, [id, projectId])
+  }, [id, projectId, isOrganizer])
 
-  if (!projectId) {
+  if (!isOrganizer && !projectId) {
     return <div>Project ID is required</div>
   }
 
@@ -44,10 +56,12 @@ export default function EditExhibitorPage() {
 
   // TODO: Add 404 handling if exhibitor not found
 
+  const backUrl = isOrganizer ? '/admin/exhibitors' : `/admin/exhibitors?projectId=${projectId}`
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href={`/admin/exhibitors?projectId=${projectId}`}>
+        <Link href={backUrl}>
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -57,12 +71,12 @@ export default function EditExhibitorPage() {
 
       <div className="bg-transparent">
         {exhibitor && (
-          <ExhibitorForm initialData={exhibitor} projectId={projectId} />
+          <ExhibitorForm initialData={exhibitor} projectId={projectId || ''} userRole={user?.role} />
         )}
       </div>
       
-      {exhibitor && projectId && (
-        <StaffManagement exhibitorId={exhibitor.id} projectId={projectId} exhibitor={exhibitor} />
+      {exhibitor && (
+        <StaffManagement exhibitorId={exhibitor.id} projectId={projectId || ''} exhibitor={exhibitor} userRole={user?.role} />
       )}
     </div>
   )

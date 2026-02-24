@@ -79,69 +79,86 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton 
-                  size="lg" 
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-transparent hover:border-sidebar-border transition-all"
-                >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                    <Frame className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight leading-4">
-                    <span className="truncate font-bold uppercase tracking-tight text-[11px] text-muted-foreground/80">Active Project</span>
-                    <span className="truncate font-semibold text-sm">
-                      {activeProject?.name || "Select Project"}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4 opacity-50" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl" align="start">
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-widest">Projects</div>
-                {projects?.map((project) => (
-                  <DropdownMenuItem
-                    key={project.id}
-                    onClick={() => handleProjectChange(project.id)}
-                    className="gap-2 p-2 focus:bg-primary/5 focus:text-primary cursor-pointer"
+            {user?.role === 'ORGANIZER' ? (
+              <SidebarMenuButton 
+                size="lg" 
+                className="border border-primary/10 bg-gradient-to-br from-primary/5 to-transparent cursor-default hover:bg-primary/10 transition-all duration-500 rounded-xl h-14"
+              >
+                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-primary/5 group-hover:scale-105 transition-transform duration-500">
+                  <Frame className="size-5" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight ml-2">
+                  <span className="truncate font-bold text-[14px] tracking-tight text-foreground">Organizer</span>
+                  <span className="truncate text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-[0.1em] mt-0.5">Management Hub</span>
+                </div>
+              </SidebarMenuButton>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton 
+                    size="lg" 
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-primary/10 bg-gradient-to-br from-primary/5 to-transparent hover:bg-primary/10 transition-all duration-500 rounded-xl h-14"
                   >
-                    <Frame className="size-4" />
-                    <span className="font-medium">{project.name}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-primary/5 group-hover:scale-105 transition-transform duration-500">
+                      <Frame className="size-5" />
+                    </div>
+                    <div className="grid flex-1 text-left text-sm leading-tight ml-2">
+                      <span className="truncate text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-[0.1em] mb-0.5">Active Project</span>
+                      <span className="truncate font-bold text-[14px] tracking-tight text-foreground">
+                        {activeProject?.name || "Select Project"}
+                      </span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto size-4 opacity-30" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl" align="start">
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-widest">Projects</div>
+                  {projects?.map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      onClick={() => handleProjectChange(project.id)}
+                      className="gap-2 p-2 focus:bg-primary/5 focus:text-primary cursor-pointer"
+                    >
+                      <Frame className="size-4" />
+                      <span className="font-medium">{project.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="gap-0">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
-            Navigation
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  tooltip="Dashboard" 
-                  className={cn(
-                    "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                    isActive('/admin') 
-                      ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                      : "hover:bg-sidebar-accent/50"
-                  )}
-                  isActive={isActive('/admin')}
-                >
-                  <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
-                    <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {user?.role !== 'ORGANIZER' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+              Navigation
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    tooltip="Dashboard" 
+                    className={cn(
+                      "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                      isActive('/admin') 
+                        ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                        : "hover:bg-sidebar-accent/50"
+                    )}
+                    isActive={isActive('/admin')}
+                  >
+                    <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
+                      <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>

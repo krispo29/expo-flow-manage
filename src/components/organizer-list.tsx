@@ -118,14 +118,6 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectUuid])
 
-  function fillMockData() {
-    setNewOrg({
-      username: `org_${Math.floor(Math.random() * 10000)}`,
-      password: 'password123',
-      full_name: 'Test Organizer'
-    })
-    toast.success('Mock data filled')
-  }
 
   async function handleCreate() {
     if (!newOrg.username || !newOrg.password || !newOrg.full_name) {
@@ -373,12 +365,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <div className="flex justify-between items-center pr-8">
-              <DialogTitle>Add New Organizer</DialogTitle>
-              <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
-                Fill Mock Data
-              </Button>
-            </div>
+            <DialogTitle>Add New Organizer</DialogTitle>
             <DialogDescription>
               Create a new organizer account for this project.
             </DialogDescription>

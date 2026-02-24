@@ -66,12 +66,6 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectUuid])
 
-  function fillMockData() {
-    setNewInvite({
-      company_name: 'The Deft AI Research'
-    })
-    toast.success('Mock data filled')
-  }
 
   async function handleCreate() {
     if (!newInvite.company_name) {
@@ -239,25 +233,24 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
               
               <div className="flex items-center gap-1 mx-2">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = currentPage
-                  if (currentPage <= 3) pageNum = i + 1
-                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
-                  else pageNum = currentPage - 2 + i
-
-                  if (pageNum > 0 && pageNum <= totalPages) {
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8 text-xs"
-                        onClick={() => goToPage(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    )
+                  let pageNum = i + 1
+                  if (totalPages > 5) {
+                    if (currentPage <= 3) pageNum = i + 1
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                    else pageNum = currentPage - 2 + i
                   }
-                  return null
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="icon"
+                      className="h-8 w-8 text-xs"
+                      onClick={() => goToPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  )
                 })}
               </div>
 
@@ -288,12 +281,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <div className="flex justify-between items-center pr-8">
-              <DialogTitle>Add Invitation Code</DialogTitle>
-              <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
-                Fill Mock Data
-              </Button>
-            </div>
+            <DialogTitle>Add Invitation Code</DialogTitle>
             <DialogDescription>Create a new invitation code for a company.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

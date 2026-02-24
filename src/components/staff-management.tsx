@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
 import { countries } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
@@ -31,16 +32,18 @@ import {
 } from "@/components/ui/select"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Loader2, GripVertical, Mail, Power } from 'lucide-react'
+import { Plus, Pencil, Loader2, GripVertical, Mail, Power } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface StaffManagementProps {
   readonly exhibitorId: string
   readonly projectId: string
   readonly exhibitor?: any
+  readonly userRole?: string
 }
 
-export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffManagementProps) {
+export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }: StaffManagementProps) {
+  const isOrganizer = userRole === 'ORGANIZER'
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -82,8 +85,15 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
 
   const fetchStaff = useCallback(async () => {
     setLoading(true)
-    const { getExhibitorMembers } = await import('@/app/actions/exhibitor')
-    const result = await getExhibitorMembers(projectId, exhibitorId)
+    
+    let result
+    if (isOrganizer) {
+      result = await getOrganizerExhibitorMembers(exhibitorId)
+    } else {
+      const { getExhibitorMembers } = await import('@/app/actions/exhibitor')
+      result = await getExhibitorMembers(projectId, exhibitorId)
+    }
+    
     if (result.success && result.members) {
       // Map members to Staff format
       const mappedStaff: Staff[] = result.members.map((m: any) => ({
@@ -97,7 +107,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
         mobile: m.mobile_number || '',
         phone: m.mobile_number || '',
         position: m.job_position || '',
-        isActive: m.is_active ?? true,
+        isActive: m.is_active !== undefined ? m.is_active : true,
         createdAt: new Date().toISOString(),
         companyName: m.company_name || '',
         companyCountry: m.company_country || 'TH',
@@ -108,7 +118,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
       setStaffList([])
     }
     setLoading(false)
-  }, [exhibitorId, projectId])
+  }, [exhibitorId, projectId, isOrganizer])
 
   useEffect(() => {
     fetchStaff()
@@ -184,10 +194,18 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
     }
 
     let result
-    if (editingStaff) {
-      result = await updateStaff(projectId, editingStaff.id, payload)
+    if (isOrganizer) {
+      if (editingStaff) {
+        result = await updateOrganizerMember(editingStaff.id, payload)
+      } else {
+        result = await createOrganizerMember(payload)
+      }
     } else {
-      result = await createStaff(projectId, payload)
+      if (editingStaff) {
+        result = await updateStaff(projectId, editingStaff.id, payload)
+      } else {
+        result = await createStaff(projectId, payload)
+      }
     }
 
     if (result.success) {
@@ -218,8 +236,13 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
   }
 
   async function handleToggleStatus(staff: Staff) {
-    const { toggleStatusStaff } = await import('@/app/actions/staff')
-    const result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
+    let result
+    if (isOrganizer) {
+      result = await toggleStatusOrganizerMember(exhibitorId, staff.id)
+    } else {
+      const { toggleStatusStaff } = await import('@/app/actions/staff')
+      result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
+    }
     if (result.success) {
       toast.success('Status toggled successfully')
       fetchStaff()
@@ -230,6 +253,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
 
   function handleOpenEmailDialog(staff: Staff) {
     setSelectedStaff(staff)
+    setTargetEmail(staff.email || '')
     setEmailDialogOpen(true)
   }
 
@@ -237,7 +261,12 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
     if (!selectedStaff) return
     
     setSendingEmail(true)
-    const result = await sendStaffCredentials(projectId, selectedStaff.id)
+    let result
+    if (isOrganizer) {
+      result = await resendEmailOrganizerMember([selectedStaff.id])
+    } else {
+      result = await sendStaffCredentials(projectId, selectedStaff.id)
+    }
     setSendingEmail(false)
     
     if (result.success) {
@@ -304,13 +333,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor }: StaffMana
                         <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
                       </Button>
                        <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(staff)}>
-                        <Mail className="h-4 w-4" />
+                        <Mail className="h-4 w-4 text-purple-500" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
                         <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(staff.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>

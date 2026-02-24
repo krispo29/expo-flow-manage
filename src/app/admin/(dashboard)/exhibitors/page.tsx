@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getExhibitors, deleteExhibitor, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials } from '@/app/actions/exhibitor'
+import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
+import { useAuthStore } from '@/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -31,6 +33,8 @@ import { Badge } from '@/components/ui/badge'
 export default function ExhibitorsPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
+  const { user } = useAuthStore()
+  const isOrganizer = user?.role === 'ORGANIZER'
   
   const [exhibitors, setExhibitors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,6 +45,7 @@ export default function ExhibitorsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
+  const [targetEmail, setTargetEmail] = useState('')
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -77,9 +82,16 @@ export default function ExhibitorsPage() {
 
   // Wait for fetchExhibitors
   const fetchExhibitors = async () => {
-    if (!projectId) return
+    if (!isOrganizer && !projectId) return
     setLoading(true)
-    const result = await getExhibitors(projectId)
+    
+    let result
+    if (isOrganizer) {
+      result = await getOrganizerExhibitors()
+    } else {
+      result = await getExhibitors(projectId!)
+    }
+    
     if (result.success && result.exhibitors) {
       setExhibitors(result.exhibitors)
     }
@@ -89,7 +101,7 @@ export default function ExhibitorsPage() {
   useEffect(() => {
     fetchExhibitors()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId])
+  }, [projectId, isOrganizer])
 
   async function handleDelete(id: string) {
     toast("Delete this exhibitor?", {
@@ -111,8 +123,14 @@ export default function ExhibitorsPage() {
   }
 
   async function handleToggleStatus(id: string) {
-    if (!projectId) return
-    const result = await toggleStatusExhibitor(projectId, id)
+    let result
+    if (isOrganizer) {
+      result = await toggleStatusOrganizerExhibitor(id)
+    } else {
+      if (!projectId) return
+      result = await toggleStatusExhibitor(projectId, id)
+    }
+    
     if (result.success) {
       toast.success('Status toggled successfully')
       fetchExhibitors()
@@ -130,14 +148,21 @@ export default function ExhibitorsPage() {
 
   function handleOpenEmailDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
+    setTargetEmail(exhibitor.username || exhibitor.email || '')
     setEmailDialogOpen(true)
   }
 
   async function handleSendCredentials() {
-    if (!selectedExhibitor || !projectId) return
+    if (!selectedExhibitor) return
     
     setSendingEmail(true)
-    const result = await sendExhibitorCredentials(projectId, selectedExhibitor.id)
+    let result
+    if (isOrganizer) {
+      result = await sendMailCredentialOrganizerExhibitor([selectedExhibitor.id])
+    } else {
+      if (!projectId) return
+      result = await sendExhibitorCredentials(projectId, selectedExhibitor.id)
+    }
     setSendingEmail(false)
     
     if (result.success) {
@@ -149,14 +174,20 @@ export default function ExhibitorsPage() {
   }
 
   async function handleResetPassword() {
-    if (!selectedExhibitor || !projectId) return
+    if (!selectedExhibitor) return
     if (newPassword.length < 6) {
       toast.error('Password must be at least 6 characters')
       return
     }
     
     setSavingPassword(true)
-    const result = await forcePasswordResetExhibitor(projectId, selectedExhibitor.id, newPassword)
+    let result
+    if (isOrganizer) {
+      result = await forceResetPasswordOrganizerExhibitor(selectedExhibitor.id, newPassword)
+    } else {
+      if (!projectId) return
+      result = await forcePasswordResetExhibitor(projectId, selectedExhibitor.id, newPassword)
+    }
     setSavingPassword(false)
     
     if (result.success) {
@@ -167,7 +198,7 @@ export default function ExhibitorsPage() {
     }
   }
 
-  if (!projectId) {
+  if (!isOrganizer && !projectId) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh]">
         <h2 className="text-xl font-semibold">No Project Selected</h2>
@@ -183,7 +214,7 @@ export default function ExhibitorsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Exhibitors</h1>
-        <Link href={`/admin/exhibitors/new?projectId=${projectId}`}>
+        <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
           <Button>
             <Plus className="mr-2 h-4 w-4" /> Add Exhibitor
           </Button>
@@ -255,7 +286,7 @@ export default function ExhibitorsPage() {
                               <Mail className="h-4 w-4 text-purple-500" />
                             </Button>
                           
-                            <Link href={`/admin/exhibitors/${item.id}?projectId=${projectId}`}>
+                            <Link href={isOrganizer ? `/admin/exhibitors/${item.id}` : `/admin/exhibitors/${item.id}?projectId=${projectId}`}>
                               <Button variant="ghost" size="icon" title="Edit/Manage">
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -376,9 +407,21 @@ export default function ExhibitorsPage() {
           <DialogHeader>
             <DialogTitle>Send Credentials</DialogTitle>
             <DialogDescription>
-              Are you sure you want to send the login credentials to {selectedExhibitor?.companyName}? The email will be sent to their registered contact email.
+              Send login credentials to {selectedExhibitor?.companyName}.
             </DialogDescription>
           </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="targetEmail" className="text-right">Email</Label>
+              <Input 
+                id="targetEmail" 
+                value={targetEmail} 
+                onChange={e => setTargetEmail(e.target.value)} 
+                className="col-span-3" 
+                placeholder="example@email.com"
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSendCredentials} disabled={sendingEmail}>

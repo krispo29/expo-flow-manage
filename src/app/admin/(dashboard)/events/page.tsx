@@ -1,11 +1,13 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
+import { useAuthStore } from '@/store/useAuthStore'
 import { EventSettings } from '@/components/settings/event-settings'
 
 export default function EventsPage() {
   const searchParams = useSearchParams()
-  const projectId = searchParams.get('projectId') || ''
+  const { user } = useAuthStore()
+  const projectId = searchParams.get('projectId') || user?.projectId || ''
 
   if (!projectId) {
     return (

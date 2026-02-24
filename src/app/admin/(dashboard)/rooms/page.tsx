@@ -1,11 +1,13 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
+import { useAuthStore } from '@/store/useAuthStore'
 import { RoomSettings } from '@/components/settings/room-settings'
 
 export default function RoomsPage() {
   const searchParams = useSearchParams()
-  const projectId = searchParams.get('projectId') || ''
+  const { user } = useAuthStore()
+  const projectId = searchParams.get('projectId') || user?.projectId || ''
 
   if (!projectId) {
     return (

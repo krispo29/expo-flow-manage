@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { createExhibitor, updateExhibitor } from '@/app/actions/exhibitor'
+import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents } from '@/app/actions/organizer-exhibitor'
 import { getEvents, type Event } from '@/app/actions/settings'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,9 +58,11 @@ type ExhibitorFormValues = z.infer<typeof exhibitorSchema>
 interface ExhibitorFormProps {
   initialData?: Exhibitor
   projectId: string
+  userRole?: string
 }
 
-export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorFormProps>) {
+export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
+  const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
@@ -67,13 +70,18 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
 
   useEffect(() => {
     async function loadEvents() {
-      const result = await getEvents(projectId)
+      let result
+      if (isOrganizer) {
+        result = await getOrganizerEvents()
+      } else {
+        result = await getEvents(projectId)
+      }
       if (result.success && result.events) {
-        setEvents(result.events.filter(e => e.is_active))
+        setEvents(result.events.filter((e: Event) => e.is_active))
       }
     }
     loadEvents()
-  }, [projectId])
+  }, [projectId, isOrganizer])
 
   const defaultValues: Partial<ExhibitorFormValues> = initialData
     ? {
@@ -130,15 +138,23 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
     }
 
     let result
-    if (initialData) {
-      result = await updateExhibitor(projectId, initialData.id, payload as any)
+    if (isOrganizer) {
+      if (initialData) {
+        result = await updateOrganizerExhibitor(initialData.id, payload as any)
+      } else {
+        result = await createOrganizerExhibitor(payload as any)
+      }
     } else {
-      result = await createExhibitor(projectId, payload as any)
+      if (initialData) {
+        result = await updateExhibitor(projectId, initialData.id, payload as any)
+      } else {
+        result = await createExhibitor(projectId, payload as any)
+      }
     }
 
     if (result.success) {
       toast.success(initialData ? 'Exhibitor updated successfully' : 'Exhibitor created successfully')
-      router.push(`/admin/exhibitors?projectId=${projectId}`)
+      router.push(isOrganizer ? '/admin/exhibitors' : `/admin/exhibitors?projectId=${projectId}`)
       router.refresh()
     } else {
       toast.error(result.error || 'Something went wrong')
@@ -146,35 +162,13 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
     setLoading(false)
   }
 
-  function fillMockData() {
-    form.reset({
-      eventId: events[0]?.event_uuid || '',
-      companyName: 'Global Tech Solutions',
-      username: `GT-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-      password: 'password123',
-      boothNo: 'B-205',
-      contactPerson: 'Alice Smith',
-      email: 'alice@globaltech.com',
-      phone: '+66 81 234 5678',
-      fax: '+66 2 123 4567',
-      website: 'https://globaltech-solutions.example.com',
-      address: '123 Innovation Park, Rama IV Rd',
-      city: 'Bangkok',
-      province: 'Bangkok',
-      country: 'TH',
-      postalCode: '10330',
-      quota: 5,
-      overQuota: 2,
-    })
-    toast.success('Mock data filled')
-  }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-8 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Company Profile Card */}
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
+          <Card className={`shadow-sm border-slate-200 overflow-hidden ${initialData ? 'md:col-span-2' : ''}`}>
             <CardHeader className="bg-slate-50/50 border-b pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
@@ -185,67 +179,69 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
               <CardDescription>Basic information about the exhibitor.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <FormField
-                control={form.control}
-                name="eventId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Assignment</FormLabel>
-                    <Select disabled={!!initialData} onValueChange={field.onChange} defaultValue={field.value}>
+              <div className={initialData ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
+                <FormField
+                  control={form.control}
+                  name="eventId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Assignment</FormLabel>
+                      <Select disabled={!!initialData} onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an event" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {events.map(e => (
+                            <SelectItem key={e.event_uuid} value={e.event_uuid}>
+                              {e.event_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The event this exhibitor belongs to (cannot be changed after creation).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an event" />
-                        </SelectTrigger>
+                        <Input placeholder="Acme Corp" className="h-11" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {events.map(e => (
-                          <SelectItem key={e.event_uuid} value={e.event_uuid}>
-                            {e.event_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      The event this exhibitor belongs to (cannot be changed after creation).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Acme Corp" className="h-11" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                        <Input placeholder="https://example.com" className="h-11 pl-10" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem className={initialData ? 'md:col-span-2' : ''}>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                          <Input placeholder="https://example.com" className="h-11 pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
-          {/* Account Access Card */}
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
+          {/* Account Access Card - Only show on create */}
+          {!initialData && <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
@@ -300,7 +296,7 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
                       </div>
                     </FormControl>
                     <FormDescription className="text-[11px] flex justify-between">
-                      <span>{initialData ? "Leave blank to keep existing." : "Initial password for login."}</span>
+                      <span>Initial password for login.</span>
                       <span className="italic">Minimum 6 characters</span>
                     </FormDescription>
                     <FormMessage />
@@ -308,7 +304,7 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
                 )}
               />
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Contact Information Card */}
           <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
@@ -541,11 +537,6 @@ export function ExhibitorForm({ initialData, projectId }: Readonly<ExhibitorForm
             <Button type="button" variant="ghost" onClick={() => router.back()}>
               Cancel
             </Button>
-            {!initialData && (
-              <Button type="button" variant="outline" onClick={fillMockData}>
-                Fill Mock Data
-              </Button>
-            )}
           </div>
           <Button type="submit" size="lg" className="min-w-[200px] h-12 shadow-md hover:shadow-lg transition-all" disabled={loading}>
             {loading ? (

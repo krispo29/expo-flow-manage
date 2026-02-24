@@ -37,8 +37,7 @@ import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries } from '@/lib/countries'
 // import { ParticipantExcelOperations } from './participant-excel'
-import { BadgePrint } from './badge-print'
-import { useReactToPrint } from 'react-to-print'
+import { printBadge } from '@/utils/print-badge'
 
 const PAGE_SIZE = 10
 const CONF_PAGE_SIZE = 9
@@ -72,9 +71,6 @@ export function ParticipantList({
   const [confCurrentPage, setConfCurrentPage] = useState(1)
   const [showOnlyReserved, setShowOnlyReserved] = useState(false)
   
-  // Print State
-  const [printParticipant, setPrintParticipant] = useState<Participant | null>(null)
-  const printRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   
   // Dialog Form State for controlled components
@@ -83,22 +79,26 @@ export function ParticipantList({
   const [residenceCountry, setResidenceCountry] = useState('VN')
   const [mobileCountryCode, setMobileCountryCode] = useState('VN')
   
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: "Participant Badge",
-    onAfterPrint: () => setPrintParticipant(null),
-  })
-
   const onPrintClick = (p: Participant) => {
-    setPrintParticipant(p)
-    setTimeout(() => {
-        handlePrint()
-    }, 100)
+    printBadge({
+      firstName: p.first_name || '',
+      lastName: p.last_name || '',
+      companyName: p.company_name || '',
+      country: (p as any).residence_country || 'THAILAND',
+      registrationCode: p.registration_code || '',
+      category: p.attendee_type_code || 'VISITOR',
+    })
   }
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+
+  // Email Dialog State
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [emailTarget, setEmailTarget] = useState<Participant | null>(null)
+  const [targetEmail, setTargetEmail] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   // Sliced participants for pagination
   const totalPages = Math.ceil(participants.length / PAGE_SIZE)
@@ -198,25 +198,24 @@ export function ParticipantList({
     }
   }
 
-  function handleResendEmail(p: Participant) {
-    toast(`Resend email confirmation to ${p.email}?`, {
-      action: {
-        label: "Send",
-        onClick: () => {
-          (async () => {
-            setLoading(true)
-            const result = await resendEmailConfirmation([p.registration_uuid])
-            setLoading(false)
+  function handleOpenEmailDialog(p: Participant) {
+    setEmailTarget(p)
+    setTargetEmail(p.email || '')
+    setEmailDialogOpen(true)
+  }
 
-            if (result.success) {
-              toast.success('Email confirmation sent')
-            } else {
-              toast.error(result.error || 'Failed to resend email')
-            }
-          })()
-        },
-      },
-    })
+  async function handleSendEmail() {
+    if (!emailTarget) return
+    setSendingEmail(true)
+    const result = await resendEmailConfirmation([emailTarget.registration_uuid])
+    setSendingEmail(false)
+
+    if (result.success) {
+      toast.success('Email confirmation sent')
+      setEmailDialogOpen(false)
+    } else {
+      toast.error(result.error || 'Failed to resend email')
+    }
   }
 
   async function openConferenceDialog(p: Participant) {
@@ -273,44 +272,10 @@ export function ParticipantList({
     setConfLoading(false)
   }
 
-  function fillMockData() {
-    const form = formRef.current
-    if (!form) return
- 
-    const mockData = {
-      first_name: 'John',
-      last_name: 'Wick',
-      email: `john.wick.${Math.floor(Math.random() * 1000)}@continental.com`,
-      mobile_country_code: '+66',
-      mobile_number: '0812345678',
-      company_name: 'The Continental',
-      job_position: 'Legendary Assassin',
-      residence_country: 'Thailand',
-      invitation_code: 'EXPO2024'
-    }
- 
-    Object.entries(mockData).forEach(([key, value]) => {
-      const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement
-      if (input) {
-        input.value = value
-      }
-    })
- 
-    // Update Select States
-    setAttendeeType('VI')
-    setTitle('Mr')
-
-    toast.success('Mock data filled')
-  }
 
   return (
     <div className="space-y-4">
-      {/* Hidden Print Area */}
-      <div style={{ display: "none" }}>
-        <div ref={printRef}>
-            {printParticipant && <BadgePrint participant={printParticipant} />}
-        </div>
-      </div>
+
 
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <form onSubmit={handleSearch} className="flex gap-2 flex-1">
@@ -399,7 +364,7 @@ export function ParticipantList({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                       <Button variant="outline" size="icon" onClick={() => handleResendEmail(p)} title="Resend Email">
+                       <Button variant="outline" size="icon" onClick={() => handleOpenEmailDialog(p)} title="Resend Email">
                          <Mail className="h-4 w-4 text-purple-500" />
                        </Button>
                        <Button variant="outline" size="icon" onClick={() => openConferenceDialog(p)} title="Manage Conferences">
@@ -470,14 +435,7 @@ export function ParticipantList({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex justify-between items-center pr-8">
-              <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
-              {!selectedParticipant && (
-                <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
-                  Fill Mock Data
-                </Button>
-              )}
-            </div>
+            <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
           </DialogHeader>
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
@@ -585,6 +543,36 @@ export function ParticipantList({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resend Email Confirmation</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Send email confirmation to <span className="font-medium text-foreground">{emailTarget?.first_name} {emailTarget?.last_name}</span>.
+            </p>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="participantEmail" className="text-right">Email</Label>
+              <Input 
+                id="participantEmail" 
+                value={targetEmail} 
+                onChange={e => setTargetEmail(e.target.value)} 
+                className="col-span-3" 
+                placeholder="example@email.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSendEmail} disabled={sendingEmail}>
+              {sendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+              Send Email
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { setProjectCookie } from '@/app/actions/auth'
+import { useAuthStore } from '@/store/useAuthStore'
 
 interface ProjectGuardProps {
   children: React.ReactNode
@@ -16,10 +17,15 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const lastProjectIdRef = useRef<string | null>(null)
+  const { user } = useAuthStore()
+  const isOrganizer = user?.role === 'ORGANIZER'
 
   useEffect(() => {
     // If we are on the projects page, do nothing
     if (pathname === '/admin/projects') return
+
+    // Organizers don't need a project selection — backend knows from token
+    if (isOrganizer) return
 
     // If no project ID is present
     if (!projectId) {
@@ -40,10 +46,10 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
         console.error('Failed to set project cookie:', err)
       })
     }
-  }, [projectId, pathname, router, projects])
+  }, [projectId, pathname, router, projects, isOrganizer])
 
-  // Show loader if we are NOT on projects page AND no projectId
-  if (pathname !== '/admin/projects' && !projectId) {
+  // Show loader if we are NOT on projects page AND no projectId (and not organizer)
+  if (pathname !== '/admin/projects' && !projectId && !isOrganizer) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
