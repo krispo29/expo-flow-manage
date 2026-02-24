@@ -168,7 +168,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-8 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Company Profile Card */}
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
+          <Card className={`shadow-sm border-slate-200 overflow-hidden ${initialData ? 'md:col-span-2' : ''}`}>
             <CardHeader className="bg-slate-50/50 border-b pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
@@ -179,67 +179,69 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
               <CardDescription>Basic information about the exhibitor.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <FormField
-                control={form.control}
-                name="eventId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Assignment</FormLabel>
-                    <Select disabled={!!initialData} onValueChange={field.onChange} defaultValue={field.value}>
+              <div className={initialData ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
+                <FormField
+                  control={form.control}
+                  name="eventId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Assignment</FormLabel>
+                      <Select disabled={!!initialData} onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an event" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {events.map(e => (
+                            <SelectItem key={e.event_uuid} value={e.event_uuid}>
+                              {e.event_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The event this exhibitor belongs to (cannot be changed after creation).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an event" />
-                        </SelectTrigger>
+                        <Input placeholder="Acme Corp" className="h-11" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {events.map(e => (
-                          <SelectItem key={e.event_uuid} value={e.event_uuid}>
-                            {e.event_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      The event this exhibitor belongs to (cannot be changed after creation).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Acme Corp" className="h-11" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                        <Input placeholder="https://example.com" className="h-11 pl-10" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem className={initialData ? 'md:col-span-2' : ''}>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                          <Input placeholder="https://example.com" className="h-11 pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
-          {/* Account Access Card */}
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
+          {/* Account Access Card - Only show on create */}
+          {!initialData && <Card className="shadow-sm border-slate-200 overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
@@ -294,7 +296,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                       </div>
                     </FormControl>
                     <FormDescription className="text-[11px] flex justify-between">
-                      <span>{initialData ? "Leave blank to keep existing." : "Initial password for login."}</span>
+                      <span>Initial password for login.</span>
                       <span className="italic">Minimum 6 characters</span>
                     </FormDescription>
                     <FormMessage />
@@ -302,7 +304,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                 )}
               />
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Contact Information Card */}
           <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">

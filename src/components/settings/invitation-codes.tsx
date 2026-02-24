@@ -233,25 +233,24 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
               
               <div className="flex items-center gap-1 mx-2">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = currentPage
-                  if (currentPage <= 3) pageNum = i + 1
-                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
-                  else pageNum = currentPage - 2 + i
-
-                  if (pageNum > 0 && pageNum <= totalPages) {
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8 text-xs"
-                        onClick={() => goToPage(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    )
+                  let pageNum = i + 1
+                  if (totalPages > 5) {
+                    if (currentPage <= 3) pageNum = i + 1
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                    else pageNum = currentPage - 2 + i
                   }
-                  return null
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="icon"
+                      className="h-8 w-8 text-xs"
+                      onClick={() => goToPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  )
                 })}
               </div>
 

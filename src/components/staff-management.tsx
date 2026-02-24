@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, Loader2, GripVertical, Mail, Power } from 'lucide-react'
+import { Plus, Pencil, Loader2, GripVertical, Mail, Power } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface StaffManagementProps {
@@ -253,6 +253,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
 
   function handleOpenEmailDialog(staff: Staff) {
     setSelectedStaff(staff)
+    setTargetEmail(staff.email || '')
     setEmailDialogOpen(true)
   }
 
@@ -332,13 +333,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                         <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
                       </Button>
                        <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(staff)}>
-                        <Mail className="h-4 w-4" />
+                        <Mail className="h-4 w-4 text-purple-500" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
                         <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(staff.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>

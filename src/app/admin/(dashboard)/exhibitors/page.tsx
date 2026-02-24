@@ -45,6 +45,7 @@ export default function ExhibitorsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
+  const [targetEmail, setTargetEmail] = useState('')
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -147,6 +148,7 @@ export default function ExhibitorsPage() {
 
   function handleOpenEmailDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
+    setTargetEmail(exhibitor.username || exhibitor.email || '')
     setEmailDialogOpen(true)
   }
 
@@ -405,9 +407,21 @@ export default function ExhibitorsPage() {
           <DialogHeader>
             <DialogTitle>Send Credentials</DialogTitle>
             <DialogDescription>
-              Are you sure you want to send the login credentials to {selectedExhibitor?.companyName}? The email will be sent to their registered contact email.
+              Send login credentials to {selectedExhibitor?.companyName}.
             </DialogDescription>
           </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="targetEmail" className="text-right">Email</Label>
+              <Input 
+                id="targetEmail" 
+                value={targetEmail} 
+                onChange={e => setTargetEmail(e.target.value)} 
+                className="col-span-3" 
+                placeholder="example@email.com"
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSendCredentials} disabled={sendingEmail}>
