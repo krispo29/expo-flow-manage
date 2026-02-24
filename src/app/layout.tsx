@@ -11,6 +11,8 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+export const preferredRegion = 'sin1';
+
 export const metadata: Metadata = {
   title: "ExpoFlow — Event Management Platform",
   description: "Manage exhibitions, conferences, organizers, and registrations seamlessly with ExpoFlow.",

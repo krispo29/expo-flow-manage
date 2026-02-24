@@ -66,12 +66,6 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectUuid])
 
-  function fillMockData() {
-    setNewInvite({
-      company_name: 'The Deft AI Research'
-    })
-    toast.success('Mock data filled')
-  }
 
   async function handleCreate() {
     if (!newInvite.company_name) {
@@ -288,12 +282,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <div className="flex justify-between items-center pr-8">
-              <DialogTitle>Add Invitation Code</DialogTitle>
-              <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
-                Fill Mock Data
-              </Button>
-            </div>
+            <DialogTitle>Add Invitation Code</DialogTitle>
             <DialogDescription>Create a new invitation code for a company.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

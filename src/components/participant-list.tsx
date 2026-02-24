@@ -273,35 +273,6 @@ export function ParticipantList({
     setConfLoading(false)
   }
 
-  function fillMockData() {
-    const form = formRef.current
-    if (!form) return
- 
-    const mockData = {
-      first_name: 'John',
-      last_name: 'Wick',
-      email: `john.wick.${Math.floor(Math.random() * 1000)}@continental.com`,
-      mobile_country_code: '+66',
-      mobile_number: '0812345678',
-      company_name: 'The Continental',
-      job_position: 'Legendary Assassin',
-      residence_country: 'Thailand',
-      invitation_code: 'EXPO2024'
-    }
- 
-    Object.entries(mockData).forEach(([key, value]) => {
-      const input = form.querySelector(`[name="${key}"]`) as HTMLInputElement
-      if (input) {
-        input.value = value
-      }
-    })
- 
-    // Update Select States
-    setAttendeeType('VI')
-    setTitle('Mr')
-
-    toast.success('Mock data filled')
-  }
 
   return (
     <div className="space-y-4">
@@ -470,14 +441,7 @@ export function ParticipantList({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex justify-between items-center pr-8">
-              <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
-              {!selectedParticipant && (
-                <Button type="button" variant="outline" size="sm" onClick={fillMockData}>
-                  Fill Mock Data
-                </Button>
-              )}
-            </div>
+            <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
           </DialogHeader>
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
