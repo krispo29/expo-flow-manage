@@ -41,8 +41,8 @@ export default function LoginPage() {
         toast.success('Logged in successfully')
         
         if (loginRole === 'organizer') {
-          // Organizer skips project selection, go directly to dashboard
-          router.push('/admin')
+          // Organizer skips project selection, land on exhibitors page since dashboard is hidden
+          router.push('/admin/exhibitors')
         } else {
           router.push('/admin/projects')
         }

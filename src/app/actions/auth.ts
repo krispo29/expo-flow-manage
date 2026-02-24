@@ -129,6 +129,7 @@ export async function organizerLoginAction(formData: FormData) {
         id: organizer_uuid,
         username,
         role: 'ORGANIZER',
+        projectId: project_uuid,
       },
     }
   } catch (error: any) {

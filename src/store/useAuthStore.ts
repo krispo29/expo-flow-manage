@@ -5,6 +5,7 @@ interface User {
   id: string
   username: string
   role: string
+  projectId?: string
 }
 
 interface AuthState {

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getStaffByExhibitorId, createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
-import { getOrganizerExhibitorMembers } from '@/app/actions/organizer-exhibitor'
+import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
 import { countries } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
@@ -194,10 +194,18 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     }
 
     let result
-    if (editingStaff) {
-      result = await updateStaff(projectId, editingStaff.id, payload)
+    if (isOrganizer) {
+      if (editingStaff) {
+        result = await updateOrganizerMember(editingStaff.id, payload)
+      } else {
+        result = await createOrganizerMember(payload)
+      }
     } else {
-      result = await createStaff(projectId, payload)
+      if (editingStaff) {
+        result = await updateStaff(projectId, editingStaff.id, payload)
+      } else {
+        result = await createStaff(projectId, payload)
+      }
     }
 
     if (result.success) {
@@ -228,8 +236,13 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   }
 
   async function handleToggleStatus(staff: Staff) {
-    const { toggleStatusStaff } = await import('@/app/actions/staff')
-    const result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
+    let result
+    if (isOrganizer) {
+      result = await toggleStatusOrganizerMember(exhibitorId, staff.id)
+    } else {
+      const { toggleStatusStaff } = await import('@/app/actions/staff')
+      result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
+    }
     if (result.success) {
       toast.success('Status toggled successfully')
       fetchStaff()
@@ -247,7 +260,12 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     if (!selectedStaff) return
     
     setSendingEmail(true)
-    const result = await sendStaffCredentials(projectId, selectedStaff.id)
+    let result
+    if (isOrganizer) {
+      result = await resendEmailOrganizerMember([selectedStaff.id])
+    } else {
+      result = await sendStaffCredentials(projectId, selectedStaff.id)
+    }
     setSendingEmail(false)
     
     if (result.success) {

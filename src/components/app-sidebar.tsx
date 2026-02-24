@@ -115,33 +115,35 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="gap-0">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
-            Navigation
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  tooltip="Dashboard" 
-                  className={cn(
-                    "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                    isActive('/admin') 
-                      ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                      : "hover:bg-sidebar-accent/50"
-                  )}
-                  isActive={isActive('/admin')}
-                >
-                  <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
-                    <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {user?.role !== 'ORGANIZER' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+              Navigation
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    tooltip="Dashboard" 
+                    className={cn(
+                      "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                      isActive('/admin') 
+                        ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                        : "hover:bg-sidebar-accent/50"
+                    )}
+                    isActive={isActive('/admin')}
+                  >
+                    <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
+                      <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>

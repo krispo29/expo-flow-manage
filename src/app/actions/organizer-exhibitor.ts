@@ -215,3 +215,103 @@ export async function getOrganizerExhibitorMembers(exhibitorId: string) {
     return { success: false, error: 'Failed to fetch exhibitor members' }
   }
 }
+
+// GET /v1/admin/project/events (for organizer event dropdown)
+export async function getOrganizerEvents() {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+    const response = await api.get('/v1/admin/project/events', { headers })
+    const result = response.data
+    return { success: true, events: (result.data || []) }
+  } catch (error: any) {
+    console.error('Error fetching organizer events:', error)
+    return { success: false, error: 'Failed to fetch events', events: [] }
+  }
+}
+
+export async function createOrganizerMember(data: any) {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+    const payload = {
+      exhibitor_uuid: data.exhibitorId,
+      title: data.title,
+      title_other: data.title_other || "",
+      first_name: data.firstName,
+      last_name: data.lastName,
+      job_position: data.position,
+      mobile_country_code: "66",
+      mobile_number: data.mobile,
+      email: data.email,
+      company_name: data.companyName || "",
+      company_country: data.companyCountry || "TH",
+      company_tel: data.companyTel || ""
+    }
+
+    const response = await api.post('/v1/admin/project/exhibitors/members', payload, { headers })
+    revalidatePath('/admin/exhibitors')
+    return { success: true, member: response.data.data }
+  } catch (error: any) {
+    console.error('Error creating organizer member:', error)
+    const errMsg = error.response?.data?.message || 'Failed to create member'
+    return { success: false, error: errMsg }
+  }
+}
+
+// PUT /v1/admin/project/exhibitors/members/ (Update Member)
+export async function updateOrganizerMember(memberUuid: string, data: any) {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+    const payload = {
+      exhibitor_uuid: data.exhibitorId,
+      member_uuid: memberUuid,
+      title: data.title,
+      title_other: data.title_other || "",
+      first_name: data.firstName,
+      last_name: data.lastName,
+      job_position: data.position,
+      mobile_country_code: "66",
+      mobile_number: data.mobile,
+      email: data.email,
+      company_name: data.companyName || "",
+      company_country: data.companyCountry || "TH",
+      company_tel: data.companyTel || ""
+    }
+
+    const response = await api.put('/v1/admin/project/exhibitors/members/', payload, { headers })
+    revalidatePath('/admin/exhibitors')
+    return { success: true, member: response.data.data }
+  } catch (error: any) {
+    console.error('Error updating organizer member:', error)
+    const errMsg = error.response?.data?.message || 'Failed to update member'
+    return { success: false, error: errMsg }
+  }
+}
+
+// PATCH /v1/admin/project/exhibitors/members/toggle_status
+export async function toggleStatusOrganizerMember(exhibitorUuid: string, memberUuid: string) {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+    await api.patch('/v1/admin/project/exhibitors/members/toggle_status', {
+      exhibitor_uuid: exhibitorUuid,
+      member_uuid: memberUuid
+    }, { headers })
+    revalidatePath('/admin/exhibitors')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error toggling organizer member status:', error)
+    const errMsg = error.response?.data?.message || 'Failed to toggle status'
+    return { success: false, error: errMsg }
+  }
+}
+
+// POST /v1/admin/project/exhibitors/members/resend_email_comfirmation
+export async function resendEmailOrganizerMember(memberUuids: string[]) {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+    await api.post('/v1/admin/project/exhibitors/members/resend_email_comfirmation', memberUuids, { headers })
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error resending organizer member email:', error)
+    return { success: false, error: 'Failed to send confirmation email' }
+  }
+}
