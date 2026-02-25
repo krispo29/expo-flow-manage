@@ -315,3 +315,21 @@ export async function resendEmailOrganizerMember(memberUuids: string[]) {
     return { success: false, error: 'Failed to send confirmation email' }
   }
 }
+
+// POST /v1/organizer/exhibitors/login
+export async function testLoginOrganizerExhibitor(data: any) {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+    const payload = {
+      username: data.username,
+      password: data.password
+    }
+
+    const response = await api.post('/v1/organizer/exhibitors/login', payload, { headers })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error testing organizer exhibitor login:', error)
+    const errMsg = error.response?.data?.message || 'Invalid username or password'
+    return { success: false, error: errMsg }
+  }
+}

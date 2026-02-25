@@ -273,3 +273,16 @@ export async function toggleStatusExhibitor(projectUuid: string, exhibitorId: st
     return { success: false, error: errMsg }
   }
 }
+
+// POST /v1/admin/project/exhibitors/login
+export async function testLoginExhibitor(projectUuid: string, data: any) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.post('/v1/admin/project/exhibitors/login', data, { headers })
+    return { success: true, data: response.data }
+  } catch (error: any) {
+    console.error('Error testing exhibitor login:', error)
+    const errMsg = error.response?.data?.message || 'Invalid credentials'
+    return { success: false, error: errMsg }
+  }
+}

@@ -54,6 +54,10 @@ export function ParticipantList({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   
+  const handleNoThaiInput = (e: React.FormEvent<HTMLInputElement>) => {
+    e.currentTarget.value = e.currentTarget.value.replace(/[\u0E00-\u0E7F]/g, '')
+  }
+  
   // Conference Dialog State
   const [isConfDialogOpen, setIsConfDialogOpen] = useState(false)
   const [confParticipant, setConfParticipant] = useState<Participant | null>(null)
@@ -486,15 +490,15 @@ export function ParticipantList({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="first_name">First Name *</Label>
-                <Input id="first_name" name="first_name" defaultValue={selectedParticipant?.first_name || ''} required />
+                <Input id="first_name" name="first_name" defaultValue={selectedParticipant?.first_name || ''} onInput={handleNoThaiInput} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="last_name">Last Name *</Label>
-                <Input id="last_name" name="last_name" defaultValue={selectedParticipant?.last_name || ''} required />
+                <Input id="last_name" name="last_name" defaultValue={selectedParticipant?.last_name || ''} onInput={handleNoThaiInput} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
-                <Input id="email" name="email" type="email" defaultValue={selectedParticipant?.email || ''} required />
+                <Input id="email" name="email" type="email" defaultValue={selectedParticipant?.email || ''} onInput={handleNoThaiInput} required />
               </div>
               <div className="space-y-2">
                 <Label>Country Code *</Label>
@@ -513,15 +517,15 @@ export function ParticipantList({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mobile_number">Mobile Number *</Label>
-                <Input id="mobile_number" name="mobile_number" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_number || ""} required />
+                <Input id="mobile_number" name="mobile_number" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_number || ""} onInput={handleNoThaiInput} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company_name">Company *</Label>
-                <Input id="company_name" name="company_name" defaultValue={selectedParticipant?.company_name || ''} required />
+                <Input id="company_name" name="company_name" defaultValue={selectedParticipant?.company_name || ''} onInput={handleNoThaiInput} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="job_position">Position *</Label>
-                <Input id="job_position" name="job_position" defaultValue={selectedParticipant?.job_position || ''} required />
+                <Input id="job_position" name="job_position" defaultValue={selectedParticipant?.job_position || ''} onInput={handleNoThaiInput} required />
               </div>
               <div className="space-y-2">
                 <Label>Residence Country *</Label>
@@ -545,6 +549,7 @@ export function ParticipantList({
                   defaultValue={(selectedParticipant as ParticipantDetail)?.invitation_code || ""} 
                   disabled={!!selectedParticipant}
                   className={selectedParticipant ? "bg-muted cursor-not-allowed" : ""}
+                  onInput={handleNoThaiInput}
                 />
               </div>
             </div>

@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, deleteExhibitor, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials } from '@/app/actions/exhibitor'
-import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
+import { getExhibitors, deleteExhibitor, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor } from '@/app/actions/exhibitor'
+import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff } from 'lucide-react'
+import { Plus, Pencil, Trash2, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -46,6 +46,10 @@ export default function ExhibitorsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [targetEmail, setTargetEmail] = useState('')
+
+  const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
+  const [testLoginPassword, setTestLoginPassword] = useState('')
+  const [testingLogin, setTestingLogin] = useState(false)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -146,6 +150,13 @@ export default function ExhibitorsPage() {
     setPasswordDialogOpen(true)
   }
 
+  function handleOpenTestLoginDialog(exhibitor: any) {
+    setSelectedExhibitor(exhibitor)
+    setTestLoginPassword('')
+    setShowPassword(false)
+    setTestLoginDialogOpen(true)
+  }
+
   function handleOpenEmailDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
     setTargetEmail(exhibitor.username || exhibitor.email || '')
@@ -195,6 +206,39 @@ export default function ExhibitorsPage() {
       setPasswordDialogOpen(false)
     } else {
       toast.error(result.error || 'Failed to reset password')
+    }
+  }
+
+  async function handleTestLogin() {
+    if (!selectedExhibitor) return
+    if (!testLoginPassword) {
+      toast.error('Password is required')
+      return
+    }
+
+    setTestingLogin(true)
+    
+    let result
+    if (isOrganizer) {
+      result = await testLoginOrganizerExhibitor({
+        username: selectedExhibitor.username,
+        password: testLoginPassword
+      })
+    } else {
+      if (!projectId) return
+      result = await testLoginExhibitor(projectId, {
+        username: selectedExhibitor.username,
+        password: testLoginPassword
+      })
+    }
+    
+    setTestingLogin(false)
+
+    if (result.success) {
+      toast.success('Login Successful! Credentials are valid.')
+      setTestLoginDialogOpen(false)
+    } else {
+      toast.error(result.error || 'Invalid credentials')
     }
   }
 
@@ -282,6 +326,10 @@ export default function ExhibitorsPage() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                           
+                            <Button variant="ghost" size="icon" title="Test Login" onClick={() => handleOpenTestLoginDialog(item)}>
+                              <LogIn className="h-4 w-4 text-orange-500" />
+                            </Button>
+
                             <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(item)}>
                               <Mail className="h-4 w-4 text-purple-500" />
                             </Button>
@@ -398,6 +446,57 @@ export default function ExhibitorsPage() {
             <Button onClick={handleResetPassword} disabled={savingPassword || newPassword.length < 6}>
               {savingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Save Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={testLoginDialogOpen} onOpenChange={setTestLoginDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Test Exhibitor Login</DialogTitle>
+            <DialogDescription>
+              Test login for {selectedExhibitor?.companyName} ({selectedExhibitor?.username}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Username</Label>
+              <div className="col-span-3">
+                <Input value={selectedExhibitor?.username || ''} readOnly className="bg-muted" />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="testPassword" className="text-right">Password</Label>
+               <div className="col-span-3 relative">
+                <Input 
+                  id="testPassword" 
+                  type={showPassword ? "text" : "password"}
+                  value={testLoginPassword} 
+                  onChange={e => setTestLoginPassword(e.target.value)} 
+                  className="pr-10" 
+                  placeholder="Enter password to test"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestLoginDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleTestLogin} disabled={testingLogin || !testLoginPassword}>
+              {testingLogin ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+              Test Login
             </Button>
           </DialogFooter>
         </DialogContent>
