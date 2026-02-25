@@ -1,124 +1,115 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Printer, Filter, Calendar as CalendarIcon } from "lucide-react"
+import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
+import { advancedSearch, type AdvancedSearchResult, type AdvancedSearchResponse } from "@/app/actions/report"
+import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 
 export default function ReportsPage() {
-  // Mock data for the "Check Print Badge" report
-  const printStats = {
-    total: 3500,
-    printed: 2100,
-    pending: 1400,
-    percentage: 60,
+  // ─── Filter state ────────────────────────────────────────────────────────────
+  const [keyword, setKeyword] = useState("")
+  const [country, setCountry] = useState("")
+  const [dateStart, setDateStart] = useState<Date>()
+  const [dateEnd, setDateEnd] = useState<Date>()
+  const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([])
+
+  // ─── Pagination ──────────────────────────────────────────────────────────────
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+
+  // ─── Results ─────────────────────────────────────────────────────────────────
+  const [results, setResults] = useState<AdvancedSearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+
+  // ─── Attendee types from API ─────────────────────────────────────────────────
+  const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
+
+  // Fetch attendee types on mount
+  useEffect(() => {
+    getAllAttendeeTypes().then(res => {
+      if (res.success && res.data) setAttendeeTypes(res.data)
+    })
+  }, [])
+
+  // ─── Search handler ──────────────────────────────────────────────────────────
+  const handleSearch = useCallback(async (searchPage = 1) => {
+    setLoading(true)
+    setSearched(true)
+    setPage(searchPage)
+
+    try {
+      const res = await advancedSearch({
+        start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
+        end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
+        attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
+        country: country || undefined,
+        keyword: keyword || undefined,
+        page: searchPage,
+        limit,
+      })
+
+      if (res.success && res.data) {
+        const searchData = res.data as AdvancedSearchResponse
+        setResults(searchData.data || [])
+        setTotal(searchData.total || 0)
+      } else {
+        setResults([])
+        setTotal(0)
+      }
+    } catch {
+      setResults([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit])
+
+  // ─── Reset handler ───────────────────────────────────────────────────────────
+  const handleReset = () => {
+    setKeyword("")
+    setCountry("")
+    setDateStart(undefined)
+    setDateEnd(undefined)
+    setSelectedTypeCodes([])
+    setPage(1)
+    setResults([])
+    setTotal(0)
+    setSearched(false)
   }
 
-  // Mock data for "Advance Search" results
-  const mockSearchResults = [
-    { id: "P-1001", name: "John Doe", company: "Tech Corp", type: "VIP", status: "Printed", checkIn: "Yes" },
-    { id: "P-1002", name: "Jane Smith", company: "Innovate Ltd", type: "Speaker", status: "Pending", checkIn: "No" },
-    { id: "P-1003", name: "Bob Johnson", company: "Future Inc", type: "Exhibitor", status: "Printed", checkIn: "Yes" },
-    { id: "P-1004", name: "Alice Brown", company: "Media Group", type: "Press", status: "Printed", checkIn: "Yes" },
-    { id: "P-1005", name: "Charlie Davis", company: "Startups Co", type: "Visitor", status: "Pending", checkIn: "No" },
-  ]
+  // ─── Type checkbox toggle ────────────────────────────────────────────────────
+  const toggleTypeCode = (code: string) => {
+    setSelectedTypeCodes(prev =>
+      prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+    )
+  }
 
-    const [dateStart, setDateStart] = useState<Date>()
-    const [dateEnd, setDateEnd] = useState<Date>()
+  const totalPages = Math.max(1, Math.ceil(total / limit))
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
         <p className="text-muted-foreground">
-          Analyze participant data and system usage.
+          Advanced search across participants, companies, and registration data.
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Check Print Badge Report */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5" />
-              Badge Print Status
-            </CardTitle>
-            <CardDescription>
-              Real-time overview of badge printing progress.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Printed Badges</span>
-                  <span className="font-medium">{printStats.printed} / {printStats.total}</span>
-                </div>
-                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full" 
-                    style={{ width: `${printStats.percentage}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground text-right">{printStats.percentage}% Completed</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="rounded-lg border p-3 text-center">
-                  <div className="text-2xl font-bold text-primary">{printStats.printed}</div>
-                  <div className="text-xs text-muted-foreground">Printed</div>
-                </div>
-                <div className="rounded-lg border p-3 text-center">
-                  <div className="text-2xl font-bold text-muted-foreground">{printStats.pending}</div>
-                  <div className="text-xs text-muted-foreground">Pending</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Stats Placeholder */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-             <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Quick Statistics
-            </CardTitle>
-            <CardDescription>Summary of major categories.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                    <span className="text-sm text-muted-foreground">Total Visitors</span>
-                    <span className="text-xl font-bold">12,450</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                    <span className="text-sm text-muted-foreground">Preregistered</span>
-                    <span className="text-xl font-bold">8,200</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                    <span className="text-sm text-muted-foreground">Exhibitors</span>
-                    <span className="text-xl font-bold">450</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                    <span className="text-sm text-muted-foreground">VIPs</span>
-                    <span className="text-xl font-bold">120</span>
-                </div>
-             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Advance Search Section */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Advanced Search Filters                                           */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <Card className="border-none shadow-md bg-muted/30">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -132,204 +123,190 @@ export default function ReportsPage() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-                <Button variant="outline" size="sm">Reset</Button>
-                <Button size="sm"><Search className="h-4 w-4 mr-2" />Search</Button>
+              <Button variant="outline" size="sm" onClick={handleReset}>Reset</Button>
+              <Button size="sm" onClick={() => handleSearch(1)} disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                Search
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-4">
-            {/* Event Filter */}
-            <div className="space-y-2">
-                <Label htmlFor="event" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Event</Label>
-                <Select defaultValue="all">
-                    <SelectTrigger id="event" className="w-full bg-background">
-                        <SelectValue placeholder="Select Event" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Events</SelectItem>
-                        <SelectItem value="ildex">ILDEX</SelectItem>
-                        <SelectItem value="horti">HORTI</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
 
             {/* Keyword Search */}
             <div className="space-y-2">
-                <Label htmlFor="keyword" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keyword</Label>
-                <Input id="keyword" placeholder="Name, Company, or ID..." className="bg-background" />
-            </div>
-
-            {/* Member Type Filter */}
-            <div className="space-y-2">
-                <Label htmlFor="memberType" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type of Member</Label>
-                <Select defaultValue="all">
-                    <SelectTrigger id="memberType" className="w-full bg-background">
-                        <SelectValue placeholder="Select Member Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Visitors</SelectItem>
-                        <SelectItem value="preregister">Preregister</SelectItem>
-                        <SelectItem value="group">Group</SelectItem>
-                        <SelectItem value="onsite">Onsite</SelectItem>
-                        <SelectItem value="exhibitor">Exhibitor</SelectItem>
-                        <SelectItem value="vip">VIP</SelectItem>
-                        <SelectItem value="buyer">Buyer</SelectItem>
-                        <SelectItem value="speaker">Speaker</SelectItem>
-                        <SelectItem value="press">Press</SelectItem>
-                        <SelectItem value="organizer">Organizer</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {/* Report Type Filter */}
-            <div className="space-y-2">
-                <Label htmlFor="reportType" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</Label>
-                <Select defaultValue="print">
-                    <SelectTrigger id="reportType" className="w-full bg-background">
-                        <SelectValue placeholder="Select Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="print">Print Badge</SelectItem>
-                        <SelectItem value="visits">Total Visits</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {/* Registration Date Range (Combined Label approach or clear separate) */}
-            <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reg. Date Start</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateStart ? format(dateStart, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={dateStart}
-                            onSelect={setDateStart}
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
-            </div>
-
-            <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reg. Date End</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateEnd ? format(dateEnd, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={dateEnd}
-                            onSelect={setDateEnd}
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
-            </div>
-
-            {/* Invitation Code */}
-            <div className="space-y-2">
-                <Label htmlFor="inviteCode" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invitation Code</Label>
-                <Input id="inviteCode" placeholder="Enter code..." className="bg-background" />
+              <Label htmlFor="keyword" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keyword</Label>
+              <Input
+                id="keyword"
+                placeholder="Name, Company, or ID..."
+                className="bg-background"
+                value={keyword}
+                onChange={e => setKeyword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
+              />
             </div>
 
             {/* Country Filter */}
             <div className="space-y-2">
-                <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
-                <Select defaultValue="all">
-                    <SelectTrigger id="country" className="w-full bg-background">
-                        <SelectValue placeholder="Select Country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Countries</SelectItem>
-                        <SelectItem value="thailand">Thailand</SelectItem>
-                        <SelectItem value="vietnam">Vietnam</SelectItem>
-                        <SelectItem value="others">Others</SelectItem>
-                    </SelectContent>
-                </Select>
+              <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
+              <Input
+                id="country"
+                placeholder="e.g. Thailand"
+                className="bg-background"
+                value={country}
+                onChange={e => setCountry(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
+              />
             </div>
 
-            {/* Questionnaire Toggle and Actions */}
-            <div className="flex items-center space-x-2 lg:col-span-2 xl:col-span-1 pt-2 lg:pt-8 min-h-[40px]">
-                <Checkbox id="includeQuestions" />
-                <Label htmlFor="includeQuestions" className="text-sm font-medium leading-none cursor-pointer">
-                    Include Questionnaires
-                </Label>
+            {/* Registration Date Start */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reg. Date Start</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateStart ? format(dateStart, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateStart} onSelect={setDateStart} initialFocus />
+                </PopoverContent>
+              </Popover>
             </div>
 
-            <div className="flex items-center lg:col-span-1 xl:col-span-3 justify-end pt-2 lg:pt-8 gap-3">
-                <Button variant="secondary" className="bg-background shadow-sm">
-                    <Printer className="h-4 w-4 mr-2" />
-                    Export CSV
-                </Button>
+            {/* Registration Date End */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reg. Date End</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateEnd ? format(dateEnd, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateEnd} onSelect={setDateEnd} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Attendee Type Multi-Select (Checkboxes) */}
+            <div className="space-y-2 lg:col-span-2 xl:col-span-4">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendee Types</Label>
+              <div className="flex flex-wrap gap-3 p-3 rounded-lg border bg-background">
+                {attendeeTypes.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">Loading types...</span>
+                ) : (
+                  attendeeTypes.map(t => (
+                    <label key={t.type_code} className="flex items-center gap-1.5 cursor-pointer">
+                      <Checkbox
+                        checked={selectedTypeCodes.includes(t.type_code)}
+                        onCheckedChange={() => toggleTypeCode(t.type_code)}
+                      />
+                      <span className="text-sm">{t.type_name} ({t.type_code})</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Action row */}
+            <div className="flex items-center lg:col-span-1 xl:col-span-4 justify-end pt-2 gap-3">
+              <Button variant="secondary" className="bg-background shadow-sm" disabled>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Search Results Section */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Search Results                                                     */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <Card className="border shadow-sm">
         <CardHeader className="pb-0">
           <CardTitle className="text-lg">Search Results</CardTitle>
-          <CardDescription>Found {mockSearchResults.length} participants matching your filters.</CardDescription>
+          <CardDescription>
+            {searched
+              ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
+              : 'Use the filters above and click Search to find participants.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead>Participant</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Badge</TableHead>
-                  <TableHead>Check-In</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockSearchResults.map((result) => (
-                  <TableRow key={result.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-mono text-xs text-muted-foreground">{result.id}</TableCell>
-                    <TableCell className="font-medium">{result.name}</TableCell>
-                    <TableCell>{result.company}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-normal">{result.type}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={result.status === "Printed" ? "default" : "secondary"} className="rounded-full px-2 py-0">
-                        {result.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${result.checkIn === "Yes" ? "bg-green-500" : "bg-muted"}`} />
-                            <span className={result.checkIn === "Yes" ? "text-green-600 font-medium" : "text-muted-foreground"}>
-                                {result.checkIn}
-                            </span>
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="h-8 px-2">
-                        View Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin mb-3" />
+              <p className="text-sm">Searching...</p>
+            </div>
+          ) : results.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+              <Search className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">
+                {searched ? 'No results found. Try adjusting your filters.' : 'Enter your search criteria above.'}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[130px]">Reg. Code</TableHead>
+                      <TableHead>Participant</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Registered At</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {results.map((r, i) => (
+                      <TableRow key={r.registration_uuid || i} className="hover:bg-muted/50 transition-colors">
+                        <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
+                        <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
+                        <TableCell>{r.company_name || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
+                        </TableCell>
+                        <TableCell>{r.residence_country || '-'}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {r.registered_at ? format(new Date(r.registered_at), 'yyyy-MM-dd HH:mm') : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages} · {total.toLocaleString()} total
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSearch(page - 1)}
+                    disabled={page <= 1 || loading}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSearch(page + 1)}
+                    disabled={page >= totalPages || loading}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

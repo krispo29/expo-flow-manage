@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { 
   Table, 
   TableBody, 
@@ -45,17 +45,11 @@ const CONF_PAGE_SIZE = 9
 interface ParticipantListProps {
   participants: Participant[]
   projectId: string
-  onSearch: (query: string) => void
-  onTypeFilter: (type: string) => void
-  currentType: string
 }
 
 export function ParticipantList({ 
   participants, 
   projectId, 
-  onSearch, 
-  onTypeFilter,
-  currentType 
 }: ParticipantListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
@@ -92,6 +86,7 @@ export function ParticipantList({
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('ALL')
   const [currentPage, setCurrentPage] = useState(1)
 
   // Email Dialog State
@@ -100,21 +95,39 @@ export function ParticipantList({
   const [targetEmail, setTargetEmail] = useState('')
   const [sendingEmail, setSendingEmail] = useState(false)
 
+  // Client-side filtering
+  const filteredParticipants = useMemo(() => {
+    let filtered = participants
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase()
+      filtered = filtered.filter(p =>
+        p.first_name.toLowerCase().includes(lowerQuery) ||
+        p.last_name.toLowerCase().includes(lowerQuery) ||
+        p.email.toLowerCase().includes(lowerQuery) ||
+        p.company_name.toLowerCase().includes(lowerQuery) ||
+        p.registration_code.toLowerCase().includes(lowerQuery)
+      )
+    }
+    if (typeFilter && typeFilter !== 'ALL') {
+      filtered = filtered.filter(p => p.attendee_type_code === typeFilter)
+    }
+    return filtered
+  }, [participants, searchQuery, typeFilter])
+
   // Sliced participants for pagination
-  const totalPages = Math.ceil(participants.length / PAGE_SIZE)
+  const totalPages = Math.ceil(filteredParticipants.length / PAGE_SIZE)
   const startIndex = (currentPage - 1) * PAGE_SIZE
   const endIndex = startIndex + PAGE_SIZE
-  const currentParticipants = participants.slice(startIndex, endIndex)
+  const currentParticipants = filteredParticipants.slice(startIndex, endIndex)
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     setCurrentPage(1) // Reset to first page on search
-    onSearch(searchQuery)
   }
 
   function handleTypeFilter(type: string) {
+    setTypeFilter(type)
     setCurrentPage(1) // Reset to first page on filter
-    onTypeFilter(type)
   }
 
   function openCreate() {
@@ -290,7 +303,7 @@ export function ParticipantList({
           </Button>
         </form>
         <div className="flex gap-2">
-          <Select value={currentType} onValueChange={handleTypeFilter}>
+          <Select value={typeFilter} onValueChange={handleTypeFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by Type" />
             </SelectTrigger>
@@ -388,12 +401,12 @@ export function ParticipantList({
         </Table>
         
         {/* Pagination Controls */}
-        {participants.length > 0 && (
+        {filteredParticipants.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t bg-muted/5">
             <div className="text-sm text-muted-foreground italic">
-              Showing <span className="font-medium text-foreground">{Math.min(startIndex + 1, participants.length)}</span> to{' '}
-              <span className="font-medium text-foreground">{Math.min(endIndex, participants.length)}</span> of{' '}
-              <span className="font-medium text-foreground">{participants.length}</span> participants
+              Showing <span className="font-medium text-foreground">{Math.min(startIndex + 1, filteredParticipants.length)}</span> to{' '}
+              <span className="font-medium text-foreground">{Math.min(endIndex, filteredParticipants.length)}</span> of{' '}
+              <span className="font-medium text-foreground">{filteredParticipants.length}</span> participants
             </div>
             
             <div className="flex items-center gap-2">

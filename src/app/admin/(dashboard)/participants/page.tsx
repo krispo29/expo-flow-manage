@@ -1,23 +1,15 @@
 // import { ScannerImport } from '@/components/scanner-import'
 import { getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
-import { redirect } from 'next/navigation'
 
 import { cookies } from 'next/headers'
  
-export default async function ParticipantsPage({ 
-  searchParams 
-}: { 
-  searchParams: Promise<{ q?: string; type?: string; projectId?: string }> 
-}) {
-  const resolvedSearchParams = await searchParams
+export default async function ParticipantsPage() {
   const cookieStore = await cookies()
-  const projectId = resolvedSearchParams.projectId || cookieStore.get('project_uuid')?.value || 'horti-agri'
-  const query = resolvedSearchParams.q || ''
-  const type = resolvedSearchParams.type || 'ALL'
+  const projectId = cookieStore.get('project_uuid')?.value || 'horti-agri'
 
-  // Fetch data
-  const result = await getParticipants(projectId, query, type)
+  // Fetch all participants (filtering handled client-side)
+  const result = await getParticipants(projectId)
   const participants = result.data || []
 
   return (
@@ -37,15 +29,6 @@ export default async function ParticipantsPage({
       <ParticipantList 
         participants={participants} 
         projectId={projectId}
-        currentType={type}
-        onSearch={async (q) => {
-          'use server'
-          redirect(`/admin/participants?q=${q}&type=${type}&projectId=${projectId}`)
-        }}
-        onTypeFilter={async (t) => {
-            'use server'
-            redirect(`/admin/participants?q=${query}&type=${t}&projectId=${projectId}`)
-        }}
       />
     </div>
   )
