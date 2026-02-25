@@ -289,10 +289,10 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2 justify-end">
-                                <Badge variant={conference.conference_type === 'public' ? 'secondary' : 'outline'}>
+                                <Badge variant={conference.conference_type === 'public' ? 'secondary' : 'outline'} className="capitalize">
                                   {conference.conference_type}
                                 </Badge>
-                                <Badge variant={conference.status === 'available' ? 'default' : 'destructive'}>
+                                <Badge variant={conference.status === 'available' ? 'default' : 'destructive'} className="capitalize">
                                   {conference.status}
                                 </Badge>
                                 {conference.can_book && <Badge variant="outline">Can Book</Badge>}
@@ -377,10 +377,10 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant={previewConference.conference_type === 'public' ? 'secondary' : 'outline'}>
+                        <Badge variant={previewConference.conference_type === 'public' ? 'secondary' : 'outline'} className="capitalize">
                           {previewConference.conference_type}
                         </Badge>
-                        <Badge variant={previewConference.status === 'available' ? 'default' : 'destructive'}>
+                        <Badge variant={previewConference.status === 'available' ? 'default' : 'destructive'} className="capitalize">
                           {previewConference.status}
                         </Badge>
                         {previewConference.can_book && <Badge variant="outline">Can Book</Badge>}

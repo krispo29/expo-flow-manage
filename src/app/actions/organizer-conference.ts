@@ -54,7 +54,8 @@ export async function getOrganizerConferenceLogs(conferenceUuid: string) {
     const headers = await getOrganizerAuthHeaders()
     const response = await api.get(`/v1/organizer/conferences/${conferenceUuid}/logs`, { headers })
 
-    return { success: true, data: response.data.data as import('./conference').ConferenceLog[] }
+    const data = response.data?.data || []
+    return { success: true, data: data as import('./conference').ConferenceLog[] }
   } catch (error: unknown) {
     console.error('Error fetching organizer conference logs:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference logs'

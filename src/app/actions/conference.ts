@@ -93,7 +93,8 @@ export async function getConferenceLogs(conferenceUuid: string) {
     const headers = await getAuthHeaders()
     const response = await api.get(`/v1/admin/project/conferences/${conferenceUuid}/logs`, { headers })
 
-    return { success: true, data: response.data.data as ConferenceLog[] }
+    const data = response.data?.data || []
+    return { success: true, data: data as ConferenceLog[] }
   } catch (error: unknown) {
     console.error('Error fetching conference logs:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference logs'
