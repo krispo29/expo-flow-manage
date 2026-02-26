@@ -55,7 +55,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
   // Create dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [newOrg, setNewOrg] = useState({ username: '', password: '', full_name: '' })
+  const [newOrg, setNewOrg] = useState({ username: '', full_name: '' })
 
   // Exposed handle for parent component
   useImperativeHandle(ref, () => ({
@@ -120,12 +120,8 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
 
   async function handleCreate() {
-    if (!newOrg.username || !newOrg.password || !newOrg.full_name) {
+    if (!newOrg.username || !newOrg.full_name) {
       toast.error('Please fill in all fields')
-      return
-    }
-    if (newOrg.password.length < 6) {
-      toast.error('Password must be at least 6 characters')
       return
     }
     setSaving(true)
@@ -134,7 +130,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
     if (result.success) {
       toast.success('Organizer created successfully')
       setIsCreateOpen(false)
-      setNewOrg({ username: '', password: '', full_name: '' })
+      setNewOrg({ username: '', full_name: '' })
       fetchOrganizers()
     } else {
       toast.error(result.error || 'Failed to create organizer')
@@ -225,6 +221,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
               <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="font-semibold text-foreground">Username</TableHead>
+                  <TableHead className="font-semibold text-foreground">Password Note</TableHead>
                   <TableHead className="font-semibold text-foreground">Full Name</TableHead>
                   <TableHead className="font-semibold text-foreground">Project</TableHead>
                   <TableHead className="font-semibold text-foreground">Status</TableHead>
@@ -236,7 +233,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
               <TableBody>
                 {filteredOrganizers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       {searchQuery ? "No results matching your search terms." : "No organizers found."}
                     </TableCell>
                   </TableRow>
@@ -244,6 +241,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                   paginatedOrganizers.map((org) => (
                     <TableRow key={org.organizer_uuid}>
                       <TableCell className="font-medium">{org.username}</TableCell>
+                      <TableCell className="font-mono text-xs">{org.password_note || '-'}</TableCell>
                       <TableCell>{org.full_name}</TableCell>
                       <TableCell>{org.project_name}</TableCell>
                       <TableCell>
@@ -389,37 +387,10 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="create-password"
-                  type={showPassword ? "text" : "password"}
-                  value={newOrg.password}
-                  onChange={(e) => setNewOrg({ ...newOrg, password: e.target.value })}
-                  className="pr-10"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters</p>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving || newOrg.password.length < 6}>
+            <Button onClick={handleCreate} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create
             </Button>

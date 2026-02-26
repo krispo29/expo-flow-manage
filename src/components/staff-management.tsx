@@ -329,14 +329,15 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                       <Button variant="ghost" size="icon" title={staff.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(staff)}>
-                        <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
-                      </Button>
+                      
                        <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(staff)}>
                         <Mail className="h-4 w-4 text-purple-500" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                       <Button variant="ghost" size="icon" title={staff.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(staff)}>
+                        <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
                       </Button>
                     </div>
                   </TableCell>

@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Trash2, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn } from 'lucide-react'
+import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -295,6 +295,7 @@ export default function ExhibitorsPage() {
                 <TableHeader className="bg-muted/50">
                   <TableRow>
                     <TableHead className="font-semibold text-foreground">Username</TableHead>
+                    <TableHead className="font-semibold text-foreground">Password Note</TableHead>
                     <TableHead className="font-semibold text-foreground">Company Name</TableHead>
                     <TableHead className="font-semibold text-foreground">Event</TableHead>
                     <TableHead className="font-semibold text-foreground">Booth No.</TableHead>
@@ -306,7 +307,7 @@ export default function ExhibitorsPage() {
                 <TableBody>
                   {filteredExhibitors.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                         {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
                       </TableCell>
                     </TableRow>
@@ -314,6 +315,7 @@ export default function ExhibitorsPage() {
                     paginatedExhibitors.map((item, index) => (
                       <TableRow key={`${item.id}-${index}`}>
                         <TableCell className="font-medium">{item.username || '-'}</TableCell>
+                        <TableCell className="font-mono text-xs">{item.passwordNote || '-'}</TableCell>
                         <TableCell>{item.companyName}</TableCell>
                         <TableCell>{item.eventName || '-'}</TableCell>
                         <TableCell>{item.boothNo || '-'}</TableCell>

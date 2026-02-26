@@ -41,7 +41,8 @@ export async function getOrganizerExhibitors() {
       isActive: item.is_active,
       usedQuota: item.used_quota || 0,
       quota: 0,
-      overQuota: 0
+      overQuota: 0,
+      passwordNote: item.password_note
     }))
 
     return { success: true, exhibitors: mappedExhibitors }
@@ -85,7 +86,8 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,
       usedQuota: 0,
-      createdAt: rawData.created_at
+      createdAt: rawData.created_at,
+      passwordNote: rawData.password_note
     }
 
     return { success: true, exhibitor: mappedExhibitor, members: response.data.data.members }
@@ -98,7 +100,6 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
 // POST /v1/organizer/exhibitors
 export async function createOrganizerExhibitor(data: any) {
   try {
-    const headers = await getOrganizerAuthHeaders()
     const payload = {
       event_uuid: data.eventId,
       username: data.username,
@@ -119,6 +120,7 @@ export async function createOrganizerExhibitor(data: any) {
       over_quota: data.overQuota
     }
 
+    const headers = await getOrganizerAuthHeaders()
     const response = await api.post('/v1/organizer/exhibitors', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, exhibitor: response.data.data }
@@ -132,7 +134,6 @@ export async function createOrganizerExhibitor(data: any) {
 // PUT /v1/organizer/exhibitors
 export async function updateOrganizerExhibitor(exhibitorUuid: string, data: any) {
   try {
-    const headers = await getOrganizerAuthHeaders()
     const payload = {
       exhibitor_uuid: exhibitorUuid,
       company_name: data.companyName,
@@ -151,6 +152,7 @@ export async function updateOrganizerExhibitor(exhibitorUuid: string, data: any)
       over_quota: data.overQuota
     }
 
+    const headers = await getOrganizerAuthHeaders()
     const response = await api.put('/v1/organizer/exhibitors', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, exhibitor: response.data.data }
@@ -232,7 +234,6 @@ export async function getOrganizerEvents() {
 
 export async function createOrganizerMember(data: any) {
   try {
-    const headers = await getOrganizerAuthHeaders()
     const payload = {
       exhibitor_uuid: data.exhibitorId,
       title: data.title,
@@ -248,7 +249,8 @@ export async function createOrganizerMember(data: any) {
       company_tel: data.companyTel || ""
     }
 
-    const response = await api.post('/v1/admin/project/exhibitors/members', payload, { headers })
+    const headers = await getOrganizerAuthHeaders()
+    const response = await api.post('/v1/organizer/exhibitors/members/', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, member: response.data.data }
   } catch (error: any) {
@@ -258,10 +260,9 @@ export async function createOrganizerMember(data: any) {
   }
 }
 
-// PUT /v1/admin/project/exhibitors/members/ (Update Member)
+// PUT /v1/organizer/exhibitors/members/ (Update Member)
 export async function updateOrganizerMember(memberUuid: string, data: any) {
   try {
-    const headers = await getOrganizerAuthHeaders()
     const payload = {
       exhibitor_uuid: data.exhibitorId,
       member_uuid: memberUuid,
@@ -278,7 +279,8 @@ export async function updateOrganizerMember(memberUuid: string, data: any) {
       company_tel: data.companyTel || ""
     }
 
-    const response = await api.put('/v1/admin/project/exhibitors/members/', payload, { headers })
+    const headers = await getOrganizerAuthHeaders()
+    const response = await api.put('/v1/organizer/exhibitors/members/', payload, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true, member: response.data.data }
   } catch (error: any) {
@@ -288,11 +290,11 @@ export async function updateOrganizerMember(memberUuid: string, data: any) {
   }
 }
 
-// PATCH /v1/admin/project/exhibitors/members/toggle_status
+// PATCH /v1/organizer/exhibitors/members/toggle_status
 export async function toggleStatusOrganizerMember(exhibitorUuid: string, memberUuid: string) {
   try {
     const headers = await getOrganizerAuthHeaders()
-    await api.patch('/v1/admin/project/exhibitors/members/toggle_status', {
+    await api.patch('/v1/organizer/exhibitors/members/toggle_status', {
       exhibitor_uuid: exhibitorUuid,
       member_uuid: memberUuid
     }, { headers })
@@ -305,11 +307,11 @@ export async function toggleStatusOrganizerMember(exhibitorUuid: string, memberU
   }
 }
 
-// POST /v1/admin/project/exhibitors/members/resend_email_comfirmation
+// POST /v1/organizer/exhibitors/members/resend_email_comfirmation
 export async function resendEmailOrganizerMember(memberUuids: string[]) {
   try {
     const headers = await getOrganizerAuthHeaders()
-    await api.post('/v1/admin/project/exhibitors/members/resend_email_comfirmation', memberUuids, { headers })
+    await api.post('/v1/organizer/exhibitors/members/resend_email_comfirmation', memberUuids, { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error resending organizer member email:', error)
@@ -320,12 +322,12 @@ export async function resendEmailOrganizerMember(memberUuids: string[]) {
 // POST /v1/organizer/exhibitors/login
 export async function testLoginOrganizerExhibitor(data: any) {
   try {
-    const headers = await getOrganizerAuthHeaders()
     const payload = {
       username: data.username,
       password: data.password
     }
 
+    const headers = await getOrganizerAuthHeaders()
     const response = await api.post('/v1/organizer/exhibitors/login', payload, { headers })
     return { success: true, data: response.data.data }
   } catch (error: any) {

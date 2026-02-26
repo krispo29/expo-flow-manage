@@ -24,6 +24,7 @@ export interface Organizer {
   is_active: boolean
   last_login: string
   created_at: string
+  password_note?: string
 }
 
 // GET /v1/admin/project/organizers
@@ -45,7 +46,7 @@ export async function getOrganizers(projectUuid: string) {
 // POST /v1/admin/project/organizers
 export async function createOrganizer(projectUuid: string, data: {
   username: string
-  password: string
+  password?: string
   full_name: string
 }) {
   try {

@@ -41,6 +41,7 @@ export interface Exhibitor {
   inviteCode?: string
   projectId?: string
   password?: string
+  passwordNote?: string
   createdAt?: string
 }
 
@@ -66,7 +67,8 @@ export async function getExhibitors(projectUuid: string) {
       isActive: item.is_active,
       usedQuota: item.used_quota || 0,
       quota: 0, // Not provided in list
-      overQuota: 0 // Not provided in list
+      overQuota: 0, // Not provided in list
+      passwordNote: item.password_note
     }))
 
     return { success: true, exhibitors: mappedExhibitors }
@@ -193,7 +195,8 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,
       usedQuota: 0, // usually comes from members length or separated field
-      createdAt: rawData.created_at
+      createdAt: rawData.created_at,
+      passwordNote: rawData.password_note
     }
 
     return { success: true, exhibitor: mappedExhibitor, members: response.data.data.members }
