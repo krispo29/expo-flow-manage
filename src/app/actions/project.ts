@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import api from '@/lib/api'
+import { isTokenExpiredError, clearAuthCookies } from '@/lib/auth-helpers'
 
 export interface Project {
   project_uuid: string
@@ -41,6 +42,12 @@ export async function getProjects() {
   } catch (error: any) {
     console.error('Error fetching projects:', error)
     console.error('Error details:', error.response?.data)
+    
+    // If token is expired/invalid, clear cookies so user can re-login
+    if (isTokenExpiredError(error)) {
+      await clearAuthCookies()
+    }
+    
     const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch projects'
     return { success: false, error: errorMessage, projects: [] as Project[] }
   }

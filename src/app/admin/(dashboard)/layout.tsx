@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -27,8 +28,14 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
   let sidebarProjects: { name: string; id: string; url: string }[] = []
   
   if (userRole !== 'ORGANIZER') {
-    const { projects } = await getProjects()
-    sidebarProjects = projects?.map(p => ({
+    const result = await getProjects()
+    
+    // If token is expired/invalid, redirect to login
+    if (!result.success && result.error === 'key incorrect') {
+      redirect('/login')
+    }
+    
+    sidebarProjects = result.projects?.map(p => ({
       name: p.project_name,
       id: p.project_uuid,
       url: '/admin/projects',
