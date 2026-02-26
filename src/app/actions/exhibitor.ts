@@ -60,6 +60,7 @@ export async function getExhibitors(projectUuid: string) {
       eventId: item.event_uuid || '', // Might not be returned in list
       companyName: item.company_name,
       username: item.username,
+      email: item.contact_email,
       address: item.address,
       boothNo: item.booth_no,
       isActive: item.is_active,

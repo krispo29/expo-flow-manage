@@ -264,7 +264,7 @@ export default function ReportsPage() {
                   </TableHeader>
                   <TableBody>
                     {results.map((r, i) => (
-                      <TableRow key={r.registration_uuid || i} className="hover:bg-muted/50 transition-colors">
+                      <TableRow key={`${r.registration_uuid}-${i}`} className="hover:bg-muted/50 transition-colors">
                         <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
                         <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
                         <TableCell>{r.company_name || '-'}</TableCell>

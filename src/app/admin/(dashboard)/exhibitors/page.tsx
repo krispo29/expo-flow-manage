@@ -159,7 +159,7 @@ export default function ExhibitorsPage() {
 
   function handleOpenEmailDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
-    setTargetEmail(exhibitor.username || exhibitor.email || '')
+    setTargetEmail(exhibitor.email || exhibitor.username || '')
     setEmailDialogOpen(true)
   }
 
