@@ -163,11 +163,11 @@ export async function updateOrganizerExhibitor(exhibitorUuid: string, data: any)
   }
 }
 
-// PATCH /v1/organizer/exhibitors/:id/force_reset_password
+// PATCH /v1/organizer/exhibitors/force_reset_password
 export async function forceResetPasswordOrganizerExhibitor(exhibitorUuid: string, newPassword: string) {
   try {
     const headers = await getOrganizerAuthHeaders()
-    await api.patch(`/v1/organizer/exhibitors/${exhibitorUuid}/force_reset_password`, {
+    await api.patch('/v1/organizer/exhibitors/force_reset_password', {
       exhibitor_uuid: exhibitorUuid,
       new_password: newPassword
     }, { headers })
@@ -179,11 +179,11 @@ export async function forceResetPasswordOrganizerExhibitor(exhibitorUuid: string
   }
 }
 
-// PATCH /v1/organizer/exhibitors/:id/toggle_status
+// PATCH /v1/organizer/exhibitors/toggle_status
 export async function toggleStatusOrganizerExhibitor(exhibitorUuid: string) {
   try {
     const headers = await getOrganizerAuthHeaders()
-    await api.patch(`/v1/organizer/exhibitors/${exhibitorUuid}/toggle_status`, {
+    await api.patch('/v1/organizer/exhibitors/toggle_status', {
       exhibitor_uuid: exhibitorUuid
     }, { headers })
     revalidatePath('/admin/exhibitors')
