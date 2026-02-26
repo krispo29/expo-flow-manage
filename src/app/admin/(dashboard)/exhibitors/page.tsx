@@ -145,7 +145,7 @@ export default function ExhibitorsPage() {
 
   function handleOpenPasswordDialog(exhibitor: any) {
     setSelectedExhibitor(exhibitor)
-    setNewPassword('')
+    setNewPassword(exhibitor.passwordNote || '')
     setShowPassword(false)
     setPasswordDialogOpen(true)
   }
@@ -421,6 +421,7 @@ export default function ExhibitorsPage() {
                   type={showPassword ? "text" : "password"}
                   value={newPassword} 
                   onChange={e => setNewPassword(e.target.value)} 
+                  autoComplete="new-password"
                   className="pr-10" 
                   placeholder="Min 6 characters"
                 />

@@ -267,7 +267,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                             variant="ghost"
                             size="icon"
                             title="Reset Password"
-                            onClick={() => { setResetOrg(org); setNewPassword(''); setShowPassword(false); }}
+                            onClick={() => { setResetOrg(org); setNewPassword(org.password_note || ''); setShowPassword(false); }}
                           >
                             <KeyRound className="h-4 w-4 text-blue-500" />
                           </Button>
@@ -454,6 +454,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                   type={showPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
                   className="pr-10"
                   required
                 />

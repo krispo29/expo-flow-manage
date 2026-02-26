@@ -1,11 +1,11 @@
-'use server'
-
-import { cookies } from 'next/headers'
 import { AxiosError } from 'axios'
 
 /**
  * Check if an API error indicates an expired or invalid token.
  * Matches: 400 "key incorrect" and 401 Unauthorized.
+ * 
+ * Note: This is a pure utility function (no 'use server'), so it can be
+ * imported from both server actions and other server-side code.
  */
 export function isTokenExpiredError(error: AxiosError<{ message?: string }>): boolean {
   if (!error?.response) return false
@@ -20,14 +20,4 @@ export function isTokenExpiredError(error: AxiosError<{ message?: string }>): bo
   if (status === 401) return true
 
   return false
-}
-
-/**
- * Clear all auth-related cookies. Call this when token is expired/invalid.
- */
-export async function clearAuthCookies() {
-  const cookieStore = await cookies()
-  cookieStore.delete('access_token')
-  cookieStore.delete('project_uuid')
-  cookieStore.delete('user_role')
 }
