@@ -54,6 +54,8 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       banner_2_url: formData.get('banner_2_url') as string,
       copy_right: formData.get('copy_right') as string,
       country_code: formData.get('country_code') as string,
+      exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
+      conference_booking_url: formData.get('conference_booking_url') as string,
     }
 
     const result = await updateProject(projectData)
@@ -126,6 +128,22 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                 Site URL
               </Label>
               <Input id="project_site_url" name="project_site_url" defaultValue={project.project_site_url} placeholder="https://example.com" />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="exhibitor_portal_url" className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                Exhibitor Portal URL
+              </Label>
+              <Input id="exhibitor_portal_url" name="exhibitor_portal_url" defaultValue={project.exhibitor_portal_url} placeholder="https://..." />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="conference_booking_url" className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                Conference Booking URL
+              </Label>
+              <Input id="conference_booking_url" name="conference_booking_url" defaultValue={project.conference_booking_url} placeholder="https://..." />
             </div>
 
             <div className="grid gap-2">

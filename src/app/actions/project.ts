@@ -20,6 +20,8 @@ export interface Project {
   banner_2_url: string
   copy_right: string
   country_code?: string
+  conference_booking_url?: string
+  exhibitor_portal_url?: string
   created_at: string
   updated_at: string
 }
@@ -29,7 +31,7 @@ export async function getProjects() {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('access_token')?.value
-    
+
     const headers: Record<string, string> = {}
     if (token) {
       headers.Authorization = `Bearer ${token}`
@@ -42,7 +44,7 @@ export async function getProjects() {
   } catch (error: any) {
     console.error('Error fetching projects:', error)
     console.error('Error details:', error.response?.data)
-    
+
     // If token is expired/invalid, clear cookies so user can re-login
     if (isTokenExpiredError(error)) {
       const cookieStore = await cookies()
@@ -50,8 +52,11 @@ export async function getProjects() {
       cookieStore.delete('project_uuid')
       cookieStore.delete('user_role')
     }
-    
-    const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch projects'
+
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch projects'
     return { success: false, error: errorMessage, projects: [] as Project[] }
   }
 }
@@ -61,9 +66,9 @@ export async function getProjectDetail(uuid: string) {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('access_token')?.value
-    
+
     const headers: Record<string, string> = {
-      'X-Project-UUID': uuid
+      'X-Project-UUID': uuid,
     }
     if (token) {
       headers.Authorization = `Bearer ${token}`
@@ -88,38 +93,48 @@ export async function getProjectShowDates(uuid: string) {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('access_token')?.value
-    
+
     const headers: Record<string, string> = {
-      'X-Project-UUID': uuid
+      'X-Project-UUID': uuid,
     }
     if (token) {
       headers.Authorization = `Bearer ${token}`
     }
 
-    const response = await api.get('/v1/admin/project/detail/show_dates', { headers })
+    const response = await api.get('/v1/admin/project/detail/show_dates', {
+      headers,
+    })
     const result = response.data
     return { success: true, showDates: (result.data || []) as ShowDate[] }
   } catch (error: any) {
     console.error('Error fetching project show dates:', error)
-    return { success: false, error: 'Failed to fetch show dates', showDates: [] as ShowDate[] }
+    return {
+      success: false,
+      error: 'Failed to fetch show dates',
+      showDates: [] as ShowDate[],
+    }
   }
 }
 
 // PUT /v1/admin/project/detail
-export async function updateProject(projectData: Partial<Project> & { project_uuid: string }) {
+export async function updateProject(
+  projectData: Partial<Project> & { project_uuid: string }
+) {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('access_token')?.value
-    
+
     const headers: Record<string, string> = {
-      'X-Project-UUID': projectData.project_uuid
+      'X-Project-UUID': projectData.project_uuid,
     }
     if (token) {
       headers.Authorization = `Bearer ${token}`
     }
 
-    const response = await api.put('/v1/admin/project/detail', projectData, { headers })
-    
+    const response = await api.put('/v1/admin/project/detail', projectData, {
+      headers,
+    })
+
     revalidatePath('/admin/projects')
     return { success: true, project: projectData }
   } catch (error: any) {

@@ -67,6 +67,8 @@ export default function ProjectsPage() {
       banner_url: formData.get('banner_url') as string,
       banner_2_url: formData.get('banner_2_url') as string,
       copy_right: formData.get('copy_right') as string,
+      exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
+      conference_booking_url: formData.get('conference_booking_url') as string,
     }
 
     const result = await updateProject(projectData)
@@ -300,6 +302,16 @@ export default function ProjectsPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="project_site_url">Site URL</Label>
                   <Input id="project_site_url" name="project_site_url" defaultValue={editingProject.project_site_url} />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="exhibitor_portal_url">Exhibitor Portal URL</Label>
+                  <Input id="exhibitor_portal_url" name="exhibitor_portal_url" defaultValue={editingProject.exhibitor_portal_url} />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="conference_booking_url">Conference Booking URL</Label>
+                  <Input id="conference_booking_url" name="conference_booking_url" defaultValue={editingProject.conference_booking_url} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

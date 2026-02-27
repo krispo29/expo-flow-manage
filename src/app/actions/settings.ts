@@ -42,6 +42,7 @@ export interface Invitation {
   invite_code: string
   invite_link: string
   is_active: boolean
+  used_count?: number
   source?: string
   creator_name?: string
 }
