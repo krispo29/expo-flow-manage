@@ -45,12 +45,9 @@ export async function getProjects() {
     console.error('Error fetching projects:', error)
     console.error('Error details:', error.response?.data)
 
-    // If token is expired/invalid, clear cookies so user can re-login
+    // If token is expired/invalid, return 'key incorrect' so the layout can redirect
     if (isTokenExpiredError(error)) {
-      const cookieStore = await cookies()
-      cookieStore.delete('access_token')
-      cookieStore.delete('project_uuid')
-      cookieStore.delete('user_role')
+      return { success: false, error: 'key incorrect', projects: [] as Project[] }
     }
 
     const errorMessage =
