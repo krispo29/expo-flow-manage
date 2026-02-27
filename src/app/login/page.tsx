@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { loginAction, organizerLoginAction } from '@/app/actions/auth'
@@ -16,8 +16,14 @@ type LoginRole = 'admin' | 'organizer'
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
+  const logout = useAuthStore((state) => state.logout)
   const [loading, setLoading] = useState(false)
   const [loginRole, setLoginRole] = useState<LoginRole>('admin')
+
+  // Clear auth state when landing on login page
+  useEffect(() => {
+    logout()
+  }, [logout])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
