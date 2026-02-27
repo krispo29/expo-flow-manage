@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Loader2, Store, Shield, User, Mail, MapPin, Ticket, Globe, Phone, Printer } from 'lucide-react'
+import { Loader2, Store, User, Mail, MapPin, Ticket, Globe, Phone, Printer } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { type Exhibitor } from '@/app/actions/exhibitor'
@@ -36,7 +36,7 @@ import { CountrySelector } from '@/components/CountrySelector'
 const exhibitorSchema = z.object({
   eventId: z.string().min(1, 'Event is required'),
   companyName: z.string().min(2, 'Company name is required'),
-  username: z.string().min(1, 'Username is required'),
+  username: z.string().optional(),
   boothNo: z.string().optional(),
   contactPerson: z.string().optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
@@ -103,7 +103,6 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     : {
         eventId: '',
         companyName: '',
-        username: '',
         boothNo: '',
         contactPerson: '',
         email: '',
@@ -164,7 +163,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-8 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Company Profile Card */}
-          <Card className={`shadow-sm border-slate-200 overflow-hidden ${initialData ? 'md:col-span-2' : ''}`}>
+          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
@@ -175,7 +174,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
               <CardDescription>Basic information about the exhibitor.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <div className={initialData ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="eventId"
@@ -220,7 +219,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                   control={form.control}
                   name="website"
                   render={({ field }) => (
-                    <FormItem className={initialData ? 'md:col-span-2' : ''}>
+                    <FormItem className="md:col-span-2">
                       <FormLabel>Website</FormLabel>
                       <FormControl>
                         <div className="relative">
@@ -236,34 +235,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
             </CardContent>
           </Card>
 
-          {/* Account Access Card - Only show on create */}
-          {!initialData && <Card className="shadow-sm border-slate-200 overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b pb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                  <Shield className="size-4" />
-                </div>
-                <CardTitle className="text-lg">Account Access</CardTitle>
-              </div>
-              <CardDescription>Credentials for the exhibitor portal.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username (Registration ID)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="REG-001" className="h-11" {...field} />
-                    </FormControl>
-                    <FormDescription className="text-[11px]">Unique identifier for login.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>}
+
 
           {/* Contact Information Card */}
           <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
