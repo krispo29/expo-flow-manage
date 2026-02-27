@@ -19,14 +19,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, user, router, isHydrated])
 
-  // Show loader while hydrating or if not authenticated (redirecting)
-  if (!isHydrated || !isAuthenticated || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
+  const isLoading = !isHydrated || !isAuthenticated || !user;
 
-  return <>{children}</>
+  return (
+    <>
+      {isLoading && (
+        <div className="flex h-screen w-full items-center justify-center fixed inset-0 z-50 bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )}
+      <div style={{ display: isLoading ? 'none' : 'contents' }}>
+        {children}
+      </div>
+    </>
+  )
 }

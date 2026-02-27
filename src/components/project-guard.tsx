@@ -48,15 +48,19 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
     }
   }, [projectId, pathname, router, projects, isOrganizer])
 
-  // Show loader if we are NOT on projects page AND no projectId (and not organizer)
-  if (pathname !== '/admin/projects' && !projectId && !isOrganizer) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-muted-foreground">Redirecting...</span>
-      </div>
-    )
-  }
+  const isLoading = pathname !== '/admin/projects' && !projectId && !isOrganizer;
 
-  return <>{children}</>
+  return (
+    <>
+      {isLoading && (
+        <div className="flex h-screen w-full items-center justify-center fixed inset-0 z-50 bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-sm text-muted-foreground">Redirecting...</span>
+        </div>
+      )}
+      <div style={{ display: isLoading ? 'none' : 'contents' }}>
+        {children}
+      </div>
+    </>
+  )
 }

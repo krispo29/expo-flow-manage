@@ -19,11 +19,16 @@ export default function LoginPage() {
   const logout = useAuthStore((state) => state.logout)
   const [loading, setLoading] = useState(false)
   const [loginRole, setLoginRole] = useState<LoginRole>('admin')
+  const [mounted, setMounted] = useState(false)
 
   // Clear auth state when landing on login page
   useEffect(() => {
     logout()
   }, [logout])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -59,6 +64,10 @@ export default function LoginPage() {
     }
   }
 
+  if (!mounted) {
+    return null
+  }
+
   return (
     <div className="flex h-screen w-full items-center justify-center bg-muted/40">
       <Card className="w-full max-w-sm">
@@ -83,7 +92,7 @@ export default function LoginPage() {
                   }`}
                   onClick={() => setLoginRole('admin')}
                 >
-                  Admin
+                  <span>Admin</span>
                 </button>
                 <button
                   type="button"
@@ -94,7 +103,7 @@ export default function LoginPage() {
                   }`}
                   onClick={() => setLoginRole('organizer')}
                 >
-                  Organizer
+                  <span>Organizer</span>
                 </button>
               </div>
             </div>
@@ -111,7 +120,7 @@ export default function LoginPage() {
           <CardFooter>
             <Button className="w-full mt-4" type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loginRole === 'organizer' ? 'Sign in as Organizer' : 'Sign in'}
+              <span>{loginRole === 'organizer' ? 'Sign in as Organizer' : 'Sign in'}</span>
             </Button>
           </CardFooter>
         </form>
