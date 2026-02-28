@@ -11,12 +11,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { format } from "date-fns"
 import { advancedSearch, getEventsForReport, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent } from "@/app/actions/report"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import * as XLSX from "xlsx"
+import { CountrySelector } from "@/components/CountrySelector"
+import { countries } from "@/lib/countries"
 
 export default function ReportsPage() {
   // ─── Filter state ────────────────────────────────────────────────────────────
@@ -108,7 +110,7 @@ export default function ReportsPage() {
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
-        country: country || undefined,
+        country: country ? countries.find(c => c.code === country)?.name : undefined,
         keyword: keyword || undefined,
         page: searchPage,
         limit,
@@ -348,14 +350,23 @@ export default function ReportsPage() {
 
             {/* Country Filter */}
             <div className="space-y-2">
-              <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
-              <Input
-                id="country"
-                placeholder="e.g. Thailand"
-                className="bg-background"
+              <div className="flex items-center justify-between">
+                <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
+                {country && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setCountry("")}
+                  >
+                    Clear <X className="h-3 w-3 ml-1" />
+                  </Button>
+                )}
+              </div>
+              <CountrySelector
                 value={country}
-                onChange={e => setCountry(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
+                onChange={setCountry}
+                placeholder="Select country"
               />
             </div>
 
@@ -419,13 +430,27 @@ export default function ReportsPage() {
       {/* Search Results                                                     */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <Card className="border shadow-sm">
-        <CardHeader className="pb-0">
-          <CardTitle className="text-lg">Search Results</CardTitle>
-          <CardDescription>
-            {searched
-              ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
-              : 'Use the filters above and click Search to find participants.'}
-          </CardDescription>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="text-lg">Search Results</CardTitle>
+              <CardDescription>
+                {searched
+                  ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
+                  : 'Use the filters above and click Search to find participants.'}
+              </CardDescription>
+            </div>
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Keyword search..."
+                className="pl-9 bg-background"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch(1)}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           {loading ? (

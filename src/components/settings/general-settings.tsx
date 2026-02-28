@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Globe, Settings2, CalendarDays, Image, Loader2 } from "lucide-react"
+import { CountrySelector } from "@/components/CountrySelector"
 
 interface ProjectSettingsProps {
   projectUuid: string
@@ -19,12 +20,14 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [countryCode, setCountryCode] = useState<string>("")
 
   async function fetchProject() {
     setLoading(true)
     const result = await getProjectDetail(projectUuid)
     if (result.success && result.project) {
       setProject(result.project)
+      setCountryCode(result.project.country_code || "")
     }
     setLoading(false)
   }
@@ -151,7 +154,12 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                 <Globe className="h-4 w-4 text-muted-foreground" />
                 Country Code
               </Label>
-              <Input id="country_code" name="country_code" defaultValue={project.country_code} placeholder="e.g. VN, TH" maxLength={2} className="uppercase" />
+              <CountrySelector
+                value={countryCode}
+                onChange={setCountryCode}
+                placeholder="Select country code"
+              />
+              <input type="hidden" name="country_code" value={countryCode} />
             </div>
           </div>
 
