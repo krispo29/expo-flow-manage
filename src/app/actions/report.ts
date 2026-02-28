@@ -83,3 +83,23 @@ export async function advancedSearch(params: AdvancedSearchParams) {
     return { success: false, error: errorMessage }
   }
 }
+
+export interface Event {
+  event_uuid: string
+  event_code: string
+  event_name: string
+  is_active: boolean
+  order_index: number
+}
+
+export async function getEventsForReport() {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/events', { headers })
+    const result = response.data
+    return { success: true, events: (result.data || []) as Event[] }
+  } catch (error: unknown) {
+    console.error('Error fetching events:', error)
+    return { success: false, error: 'Failed to fetch events', events: [] as Event[] }
+  }
+}
