@@ -119,7 +119,7 @@ export async function createOrganizerConference(formData: FormData) {
 
     await api.post('/v1/organizer/conferences/', body, { headers })
 
-    revalidatePath('/admin/conferences')
+    revalidatePath('/organizer/conferences')
     return { success: true }
   } catch (error: unknown) {
     console.error('Error creating organizer conference:', error)
@@ -158,7 +158,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
 
     await api.put('/v1/organizer/conferences/', body, { headers })
 
-    revalidatePath('/admin/conferences')
+    revalidatePath('/organizer/conferences')
     return { success: true }
   } catch (error: unknown) {
     console.error('Error updating organizer conference:', error)

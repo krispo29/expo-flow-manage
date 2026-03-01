@@ -122,7 +122,7 @@ export async function createOrganizerExhibitor(data: any) {
 
     const headers = await getOrganizerAuthHeaders()
     const response = await api.post('/v1/organizer/exhibitors', payload, { headers })
-    revalidatePath('/admin/exhibitors')
+    revalidatePath('/organizer/exhibitors')
     return { success: true, exhibitor: response.data.data }
   } catch (error: any) {
     console.error('Error creating organizer exhibitor:', error)
@@ -154,7 +154,7 @@ export async function updateOrganizerExhibitor(exhibitorUuid: string, data: any)
 
     const headers = await getOrganizerAuthHeaders()
     const response = await api.put('/v1/organizer/exhibitors', payload, { headers })
-    revalidatePath('/admin/exhibitors')
+    revalidatePath('/organizer/exhibitors')
     return { success: true, exhibitor: response.data.data }
   } catch (error: any) {
     console.error('Error updating organizer exhibitor:', error)
@@ -186,7 +186,7 @@ export async function toggleStatusOrganizerExhibitor(exhibitorUuid: string) {
     await api.patch('/v1/organizer/exhibitors/toggle_status', {
       exhibitor_uuid: exhibitorUuid
     }, { headers })
-    revalidatePath('/admin/exhibitors')
+    revalidatePath('/organizer/exhibitors')
     return { success: true }
   } catch (error: any) {
     console.error('Error toggling organizer exhibitor status:', error)
@@ -251,7 +251,7 @@ export async function createOrganizerMember(data: any) {
 
     const headers = await getOrganizerAuthHeaders()
     const response = await api.post('/v1/organizer/exhibitors/members/', payload, { headers })
-    revalidatePath('/admin/exhibitors')
+    revalidatePath('/organizer/exhibitors')
     return { success: true, member: response.data.data }
   } catch (error: any) {
     console.error('Error creating organizer member:', error)
@@ -281,7 +281,7 @@ export async function updateOrganizerMember(memberUuid: string, data: any) {
 
     const headers = await getOrganizerAuthHeaders()
     const response = await api.put('/v1/organizer/exhibitors/members/', payload, { headers })
-    revalidatePath('/admin/exhibitors')
+    revalidatePath('/organizer/exhibitors')
     return { success: true, member: response.data.data }
   } catch (error: any) {
     console.error('Error updating organizer member:', error)
@@ -298,7 +298,7 @@ export async function toggleStatusOrganizerMember(exhibitorUuid: string, memberU
       exhibitor_uuid: exhibitorUuid,
       member_uuid: memberUuid
     }, { headers })
-    revalidatePath('/admin/exhibitors')
+    revalidatePath('/organizer/exhibitors')
     return { success: true }
   } catch (error: any) {
     console.error('Error toggling organizer member status:', error)
