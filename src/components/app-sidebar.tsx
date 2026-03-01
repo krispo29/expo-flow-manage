@@ -64,14 +64,16 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
     avatar: "/avatars/admin.jpg",
   }
 
+  const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
+
   const handleProjectChange = (newProjectId: string) => {
-    router.push(`/admin?projectId=${newProjectId}`)
+    router.push(`${basePath}?projectId=${newProjectId}`)
   }
 
   // Helper to check if a path is active
   const isActive = (path: string) => {
-    if (path === '/admin' && pathname === '/admin') return true
-    return pathname.startsWith(path) && path !== '/admin'
+    if (path === basePath && pathname === basePath) return true
+    return pathname.startsWith(path) && path !== basePath
   }
 
   return (
@@ -174,13 +176,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Exhibitors" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/exhibitors') 
+                        isActive(`${basePath}/exhibitors`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/exhibitors')}
+                      isActive={isActive(`${basePath}/exhibitors`)}
                     >
-                      <Link href={projectId ? `/admin/exhibitors?projectId=${projectId}` : "/admin/exhibitors"}>
+                      <Link href={projectId ? `${basePath}/exhibitors?projectId=${projectId}` : `${basePath}/exhibitors`}>
                         <Users className="size-5 transition-transform group-hover:scale-110" />
                         <span>Exhibitors</span>
                       </Link>
@@ -195,13 +197,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Participants" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/participants') 
+                        isActive(`${basePath}/participants`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/participants')}
+                      isActive={isActive(`${basePath}/participants`)}
                     >
-                      <Link href={projectId ? `/admin/participants?projectId=${projectId}` : "/admin/participants"}>
+                      <Link href={projectId ? `${basePath}/participants?projectId=${projectId}` : `${basePath}/participants`}>
                         <Contact className="size-5 transition-transform group-hover:scale-110" />
                         <span>Participants</span>
                       </Link>
@@ -215,13 +217,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Organizers" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/organizers') 
+                        isActive(`${basePath}/organizers`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/organizers')}
+                      isActive={isActive(`${basePath}/organizers`)}
                     >
-                      <Link href={projectId ? `/admin/organizers?projectId=${projectId}` : "/admin/organizers"}>
+                      <Link href={projectId ? `${basePath}/organizers?projectId=${projectId}` : `${basePath}/organizers`}>
                         <Users className="size-5 transition-transform group-hover:scale-110" />
                         <span>Organizers</span>
                       </Link>
@@ -236,13 +238,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Conferences" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/conferences') 
+                        isActive(`${basePath}/conferences`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/conferences')}
+                      isActive={isActive(`${basePath}/conferences`)}
                     >
-                      <Link href={projectId ? `/admin/conferences?projectId=${projectId}` : "/admin/conferences"}>
+                      <Link href={projectId ? `${basePath}/conferences?projectId=${projectId}` : `${basePath}/conferences`}>
                         <Presentation className="size-5 transition-transform group-hover:scale-110" />
                         <span>Conferences</span>
                       </Link>
@@ -257,13 +259,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Rooms" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/rooms') 
+                        isActive(`${basePath}/rooms`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/rooms')}
+                      isActive={isActive(`${basePath}/rooms`)}
                     >
-                      <Link href={projectId ? `/admin/rooms?projectId=${projectId}` : "/admin/rooms"}>
+                      <Link href={projectId ? `${basePath}/rooms?projectId=${projectId}` : `${basePath}/rooms`}>
                         <DoorOpen className="size-5 transition-transform group-hover:scale-110" />
                         <span>Rooms</span>
                       </Link>
@@ -278,13 +280,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Events" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/events') 
+                        isActive(`${basePath}/events`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/events')}
+                      isActive={isActive(`${basePath}/events`)}
                     >
-                      <Link href={projectId ? `/admin/events?projectId=${projectId}` : "/admin/events"}>
+                      <Link href={projectId ? `${basePath}/events?projectId=${projectId}` : `${basePath}/events`}>
                         <Calendar className="size-5 transition-transform group-hover:scale-110" />
                         <span>Events</span>
                       </Link>
@@ -299,13 +301,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Invitation Codes" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/invitation-codes') 
+                        isActive(`${basePath}/invitation-codes`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/invitation-codes')}
+                      isActive={isActive(`${basePath}/invitation-codes`)}
                     >
-                      <Link href={projectId ? `/admin/invitation-codes?projectId=${projectId}` : "/admin/invitation-codes"}>
+                      <Link href={projectId ? `${basePath}/invitation-codes?projectId=${projectId}` : `${basePath}/invitation-codes`}>
                         <FileText className="size-5 transition-transform group-hover:scale-110" />
                         <span>Invitation Codes</span>
                       </Link>
@@ -331,13 +333,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Reports" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/reports') 
+                        isActive(`${basePath}/reports`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/reports')}
+                      isActive={isActive(`${basePath}/reports`)}
                     >
-                      <Link href={projectId ? `/admin/reports?projectId=${projectId}` : "/admin/reports"}>
+                      <Link href={projectId ? `${basePath}/reports?projectId=${projectId}` : `${basePath}/reports`}>
                         <FileText className="size-5 transition-transform group-hover:scale-110" />
                         <span>Reports</span>
                       </Link>
@@ -351,13 +353,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Utility" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/utilities') 
+                        isActive(`${basePath}/utilities`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/utilities')}
+                      isActive={isActive(`${basePath}/utilities`)}
                     >
-                      <Link href={projectId ? `/admin/utilities?projectId=${projectId}` : "/admin/utilities"}>
+                      <Link href={projectId ? `${basePath}/utilities?projectId=${projectId}` : `${basePath}/utilities`}>
                         <Wrench className="size-5 transition-transform group-hover:scale-110" />
                         <span>Utility</span>
                       </Link>
@@ -371,13 +373,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Settings" 
                       className={cn(
                         "h-10 text-[15px] font-medium px-4 transition-all duration-200",
-                        isActive('/admin/settings') 
+                        isActive(`${basePath}/settings`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
                       )}
-                      isActive={isActive('/admin/settings')}
+                      isActive={isActive(`${basePath}/settings`)}
                     >
-                      <Link href={projectId ? `/admin/settings?projectId=${projectId}` : "/admin/settings"}>
+                      <Link href={projectId ? `${basePath}/settings?projectId=${projectId}` : `${basePath}/settings`}>
                         <Settings className="size-5 transition-transform group-hover:scale-110" />
                         <span>Settings</span>
                       </Link>

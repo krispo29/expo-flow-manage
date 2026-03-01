@@ -53,7 +53,7 @@ export default function LoginPage() {
         
         if (loginRole === 'organizer') {
           // Organizer skips project selection, land on exhibitors page since dashboard is hidden
-          router.push('/admin/exhibitors')
+          router.push('/organizer/exhibitors')
         } else {
           router.push('/admin/projects')
         }

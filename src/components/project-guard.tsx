@@ -17,10 +17,13 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const lastProjectIdRef = useRef<string | null>(null)
-  const { user } = useAuthStore()
+  const { user, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
 
   useEffect(() => {
+    // Wait for hydration to finish so user role is available
+    if (!isHydrated) return
+
     // If we are on the projects page, do nothing
     if (pathname === '/admin/projects') return
 
@@ -46,9 +49,9 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
         console.error('Failed to set project cookie:', err)
       })
     }
-  }, [projectId, pathname, router, projects, isOrganizer])
+  }, [projectId, pathname, router, projects, isOrganizer, isHydrated])
 
-  const isLoading = pathname !== '/admin/projects' && !projectId && !isOrganizer;
+  const isLoading = !isHydrated || (pathname !== '/admin/projects' && !projectId && !isOrganizer);
 
   return (
     <>
