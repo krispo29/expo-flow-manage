@@ -250,7 +250,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   </SidebarMenuItem>
                 )}
 
-                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
@@ -271,7 +271,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   </SidebarMenuItem>
                 )}
 
-                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
@@ -292,7 +292,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   </SidebarMenuItem>
                 )}
 
-                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 

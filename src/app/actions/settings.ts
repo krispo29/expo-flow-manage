@@ -26,6 +26,7 @@ export interface Room {
   capacity: number
   is_active: boolean
   scanner_id?: string
+  room_type?: string
 }
 
 export interface Event {
@@ -68,6 +69,7 @@ export async function createRoom(projectUuid: string, data: {
   capacity: number
   is_active: boolean
   scanner_id?: string
+  room_type?: string
 }) {
   try {
     const headers = await getAuthHeaders(projectUuid)
@@ -89,6 +91,7 @@ export async function updateRoom(projectUuid: string, data: {
   capacity: number
   is_active: boolean
   scanner_id?: string
+  room_type?: string
 }) {
   try {
     const headers = await getAuthHeaders(projectUuid)

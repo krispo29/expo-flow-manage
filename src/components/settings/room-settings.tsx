@@ -26,7 +26,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
 
   // Create form state
-  const [newRoom, setNewRoom] = useState({ event_uuid: '', room_name: '', location_detail: '', capacity: 0, is_active: true, scanner_id: '' })
+  const [newRoom, setNewRoom] = useState({ event_uuid: '', room_name: '', location_detail: '', room_type: '', capacity: 0, is_active: true, scanner_id: '' })
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -86,7 +86,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
     if (result.success) {
       toast.success("Room created")
       setIsCreateOpen(false)
-      setNewRoom({ event_uuid: '', room_name: '', location_detail: '', capacity: 0, is_active: true, scanner_id: '' })
+      setNewRoom({ event_uuid: '', room_name: '', location_detail: '', room_type: '', capacity: 0, is_active: true, scanner_id: '' })
       fetchData()
     } else {
       toast.error(result.error || "Failed to create room")
@@ -104,6 +104,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
       capacity: editingRoom.capacity,
       is_active: editingRoom.is_active,
       scanner_id: editingRoom.scanner_id,
+      room_type: editingRoom.room_type,
     })
     setSaving(false)
     if (result.success) {
@@ -157,8 +158,9 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
           </div>
         ) : (
           <div className="border rounded-md">
-            <div className="grid grid-cols-7 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
+            <div className="grid grid-cols-8 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
               <div>Room Name</div>
+              <div>Room Type</div>
               <div>Event</div>
               <div>Location</div>
               <div>Scanner ID</div>
@@ -167,11 +169,12 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <div className="text-right">Actions</div>
             </div>
             {paginatedRooms.map((room) => (
-              <div key={room.room_uuid} className="grid grid-cols-7 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
+              <div key={room.room_uuid} className="grid grid-cols-8 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
                 <div className="font-medium flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   {room.room_name}
                 </div>
+                <div className="text-muted-foreground">{room.room_type || '—'}</div>
                 <div className="text-muted-foreground">{room.event_name}</div>
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <MapPin className="h-3 w-3" />
@@ -302,6 +305,10 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <Input value={newRoom.location_detail} onChange={(e) => setNewRoom({ ...newRoom, location_detail: e.target.value })} placeholder="e.g. Hall 1" />
             </div>
             <div className="grid gap-2">
+              <Label>Room Type</Label>
+              <Input value={newRoom.room_type} onChange={(e) => setNewRoom({ ...newRoom, room_type: e.target.value })} placeholder="e.g. Conference, Meeting" />
+            </div>
+            <div className="grid gap-2">
               <Label>Scanner ID</Label>
               <Input value={newRoom.scanner_id} onChange={(e) => setNewRoom({ ...newRoom, scanner_id: e.target.value })} placeholder="e.g. A001" />
             </div>
@@ -353,6 +360,10 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <div className="grid gap-2">
                 <Label>Location Detail</Label>
                 <Input value={editingRoom.location_detail} onChange={(e) => setEditingRoom({ ...editingRoom, location_detail: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Room Type</Label>
+                <Input value={editingRoom.room_type || ''} onChange={(e) => setEditingRoom({ ...editingRoom, room_type: e.target.value })} placeholder="e.g. Conference, Meeting" />
               </div>
               <div className="grid gap-2">
                 <Label>Scanner ID</Label>
