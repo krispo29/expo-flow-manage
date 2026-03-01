@@ -27,6 +27,7 @@ import {
 
 import { useAuthStore } from "@/store/useAuthStore"
 import { useRouter } from "next/navigation"
+import { logoutAction } from "@/app/actions/auth"
 
 export function NavUser({
   user,
@@ -41,7 +42,8 @@ export function NavUser({
   const { logout } = useAuthStore()
   const router = useRouter()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutAction()
     logout()
     router.push("/login")
   }

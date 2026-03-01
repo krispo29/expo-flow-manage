@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
-import { loginAction, organizerLoginAction } from '@/app/actions/auth'
+import { loginAction, organizerLoginAction, logoutAction } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,9 +21,10 @@ export default function LoginPage() {
   const [loginRole, setLoginRole] = useState<LoginRole>('admin')
   const [mounted, setMounted] = useState(false)
 
-  // Clear auth state when landing on login page
+  // Clear auth state (both client and server) when landing on login page
   useEffect(() => {
     logout()
+    logoutAction()
   }, [logout])
 
   useEffect(() => {

@@ -36,7 +36,7 @@ export default async function Page(props: Props) {
   }
 
   // Single API call for all dashboard data
-  const result = await getDashboard()
+  const result = await getDashboard(projectId)
   const failed = !result.success || !result.data
 
   const summary = result.data?.summary

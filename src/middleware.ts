@@ -11,13 +11,6 @@ export function middleware(request: NextRequest) {
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
 
   if (isPublicPath) {
-    // If user is already logged in and tries to access login page, redirect to appropriate dashboard
-    if (pathname === '/login' && accessToken) {
-      if (userRole === 'ORGANIZER') {
-        return NextResponse.redirect(new URL('/organizer/exhibitors', request.url))
-      }
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
     return NextResponse.next()
   }
 

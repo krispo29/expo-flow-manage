@@ -58,9 +58,9 @@ export interface DashboardData {
 
 // ─── Action ───────────────────────────────────────────────────────────────────
 
-export async function getDashboard() {
+export async function getDashboard(projectUuid?: string) {
   try {
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/dashboard', { headers })
     const rawData = response.data?.data || {}
 
