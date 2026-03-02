@@ -3,6 +3,7 @@
 import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { requireProjectContext } from '@/lib/authorization'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
@@ -54,6 +55,9 @@ export interface ParticipantDetail extends Participant {
 }
 
 export async function getParticipants(projectId: string, query?: string, type?: string) {
+  // Verify user has access to this project
+  await requireProjectContext(projectId)
+  
   try {
     const headers = await getAuthHeaders(projectId)
  
@@ -87,6 +91,14 @@ export async function getParticipants(projectId: string, query?: string, type?: 
 
 export async function getParticipantById(id: string) {
   try {
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+    
+    // Verify user has access to this project
+    if (projectUuid) {
+      await requireProjectContext(projectUuid)
+    }
+    
     const headers = await getAuthHeaders()
  
     const response = await api.get(`/v1/admin/project/participants/${id}`, {
@@ -170,6 +182,15 @@ export async function updateParticipant(registrationUuid: string, formData: Form
 
 export async function deleteParticipant(registrationUuid: string) {
   try {
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
+    
+    // Verify user has access to this project before deletion
+    if (!projectUuid) {
+      return { error: 'Project context required' }
+    }
+    await requireProjectContext(projectUuid)
+    
     const headers = await getAuthHeaders()
  
     await api.delete(`/v1/admin/project/participants/${registrationUuid}/delete`, {

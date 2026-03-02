@@ -18,6 +18,8 @@
     "@hookform/resolvers": "^5.2.2",
     "@sentry/nextjs": "^10.40.0",
     "@types/uuid": "^10.0.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.3",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",

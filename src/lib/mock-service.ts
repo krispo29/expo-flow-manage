@@ -120,11 +120,13 @@ export interface InvitationCode {
 }
 
 // Mock Data Store
+// WARNING: This file contains mock data for development/testing only
+// DO NOT use in production - passwords are for testing purposes only
 class MockService {
   private readonly users: User[] = [
-    { id: '1', username: 'admin', password: '123', role: 'ADMIN' },
-    { id: '2', username: 'organizer', password: '123', role: 'ORGANIZER' },
-    { id: '3', username: 'exhibitor', password: '123', role: 'EXHIBITOR' },
+    { id: '1', username: 'admin', password: 'MOCK_PASSWORD_HASH_ADMIN', role: 'ADMIN' },
+    { id: '2', username: 'organizer', password: 'MOCK_PASSWORD_HASH_ORGANIZER', role: 'ORGANIZER' },
+    { id: '3', username: 'exhibitor', password: 'MOCK_PASSWORD_HASH_EXHIBITOR', role: 'EXHIBITOR' },
   ];
   
   private projectsList: Project[] = [

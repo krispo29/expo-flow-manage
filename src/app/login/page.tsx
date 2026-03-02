@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { loginAction, organizerLoginAction, logoutAction } from '@/app/actions/auth'
+import { getProjects } from '@/app/actions/project'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { setStoredUser, setStoredProjects, clearAuthStorage, type StoredProject } from '@/lib/auth-storage'
 
 type LoginRole = 'admin' | 'organizer'
 
@@ -25,6 +27,8 @@ export default function LoginPage() {
   useEffect(() => {
     logout()
     logoutAction()
+    // Clear sessionStorage as well
+    clearAuthStorage()
   }, [logout])
 
   useEffect(() => {
@@ -56,7 +60,41 @@ export default function LoginPage() {
           // Organizer skips project selection, land on exhibitors page since dashboard is hidden
           router.push('/organizer/exhibitors')
         } else {
-          router.push('/admin/projects')
+          // For admin role, check number of projects after login
+          const projectsResult = await getProjects()
+          
+          if (projectsResult.success && projectsResult.projects) {
+            // Store user and projects in sessionStorage for use across the app
+            // For admin, user has com_uuid; for organizer, user has projectId
+            const userData = result.user as { id: string; username: string; role: string; com_uuid?: string; projectId?: string }
+            setStoredUser({
+              id: userData.id,
+              username: userData.username,
+              role: userData.role,
+              projectId: userData.com_uuid || userData.projectId
+            })
+            
+            // Store projects in sessionStorage (map to simple format)
+            const storedProjects: StoredProject[] = projectsResult.projects.map(p => ({
+              project_uuid: p.project_uuid,
+              project_name: p.project_name,
+              project_code: p.project_code || '',
+              logo_url: p.logo_url
+            }))
+            setStoredProjects(storedProjects)
+            
+            // Check project count and redirect accordingly
+            if (projectsResult.projects.length === 1) {
+              // Single project - show loading page with animation before redirect
+              router.push(`/loading?projectId=${projectsResult.projects[0].project_uuid}`)
+            } else {
+              // Multiple projects - go to project selection page
+              router.push('/admin/projects')
+            }
+          } else {
+            // If we can't fetch projects, go to projects page anyway
+            router.push('/admin/projects')
+          }
         }
       }
     } catch {

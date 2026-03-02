@@ -3,6 +3,7 @@
 import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { requireOrganizer } from '@/lib/authorization'
 
 // Re-export shared interfaces
 export type { Exhibitor } from './exhibitor'
@@ -22,6 +23,9 @@ async function getOrganizerAuthHeaders() {
 
 // GET /v1/organizer/exhibitors
 export async function getOrganizerExhibitors() {
+  // Verify user is an organizer
+  await requireOrganizer()
+  
   try {
     const headers = await getOrganizerAuthHeaders()
     const response = await api.get('/v1/organizer/exhibitors', { headers })

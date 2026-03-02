@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import api from '@/lib/api'
+import { requireProjectContext } from '@/lib/authorization'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid: string) {
@@ -36,6 +37,9 @@ export interface Staff {
 
 // GET /v1/admin/project/exhibitors/staff
 export async function getStaffByExhibitorId(projectUuid: string, exhibitorId: string) {
+  // Verify user has access to this project
+  await requireProjectContext(projectUuid)
+  
   try {
     const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/exhibitors/staff', {
@@ -110,6 +114,9 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
 
 // DELETE /v1/admin/project/exhibitors/members
 export async function deleteStaff(projectUuid: string, memberId: string, exhibitorId?: string) {
+  // Verify user has access to this project before deletion
+  await requireProjectContext(projectUuid)
+  
   try {
     const headers = await getAuthHeaders(projectUuid)
     await api.delete('/v1/admin/project/exhibitors/members', {
