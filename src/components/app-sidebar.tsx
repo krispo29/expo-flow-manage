@@ -15,6 +15,7 @@ import {
   ChevronsUpDown,
   Calendar,
   DoorOpen,
+  ContactRound,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -210,6 +211,28 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Staff" 
+                      className={cn(
+                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        isActive(`${basePath}/staff`) 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-sidebar-accent/50"
+                      )}
+                      isActive={isActive(`${basePath}/staff`)}
+                    >
+                      <Link href={projectId ? `${basePath}/staff?projectId=${projectId}` : `${basePath}/staff`}>
+                        <ContactRound className="size-5 transition-transform group-hover:scale-110" />
+                        <span>Staff</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 

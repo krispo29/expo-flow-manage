@@ -161,3 +161,104 @@ export async function toggleStatusStaff(projectUuid: string, memberId: string, e
     return { success: false, error: errMsg }
   }
 }
+
+// GET /v1/admin/project/staff
+export async function getProjectStaffs(projectUuid: string, page: number = 1, limit: number = 20, keyword: string = '') {
+  await requireProjectContext(projectUuid)
+  
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get('/v1/admin/project/staff', {
+      headers,
+      params: { page, limit, keyword }
+    })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error fetching project staffs:', error)
+    return { success: false, error: 'Failed to fetch staff' }
+  }
+}
+
+// POST /v1/admin/project/staff
+export async function createProjectStaff(projectUuid: string, data: any) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const payload = {
+      title: data.title,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      company_name: data.company_name,
+      staff_type_code: data.staff_type_code,
+    }
+
+    const response = await api.post('/v1/admin/project/staff', payload, { headers })
+    revalidatePath('/admin/staff')
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error creating project staff:', error)
+    const errMsg = error.response?.data?.message || 'Failed to create staff'
+    return { success: false, error: errMsg }
+  }
+}
+
+// GET /v1/admin/project/staff/{staffID}
+export async function getProjectStaffById(projectUuid: string, staffId: string) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get(`/v1/admin/project/staff/${staffId}`, { headers })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error fetching project staff by id:', error)
+    return { success: false, error: 'Failed to fetch staff details' }
+  }
+}
+
+// PUT /v1/admin/project/staff/{staffID}
+export async function updateProjectStaff(projectUuid: string, staffId: string, data: any) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const payload = {
+      title: data.title,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      company_name: data.company_name,
+      staff_type_code: data.staff_type_code,
+    }
+
+    const response = await api.put(`/v1/admin/project/staff/${staffId}`, payload, { headers })
+    revalidatePath('/admin/staff')
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error updating project staff:', error)
+    const errMsg = error.response?.data?.message || 'Failed to update staff'
+    return { success: false, error: errMsg }
+  }
+}
+
+// DELETE /v1/admin/project/staff/{staffID}
+export async function deleteProjectStaff(projectUuid: string, staffId: string) {
+  await requireProjectContext(projectUuid)
+  
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    await api.delete(`/v1/admin/project/staff/${staffId}`, { headers })
+    revalidatePath('/admin/staff')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error deleting project staff:', error)
+    return { success: false, error: 'Failed to delete staff' }
+  }
+}
+
+// POST /v1/admin/project/staff/{staffID}/print
+export async function printProjectStaffBadge(projectUuid: string, staffId: string) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.post(`/v1/admin/project/staff/${staffId}/print`, {}, { headers })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error printing project staff badge:', error)
+    const errMsg = error.response?.data?.message || 'Failed to print badge'
+    return { success: false, error: errMsg }
+  }
+}
