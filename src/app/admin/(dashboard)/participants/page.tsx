@@ -1,6 +1,7 @@
-// import { ScannerImport } from '@/components/scanner-import'
 import { getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
+import { AttendanceLogs } from '@/components/attendance-logs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { cookies } from 'next/headers'
  
@@ -26,10 +27,21 @@ export default async function ParticipantsPage() {
       {/* Scanner Import Section */}
       {/* <ScannerImport projectId={projectId} /> */}
 
-      <ParticipantList 
-        participants={participants} 
-        projectId={projectId}
-      />
+      <Tabs defaultValue="participants" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="participants">Participant List</TabsTrigger>
+          <TabsTrigger value="attendance-logs">Attendance Logs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="participants">
+          <ParticipantList 
+            participants={participants} 
+            projectId={projectId}
+          />
+        </TabsContent>
+        <TabsContent value="attendance-logs">
+          <AttendanceLogs projectId={projectId} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

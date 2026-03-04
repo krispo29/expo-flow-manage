@@ -391,3 +391,66 @@ export async function getAllAttendeeTypes() {
     return { error: errorMessage }
   }
 }
+
+export type AttendanceLog = {
+  log_id: number
+  registration_code: string
+  device_id: string
+  scanned_at: string
+  first_name: string
+  last_name: string
+  company_name: string
+  job_position: string
+  room_name: string
+}
+
+export async function getAttendanceLogs(page: number = 1, limit: number = 50, keyword: string = '') {
+  try {
+    const headers = await getAuthHeaders()
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })
+    if (keyword) {
+      params.append('keyword', keyword)
+    }
+
+    const response = await api.get(`/v1/admin/project/participants/attendance_logs?${params.toString()}`, {
+      headers
+    })
+
+    const data = response.data.data
+    return { success: true, total: data.total as number, items: data.items as AttendanceLog[] }
+  } catch (error: unknown) {
+    console.error('Error fetching attendance logs:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch attendance logs'
+    return { success: false, error: errorMessage, total: 0, items: [] }
+  }
+}
+
+export async function importAttendanceLogs(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    if (!file) {
+      return { success: false, error: 'File is required' }
+    }
+
+    const headers = await getAuthHeaders()
+    
+    await api.post('/v1/admin/project/participants/attendance_logs/import', formData, {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    revalidatePath('/admin/participants')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Attendance Log import error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to import attendance logs'
+    return { success: false, error: errorMessage }
+  }
+}
+
