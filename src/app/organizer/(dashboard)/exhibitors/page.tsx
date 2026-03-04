@@ -258,7 +258,7 @@ export default function ExhibitorsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Exhibitors</h1>
-        <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
+        <Link href={isOrganizer ? `/organizer/exhibitors/new` : `/organizer/exhibitors/new?projectId=${projectId}`}>
           <Button>
             <Plus className="mr-2 h-4 w-4" /> Add Exhibitor
           </Button>
@@ -344,7 +344,7 @@ export default function ExhibitorsPage() {
                               <Mail className="h-4 w-4 text-purple-500" />
                             </Button>
                           
-                            <Link href={isOrganizer ? `/admin/exhibitors/${item.id}` : `/admin/exhibitors/${item.id}?projectId=${projectId}`}>
+                            <Link href={isOrganizer ? `/organizer/exhibitors/${item.id}` : `/organizer/exhibitors/${item.id}?projectId=${projectId}`}>
                               <Button variant="ghost" size="icon" title="Edit/Manage">
                                 <Pencil className="h-4 w-4" />
                               </Button>
