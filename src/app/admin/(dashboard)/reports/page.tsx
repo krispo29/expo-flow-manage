@@ -11,15 +11,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, RefreshCw } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, Building2, Users, FileSpreadsheet, Send, FileText, FileBarChart } from "lucide-react"
 import { format } from "date-fns"
 import { advancedSearch, getEventsForReport, getHallNoConference, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type HallNoConferenceResponse } from "@/app/actions/report"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 import { CountrySelector } from "@/components/CountrySelector"
 import { countries } from "@/lib/countries"
 
+type ReportView = 'advanced-search' | 'hall-no-conference';
+
 export default function ReportsPage() {
+  const [activeView, setActiveView] = useState<ReportView>('advanced-search')
+
   // ─── Filter state ────────────────────────────────────────────────────────────
   const [keyword, setKeyword] = useState("")
   const [country, setCountry] = useState("")
@@ -40,7 +44,6 @@ export default function ReportsPage() {
   // ─── Attendee types & Events from API ─────────────────────────────────────────
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
   const [events, setEvents] = useState<ReportEvent[]>([])
-  const [selectedEventUuid, setSelectedEventUuid] = useState<string>("")
   const [selectedHallEventUuid, setSelectedHallEventUuid] = useState<string>("")
 
   // Fetch attendee types and events on mount
@@ -52,7 +55,6 @@ export default function ReportsPage() {
       if (res.success && res.events) {
         setEvents(res.events)
         if (res.events.length > 0) {
-          setSelectedEventUuid(res.events[0].event_uuid)
           setSelectedHallEventUuid(res.events[0].event_uuid)
         }
       }
@@ -64,17 +66,70 @@ export default function ReportsPage() {
   const [loadingHall, setLoadingHall] = useState(false)
   const [searchedHall, setSearchedHall] = useState(false)
 
-  const handleFetchHallNoConference = async () => {
-    if (!selectedHallEventUuid) return
+  const fetchHallNoConference = useCallback(async (eventUuid: string) => {
+    if (!eventUuid) return
     setLoadingHall(true)
     setSearchedHall(true)
     try {
-      const res = await getHallNoConference(selectedHallEventUuid)
+      const res = await getHallNoConference(eventUuid)
       setHallData(res.success ? res.data : [])
     } catch {
       setHallData([])
     } finally {
       setLoadingHall(false)
+    }
+  }, [])
+
+  // Auto-fetch when selectedHallEventUuid changes
+  useEffect(() => {
+    if (activeView === 'hall-no-conference' && selectedHallEventUuid) {
+      fetchHallNoConference(selectedHallEventUuid)
+    }
+  }, [activeView, selectedHallEventUuid, fetchHallNoConference])
+
+  // ─── Export Dialog Logic ─────────────────────────────────────────────────────
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportType, setExportType] = useState<string>('')
+  const [exportEventUuid, setExportEventUuid] = useState<string>('')
+
+  const openExportDialog = (type: string) => {
+    setExportType(type)
+    setExportEventUuid(events.length > 0 ? events[0].event_uuid : '')
+    setExportDialogOpen(true)
+  }
+
+  const handleConfirmExport = () => {
+    if (!exportEventUuid) return
+    let url = ''
+    switch (exportType) {
+      case 'registrations-by-country':
+        url = `/api/export/registrations-by-country?event_uuid=${exportEventUuid}`
+        break
+      case 'questionnaires':
+        url = `/api/export/questionnaires?event_uuid=${exportEventUuid}`
+        break
+      case 'attendees-summary':
+        url = `/api/export/attendees-summary?event_uuid=${exportEventUuid}`
+        break
+      case 'edm-visitors':
+        url = `/api/export/edm-visitors?event_uuid=${exportEventUuid}`
+        break
+      case 'participants':
+        url = `/api/export/participants?event_uuid=${exportEventUuid}&include_questionnaire=true`
+        break
+    }
+    window.open(url, '_blank')
+    setExportDialogOpen(false)
+  }
+
+  const getExportTitle = (type: string) => {
+    switch (type) {
+      case 'registrations-by-country': return 'Registrations By Country'
+      case 'questionnaires': return 'Questionnaires'
+      case 'attendees-summary': return 'Attendees Summary'
+      case 'edm-visitors': return 'EDM Visitors'
+      case 'participants': return 'Participants (with Questionnaire)'
+      default: return 'Export Data'
     }
   }
 
@@ -92,7 +147,7 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: 1,
         limit: 100000, 
-        include_questionnaire: false // according to req
+        include_questionnaire: false
       }
       
       const response = await fetch('/api/export/advanced-search', {
@@ -151,7 +206,6 @@ export default function ReportsPage() {
     }
   }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit])
 
-  // ─── Reset handler ───────────────────────────────────────────────────────────
   const handleReset = () => {
     setKeyword("")
     setCountry("")
@@ -164,7 +218,6 @@ export default function ReportsPage() {
     setSearched(false)
   }
 
-  // ─── Type checkbox toggle ────────────────────────────────────────────────────
   const toggleTypeCode = (code: string) => {
     setSelectedTypeCodes(prev =>
       prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
@@ -176,446 +229,440 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
         <p className="text-muted-foreground">
-          Advanced search across participants, companies, and registration data.
+          Manage, view, and export registration data.
         </p>
       </div>
 
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* Left Sidebar Menu                                                   */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <div className="w-full md:w-64 shrink-0 space-y-8">
+          
+          <div className="space-y-2">
+            <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Views</h3>
+            <Button 
+              variant={activeView === 'advanced-search' ? 'secondary' : 'ghost'} 
+              className="w-full justify-start font-medium" 
+              onClick={() => setActiveView('advanced-search')}
+            >
+              <Search className="mr-3 h-4 w-4" /> Advanced Search
+            </Button>
+            <Button 
+              variant={activeView === 'hall-no-conference' ? 'secondary' : 'ghost'} 
+              className="w-full justify-start font-medium" 
+              onClick={() => setActiveView('hall-no-conference')}
+            >
+              <Building2 className="mr-3 h-4 w-4" /> On Hall No Conference
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Exports Options</h3>
+            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('registrations-by-country')}>
+              <FileSpreadsheet className="mr-3 h-4 w-4" /> Registrations by Country <Download className="ml-auto h-3 w-3 opacity-50"/>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('questionnaires')}>
+              <FileBarChart className="mr-3 h-4 w-4" /> Questionnaires <Download className="ml-auto h-3 w-3 opacity-50"/>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary')}>
+              <Users className="mr-3 h-4 w-4" /> Attendees Summary <Download className="ml-auto h-3 w-3 opacity-50"/>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('edm-visitors')}>
+              <Send className="mr-3 h-4 w-4" /> EDM Visitors <Download className="ml-auto h-3 w-3 opacity-50"/>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('participants')}>
+              <FileText className="mr-3 h-4 w-4" /> Participants (Full) <Download className="ml-auto h-3 w-3 opacity-50"/>
+            </Button>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* Right Content Area                                                  */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex-1 w-full overflow-hidden space-y-6">
+          
+          {/* ────── Advanced Search View ────── */}
+          {activeView === 'advanced-search' && (
+            <>
+              <Card className="border-none shadow-md bg-muted/30">
+                <CardHeader className="pb-4 border-b border-border/50">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-xl">
+                        Advanced Search
+                      </CardTitle>
+                      <CardDescription>
+                        Filter across participants, companies, and registration metadata.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-6">
+                    {/* Main Search Bar & Actions */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by Name, Company, or ID..."
+                          className="pl-10 h-12 text-base bg-background shadow-sm"
+                          value={keyword}
+                          onChange={e => setKeyword(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="lg" className="h-12 px-6" onClick={() => handleSearch(1)} disabled={loading}>
+                          {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Search className="h-5 w-5 mr-2" />}
+                          Search
+                        </Button>
+                        <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleReset}>
+                          Reset
+                        </Button>
+                        <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
+                          {exportingAdvanced ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Download className="h-5 w-5 mr-2 text-primary" />}
+                          Export CSV
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Secondary Filters Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                      {/* Country Filter */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
+                          {country && (
+                            <button 
+                              onClick={() => setCountry("")}
+                              className="text-xs text-muted-foreground hover:text-foreground flex items-center"
+                            >
+                              Clear <X className="h-3 w-3 ml-0.5" />
+                            </button>
+                          )}
+                        </div>
+                        <CountrySelector
+                          value={country}
+                          onChange={setCountry}
+                          placeholder="Select country"
+                        />
+                      </div>
+
+                      {/* Registration Date Start */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date Start</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                              <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {dateStart ? format(dateStart, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateStart} onSelect={setDateStart} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Registration Date End */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date End</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                              <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {dateEnd ? format(dateEnd, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateEnd} onSelect={setDateEnd} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Attendee Type Popover */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendee Types</Label>
+                          {selectedTypeCodes.length > 0 && (
+                            <button 
+                              onClick={() => setSelectedTypeCodes([])}
+                              className="text-xs text-muted-foreground hover:text-foreground flex items-center"
+                            >
+                              Clear <X className="h-3 w-3 ml-0.5" />
+                            </button>
+                          )}
+                        </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-between font-normal bg-background">
+                              <span className="truncate">
+                                {selectedTypeCodes.length === 0 
+                                  ? <span className="text-muted-foreground">All Types</span>
+                                  : `${selectedTypeCodes.length} type${selectedTypeCodes.length > 1 ? 's' : ''} selected`}
+                              </span>
+                              <ChevronRight className="h-4 w-4 opacity-50 rotate-90" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0" align="start">
+                            <div className="p-3 border-b border-border">
+                              <h4 className="font-medium text-sm">Select Attendee Types</h4>
+                            </div>
+                            <div className="p-3 max-h-[300px] overflow-y-auto space-y-3 flex flex-col">
+                              {attendeeTypes.length === 0 ? (
+                                <span className="text-sm text-muted-foreground">Loading types...</span>
+                              ) : (
+                                attendeeTypes.map(t => (
+                                  <label key={t.type_code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded-md -mx-1 px-2">
+                                    <Checkbox
+                                      checked={selectedTypeCodes.includes(t.type_code)}
+                                      onCheckedChange={() => toggleTypeCode(t.type_code)}
+                                    />
+                                    <span className="text-sm flex-1">{t.type_name}</span>
+                                    <Badge variant="secondary" className="text-[10px] font-normal">{t.type_code}</Badge>
+                                  </label>
+                                ))
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Advanced Search Results */}
+              <Card className="border shadow-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">Search Results</CardTitle>
+                      <CardDescription>
+                        {searched
+                          ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
+                          : 'Use the filters above and click Search to find participants.'}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                      <Loader2 className="h-8 w-8 animate-spin mb-3" />
+                      <p className="text-sm">Searching...</p>
+                    </div>
+                  ) : results.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                      <Search className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        {searched ? 'No results found. Try adjusting your filters.' : 'Enter your search criteria above.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rounded-md border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[130px]">Reg. Code</TableHead>
+                              <TableHead>Participant</TableHead>
+                              <TableHead>Company</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Country</TableHead>
+                              <TableHead>Registered At</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {results.map((r, i) => (
+                              <TableRow key={`${r.registration_uuid}-${i}`} className="hover:bg-muted/50 transition-colors">
+                                <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
+                                <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
+                                <TableCell>{r.company_name || '-'}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
+                                </TableCell>
+                                <TableCell>{r.residence_country || '-'}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {r.registered_at ? format(new Date(r.registered_at), 'yyyy-MM-dd HH:mm') : '-'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Pagination */}
+                      <div className="flex items-center justify-between mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          Page {page} of {totalPages} · {total.toLocaleString()} total
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSearch(page - 1)}
+                            disabled={page <= 1 || loading}
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSearch(page + 1)}
+                            disabled={page >= totalPages || loading}
+                          >
+                            Next <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* ────── Hall No Conference View ────── */}
+          {activeView === 'hall-no-conference' && (
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">On Hall No Conference</CardTitle>
+                    <CardDescription>
+                      Registration records for participants that attended the Hall but not the Conference.
+                    </CardDescription>
+                  </div>
+                  {/* Contextual Toolbar for Hall No Conference */}
+                  <div className="flex items-center gap-3 w-full sm:w-auto p-2 bg-muted/30 rounded-md border border-border/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-2">Event:</span>
+                      <Select value={selectedHallEventUuid} onValueChange={setSelectedHallEventUuid}>
+                        <SelectTrigger className="w-[180px] h-9 bg-background border-muted-foreground/20">
+                          <SelectValue placeholder="Select Event" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {events.map((e) => (
+                            <SelectItem key={e.event_uuid} value={e.event_uuid}>
+                              {e.event_code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Integrated Export Button */}
+                    <div className="h-5 w-[1px] bg-border mx-1" />
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.open(`/api/export/hall-no-conference?event_uuid=${selectedHallEventUuid}`, '_blank')}
+                      disabled={!selectedHallEventUuid || loadingHall} 
+                      className="h-9 px-3 gap-2 bg-background border-muted-foreground/20 hover:bg-primary/5 shadow-sm"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span className="hidden sm:inline">Export</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingHall ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin mb-3" />
+                    <p className="text-sm">Loading records...</p>
+                  </div>
+                ) : hallData.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                    <Building2 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      {searchedHall ? 'No records found for the selected event.' : 'Select an event to load records.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border max-h-[600px] overflow-auto">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                        <TableRow>
+                          <TableHead className="w-[130px]">Reg. Code</TableHead>
+                          <TableHead>Participant</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Job Position</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Hall Name</TableHead>
+                          <TableHead>Scanned At</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {hallData.map((r, i) => (
+                          <TableRow key={`${r.registration_code}-${i}`} className="hover:bg-muted/50 transition-colors">
+                            <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
+                            <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
+                            <TableCell>{r.email || '-'}</TableCell>
+                            <TableCell>{r.company_name || '-'}</TableCell>
+                            <TableCell>{r.job_position || '-'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
+                            </TableCell>
+                            <TableCell>{r.hall_name || '-'}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Export Reports                                                    */}
+      {/* Export Dialog                                                       */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <Card className="border-none shadow-md bg-muted/30">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Download className="h-5 w-5 text-primary" />
-            Export Data
-          </CardTitle>
-          <CardDescription>
-            Download comprehensive registration and attendee reports by selecting an event.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Select Event:</span>
-              <div className="w-[240px]">
-                <Select value={selectedEventUuid} onValueChange={setSelectedEventUuid}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Select Event" />
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5 text-primary" /> Export Data
+            </DialogTitle>
+            <DialogDescription>
+              Select an event to export <strong className="text-foreground">{getExportTitle(exportType)}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="event" className="text-right">Event</Label>
+              <div className="col-span-3">
+                <Select value={exportEventUuid} onValueChange={setExportEventUuid}>
+                  <SelectTrigger id="event">
+                    <SelectValue placeholder="Select event..." />
                   </SelectTrigger>
                   <SelectContent>
                     {events.map((e) => (
                       <SelectItem key={e.event_uuid} value={e.event_uuid}>
-                        {e.event_code} - {e.event_name}
+                        {e.event_code}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3 flex-1 md:justify-end">
-              <Button 
-                variant="outline" 
-                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => window.open(`/api/export/registrations-by-country?event_uuid=${selectedEventUuid}`, '_blank')}
-                disabled={!selectedEventUuid}
-              >
-                <Download className="h-4 w-4 mr-2 text-primary" />
-                Registrations By Country
-              </Button>
-              <Button 
-                variant="outline" 
-                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => window.open(`/api/export/questionnaires?event_uuid=${selectedEventUuid}`, '_blank')}
-                disabled={!selectedEventUuid}
-              >
-                <Download className="h-4 w-4 mr-2 text-primary" />
-                Questionnaires
-              </Button>
-              <Button 
-                variant="outline" 
-                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => window.open(`/api/export/attendees-summary?event_uuid=${selectedEventUuid}`, '_blank')}
-                disabled={!selectedEventUuid}
-              >
-                <Download className="h-4 w-4 mr-2 text-primary" />
-                Attendees Summary
-              </Button>
-              <Button 
-                variant="outline" 
-                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => window.open(`/api/export/edm-visitors?event_uuid=${selectedEventUuid}`, '_blank')}
-                disabled={!selectedEventUuid}
-              >
-                <Download className="h-4 w-4 mr-2 text-primary" />
-                EDM Visitors
-              </Button>
-              <Button 
-                variant="outline" 
-                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => window.open(`/api/export/hall-no-conference?event_uuid=${selectedEventUuid}`, '_blank')}
-                disabled={!selectedEventUuid}
-              >
-                <Download className="h-4 w-4 mr-2 text-primary" />
-                On Hall No Conference
-              </Button>
-              <Button 
-                variant="outline" 
-                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => window.open(`/api/export/participants?event_uuid=${selectedEventUuid}&include_questionnaire=true`, '_blank')}
-                disabled={!selectedEventUuid}
-              >
-                <Download className="h-4 w-4 mr-2 text-primary" />
-                Participants
-              </Button>
-            </div>
           </div>
-        </CardContent>
-      </Card>
-
-
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Tab Navigations                                                     */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <Tabs defaultValue="advanced-search" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="advanced-search">Advanced Search</TabsTrigger>
-          <TabsTrigger value="hall-no-conference">On Hall No Conference</TabsTrigger>
-        </TabsList>
-
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* Advanced Search Tab                                                 */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        <TabsContent value="advanced-search" className="space-y-6">
-          <Card className="border-none shadow-md bg-muted/30">
-            <CardHeader className="pb-4 border-b border-border/50">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Search className="h-5 w-5 text-primary" />
-                Advanced Search
-              </CardTitle>
-              <CardDescription>
-                Filter across participants, companies, and registration metadata.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-6">
-                {/* Main Search Bar & Actions */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by Name, Company, or ID..."
-                      className="pl-10 h-12 text-base bg-background shadow-sm"
-                      value={keyword}
-                      onChange={e => setKeyword(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="lg" className="h-12 px-6" onClick={() => handleSearch(1)} disabled={loading}>
-                      {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Search className="h-5 w-5 mr-2" />}
-                      Search
-                    </Button>
-                    <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleReset}>
-                      Reset
-                    </Button>
-                    <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
-                      {exportingAdvanced ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Download className="h-5 w-5 mr-2 text-primary" />}
-                      Export
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Secondary Filters Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
-                  {/* Country Filter */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
-                      {country && (
-                        <button 
-                          onClick={() => setCountry("")}
-                          className="text-xs text-muted-foreground hover:text-foreground flex items-center"
-                        >
-                          Clear <X className="h-3 w-3 ml-0.5" />
-                        </button>
-                      )}
-                    </div>
-                    <CountrySelector
-                      value={country}
-                      onChange={setCountry}
-                      placeholder="Select country"
-                    />
-                  </div>
-
-                  {/* Registration Date Start */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date Start</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {dateStart ? format(dateStart, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={dateStart} onSelect={setDateStart} initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  {/* Registration Date End */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date End</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {dateEnd ? format(dateEnd, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={dateEnd} onSelect={setDateEnd} initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  {/* Attendee Type Popover */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendee Types</Label>
-                      {selectedTypeCodes.length > 0 && (
-                        <button 
-                          onClick={() => setSelectedTypeCodes([])}
-                          className="text-xs text-muted-foreground hover:text-foreground flex items-center"
-                        >
-                          Clear <X className="h-3 w-3 ml-0.5" />
-                        </button>
-                      )}
-                    </div>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between font-normal bg-background">
-                          <span className="truncate">
-                            {selectedTypeCodes.length === 0 
-                              ? <span className="text-muted-foreground">All Types</span>
-                              : `${selectedTypeCodes.length} type${selectedTypeCodes.length > 1 ? 's' : ''} selected`}
-                          </span>
-                          <ChevronRight className="h-4 w-4 opacity-50 rotate-90" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0" align="start">
-                        <div className="p-3 border-b border-border">
-                          <h4 className="font-medium text-sm">Select Attendee Types</h4>
-                        </div>
-                        <div className="p-3 max-h-[300px] overflow-y-auto space-y-3 flex flex-col">
-                          {attendeeTypes.length === 0 ? (
-                            <span className="text-sm text-muted-foreground">Loading types...</span>
-                          ) : (
-                            attendeeTypes.map(t => (
-                              <label key={t.type_code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded-md -mx-1 px-2">
-                                <Checkbox
-                                  checked={selectedTypeCodes.includes(t.type_code)}
-                                  onCheckedChange={() => toggleTypeCode(t.type_code)}
-                                />
-                                <span className="text-sm flex-1">{t.type_name}</span>
-                                <Badge variant="secondary" className="text-[10px] font-normal">{t.type_code}</Badge>
-                              </label>
-                            ))
-                          )}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* Search Results                                                     */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          <Card className="border shadow-sm">
-            <CardHeader className="pb-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">Search Results</CardTitle>
-                  <CardDescription>
-                    {searched
-                      ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
-                      : 'Use the filters above and click Search to find participants.'}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-        <CardContent className="pt-6">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin mb-3" />
-              <p className="text-sm">Searching...</p>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
-              <Search className="h-8 w-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {searched ? 'No results found. Try adjusting your filters.' : 'Enter your search criteria above.'}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[130px]">Reg. Code</TableHead>
-                      <TableHead>Participant</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Registered At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results.map((r, i) => (
-                      <TableRow key={`${r.registration_uuid}-${i}`} className="hover:bg-muted/50 transition-colors">
-                        <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
-                        <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
-                        <TableCell>{r.company_name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
-                        </TableCell>
-                        <TableCell>{r.residence_country || '-'}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {r.registered_at ? format(new Date(r.registered_at), 'yyyy-MM-dd HH:mm') : '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages} · {total.toLocaleString()} total
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSearch(page - 1)}
-                    disabled={page <= 1 || loading}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSearch(page + 1)}
-                    disabled={page >= totalPages || loading}
-                  >
-                    Next <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-      </TabsContent>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Hall No Conference Tab                                              */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <TabsContent value="hall-no-conference" className="space-y-6">
-        <Card className="border shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <CardTitle className="text-lg">On Hall No Conference</CardTitle>
-                <CardDescription>
-                  Registration records for participants that attended the Hall but not the Conference.
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="w-full sm:w-[240px]">
-                  <Select value={selectedHallEventUuid} onValueChange={setSelectedHallEventUuid}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Select Event" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {events.map((e) => (
-                        <SelectItem key={e.event_uuid} value={e.event_uuid}>
-                          {e.event_code} - {e.event_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleFetchHallNoConference} disabled={loadingHall || !selectedHallEventUuid} className="whitespace-nowrap shrink-0">
-                  {loadingHall ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                  Load Data
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {loadingHall ? (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin mb-3" />
-                <p className="text-sm">Loading...</p>
-              </div>
-            ) : hallData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
-                <Search className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  {searchedHall ? 'No results found.' : 'Click Load Data to fetch records.'}
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-md border max-h-[600px] overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                    <TableRow>
-                      <TableHead className="w-[130px]">Reg. Code</TableHead>
-                      <TableHead>Participant</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Job Position</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Hall Name</TableHead>
-                      <TableHead>Scanned At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {hallData.map((r, i) => (
-                      <TableRow key={`${r.registration_code}-${i}`} className="hover:bg-muted/50 transition-colors">
-                        <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
-                        <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
-                        <TableCell>{r.email || '-'}</TableCell>
-                        <TableCell>{r.company_name || '-'}</TableCell>
-                        <TableCell>{r.job_position || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
-                        </TableCell>
-                        <TableCell>{r.hall_name || '-'}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      </Tabs>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmExport} disabled={!exportEventUuid}>
+              <Download className="mr-2 h-4 w-4" /> Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-
