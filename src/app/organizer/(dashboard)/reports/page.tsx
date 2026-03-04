@@ -206,6 +206,7 @@ export default function ReportsPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Export Reports                                                    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 
       <Card className="border-none shadow-md bg-muted/30">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl">
@@ -276,6 +277,7 @@ export default function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+      */}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Excel Preview Modal                                                 */}
