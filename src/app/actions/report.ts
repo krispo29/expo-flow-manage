@@ -24,6 +24,7 @@ export interface AdvancedSearchParams {
   keyword?: string
   page?: number
   limit?: number
+  include_questionnaire?: boolean
 }
 
 export interface AdvancedSearchResult {
@@ -63,6 +64,7 @@ export async function advancedSearch(params: AdvancedSearchParams) {
       keyword: params.keyword,
       page: params.page,
       limit: params.limit,
+      include_questionnaire: params.include_questionnaire
     }
 
     const url = '/v1/admin/project/report/advanced-search'
@@ -72,6 +74,65 @@ export async function advancedSearch(params: AdvancedSearchParams) {
   } catch (error: unknown) {
     console.error('Error in advanced search:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to perform advanced search'
+    return { success: false, error: errorMessage }
+  }
+}
+
+export async function organizerAdvancedSearch(params: AdvancedSearchParams) {
+  try {
+    const headers = await getAuthHeaders()
+
+    const payload = {
+      start_date: params.start_date,
+      end_date: params.end_date,
+      attendee_type_codes: params.attendee_type_codes,
+      country: params.country,
+      keyword: params.keyword,
+      page: params.page,
+      limit: params.limit,
+      include_questionnaire: params.include_questionnaire
+    }
+
+    const url = '/v1/organizer/report/advanced-search'
+    const response = await api.post(url, payload, { headers })
+
+    return { success: true, data: response.data.data as AdvancedSearchResponse }
+  } catch (error: unknown) {
+    console.error('Error in organizer advanced search:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to perform advanced search'
+    return { success: false, error: errorMessage }
+  }
+}
+
+export async function exportOrganizerAdvancedSearch(params: AdvancedSearchParams) {
+  try {
+    const headers = await getAuthHeaders()
+
+    const payload = {
+      start_date: params.start_date,
+      end_date: params.end_date,
+      attendee_type_codes: params.attendee_type_codes,
+      country: params.country,
+      keyword: params.keyword,
+      page: params.page,
+      limit: params.limit,
+      include_questionnaire: params.include_questionnaire
+    }
+
+    const url = '/v1/organizer/report/export-excel-advanced-search'
+    const response = await api.post(url, payload, { 
+      headers, 
+      responseType: 'arraybuffer' 
+    })
+
+    return { 
+      success: true, 
+      data: response.data,
+      contentType: response.headers['content-type']
+    }
+  } catch (error: unknown) {
+    console.error('Error in export organizer advanced search:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to export advanced search'
     return { success: false, error: errorMessage }
   }
 }

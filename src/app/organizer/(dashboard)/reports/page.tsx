@@ -13,12 +13,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { format } from "date-fns"
-import { advancedSearch, getEventsForReport, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent } from "@/app/actions/report"
+import { organizerAdvancedSearch, exportOrganizerAdvancedSearch, getEventsForReport, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent } from "@/app/actions/report"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import * as XLSX from "xlsx"
 import { CountrySelector } from "@/components/CountrySelector"
 import { countries } from "@/lib/countries"
+import { toast } from "sonner"
 
 export default function ReportsPage() {
   // ─── Filter state ────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ export default function ReportsPage() {
   const [dateStart, setDateStart] = useState<Date>()
   const [dateEnd, setDateEnd] = useState<Date>()
   const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([])
+  const [includeQuestionnaire, setIncludeQuestionnaire] = useState(false)
 
   // ─── Pagination ──────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1)
@@ -36,6 +38,7 @@ export default function ReportsPage() {
   const [results, setResults] = useState<AdvancedSearchResult[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [searched, setSearched] = useState(false)
 
   // ─── Attendee types & Events from API ─────────────────────────────────────────
@@ -106,7 +109,7 @@ export default function ReportsPage() {
     setPage(searchPage)
 
     try {
-      const res = await advancedSearch({
+      const res = await organizerAdvancedSearch({
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
@@ -114,6 +117,7 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: searchPage,
         limit,
+        include_questionnaire: includeQuestionnaire
       })
 
       if (res.success && res.data) {
@@ -130,7 +134,42 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit])
+  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeQuestionnaire])
+
+  // ─── Export handler ──────────────────────────────────────────────────────────
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await exportOrganizerAdvancedSearch({
+        start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
+        end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
+        attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
+        country: country ? countries.find(c => c.code === country)?.name : undefined,
+        keyword: keyword || undefined,
+        include_questionnaire: includeQuestionnaire
+      })
+
+      if (res.success && res.data) {
+        const blob = new Blob([res.data], { type: res.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `advanced-search-export-${format(new Date(), 'yyyyMMdd-HHmm')}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success("Report exported successfully")
+      } else {
+        toast.error(res.error || "Failed to export report")
+      }
+    } catch (error) {
+      console.error("Export error:", error)
+      toast.error("An error occurred during export")
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // ─── Reset handler ───────────────────────────────────────────────────────────
   const handleReset = () => {
@@ -139,6 +178,7 @@ export default function ReportsPage() {
     setDateStart(undefined)
     setDateEnd(undefined)
     setSelectedTypeCodes([])
+    setIncludeQuestionnaire(false)
     setPage(1)
     setResults([])
     setTotal(0)
@@ -402,6 +442,18 @@ export default function ReportsPage() {
               </Popover>
             </div>
 
+            {/* Questionnaire Checkbox */}
+            <div className="flex items-center space-x-2 pt-2 md:pt-8">
+              <Checkbox 
+                id="include_questionnaire" 
+                checked={includeQuestionnaire}
+                onCheckedChange={(checked) => setIncludeQuestionnaire(!!checked)}
+              />
+              <Label htmlFor="include_questionnaire" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Include Questionnaire
+              </Label>
+            </div>
+
             {/* Attendee Type Multi-Select (Checkboxes) */}
             <div className="space-y-2 lg:col-span-2 xl:col-span-4">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendee Types</Label>
@@ -440,15 +492,27 @@ export default function ReportsPage() {
                   : 'Use the filters above and click Search to find participants.'}
               </CardDescription>
             </div>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Keyword search..."
-                className="pl-9 bg-background"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch(1)}
-              />
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExport}
+                disabled={exporting || results.length === 0}
+                title="Export current search results to Excel"
+              >
+                {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                Export Excel
+              </Button>
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Keyword search..."
+                  className="pl-9 bg-background"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch(1)}
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
