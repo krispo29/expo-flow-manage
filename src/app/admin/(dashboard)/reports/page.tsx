@@ -11,12 +11,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
-import { advancedSearch, getEventsForReport, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent } from "@/app/actions/report"
+import { advancedSearch, getEventsForReport, getHallNoConference, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type HallNoConferenceResponse } from "@/app/actions/report"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import * as XLSX from "xlsx"
 import { CountrySelector } from "@/components/CountrySelector"
 import { countries } from "@/lib/countries"
 
@@ -56,46 +55,62 @@ export default function ReportsPage() {
     })
   }, [])
 
-  // ─── Excel Preview State & Logic ─────────────────────────────────────────────
-  const [showPreview, setShowPreview] = useState(false)
-  const [isPreviewing, setIsPreviewing] = useState(false)
-  const [previewType, setPreviewType] = useState<string>("")
-  const [previewData, setPreviewData] = useState<any[]>([])
-  const [previewHeaders, setPreviewHeaders] = useState<string[]>([])
+  // ─── Hall No Conference State & Logic ──────────────────────────────────────────
+  const [hallData, setHallData] = useState<HallNoConferenceResponse[]>([])
+  const [loadingHall, setLoadingHall] = useState(false)
+  const [searchedHall, setSearchedHall] = useState(false)
 
-  const handlePreview = async (type: string) => {
+  const handleFetchHallNoConference = async () => {
     if (!selectedEventUuid) return
-    
-    setPreviewType(type)
-    setIsPreviewing(true)
-    setShowPreview(true)
-    setPreviewData([])
-    setPreviewHeaders([])
-
+    setLoadingHall(true)
+    setSearchedHall(true)
     try {
-      const response = await fetch(`/api/export/${type}?event_uuid=${selectedEventUuid}`)
-      if (!response.ok) throw new Error('Failed to fetch Excel file')
-      
-      const blob = await response.blob()
-      const arrayBuffer = await blob.arrayBuffer()
-      
-      // Parse with xlsx
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-      const firstSheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[firstSheetName]
-      
-      // Convert to array of objects
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" })
-      
-      if (jsonData.length > 0) {
-        setPreviewHeaders(Object.keys(jsonData[0] as object))
-        setPreviewData(jsonData)
-      }
-    } catch (error) {
-      console.error("Preview error:", error)
-      // Could show a toast here if needed
+      const res = await getHallNoConference(selectedEventUuid)
+      setHallData(res.success ? res.data : [])
+    } catch {
+      setHallData([])
     } finally {
-      setIsPreviewing(false)
+      setLoadingHall(false)
+    }
+  }
+
+  // ─── Export Advanced Search Logic ──────────────────────────────────────────────
+  const [exportingAdvanced, setExportingAdvanced] = useState(false)
+
+  const handleExportAdvancedSearch = async () => {
+    try {
+      setExportingAdvanced(true)
+      const payload = {
+        start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
+        end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
+        attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
+        country: country ? countries.find(c => c.code === country)?.name : undefined,
+        keyword: keyword || undefined,
+        page: 1,
+        limit: 100000, 
+        include_questionnaire: false // according to req
+      }
+      
+      const response = await fetch('/api/export/advanced-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!response.ok) throw new Error('Failed to export')
+        
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `advanced_search_export_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Export error:', error)
+    } finally {
+      setExportingAdvanced(false)
     }
   }
 
@@ -199,139 +214,102 @@ export default function ReportsPage() {
               <Button 
                 variant="outline" 
                 className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => handlePreview('registrations-by-country')}
-                disabled={!selectedEventUuid || isPreviewing}
+                onClick={() => window.open(`/api/export/registrations-by-country?event_uuid=${selectedEventUuid}`, '_blank')}
+                disabled={!selectedEventUuid}
               >
-                {isPreviewing && previewType === 'registrations-by-country' ? <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" /> : <Search className="h-4 w-4 mr-2 text-primary" />}
-                Preview Registrations By Country
+                <Download className="h-4 w-4 mr-2 text-primary" />
+                Registrations By Country
               </Button>
               <Button 
                 variant="outline" 
                 className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => handlePreview('questionnaires')}
-                disabled={!selectedEventUuid || isPreviewing}
+                onClick={() => window.open(`/api/export/questionnaires?event_uuid=${selectedEventUuid}`, '_blank')}
+                disabled={!selectedEventUuid}
               >
-                {isPreviewing && previewType === 'questionnaires' ? <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" /> : <Search className="h-4 w-4 mr-2 text-primary" />}
-                Preview Questionnaires
+                <Download className="h-4 w-4 mr-2 text-primary" />
+                Questionnaires
               </Button>
               <Button 
                 variant="outline" 
                 className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => handlePreview('attendees-summary')}
-                disabled={!selectedEventUuid || isPreviewing}
+                onClick={() => window.open(`/api/export/attendees-summary?event_uuid=${selectedEventUuid}`, '_blank')}
+                disabled={!selectedEventUuid}
               >
-                {isPreviewing && previewType === 'attendees-summary' ? <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" /> : <Search className="h-4 w-4 mr-2 text-primary" />}
-                Preview Attendees Summary
+                <Download className="h-4 w-4 mr-2 text-primary" />
+                Attendees Summary
               </Button>
               <Button 
                 variant="outline" 
                 className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
-                onClick={() => handlePreview('edm-visitors')}
-                disabled={!selectedEventUuid || isPreviewing}
+                onClick={() => window.open(`/api/export/edm-visitors?event_uuid=${selectedEventUuid}`, '_blank')}
+                disabled={!selectedEventUuid}
               >
-                {isPreviewing && previewType === 'edm-visitors' ? <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" /> : <Search className="h-4 w-4 mr-2 text-primary" />}
-                Preview EDM Visitors
+                <Download className="h-4 w-4 mr-2 text-primary" />
+                EDM Visitors
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
+                onClick={() => window.open(`/api/export/hall-no-conference?event_uuid=${selectedEventUuid}`, '_blank')}
+                disabled={!selectedEventUuid}
+              >
+                <Download className="h-4 w-4 mr-2 text-primary" />
+                Hall No Conference
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-background shadow-sm border-primary/20 hover:bg-primary/5" 
+                onClick={() => window.open(`/api/export/participants?event_uuid=${selectedEventUuid}&include_questionnaire=true`, '_blank')}
+                disabled={!selectedEventUuid}
+              >
+                <Download className="h-4 w-4 mr-2 text-primary" />
+                Participants
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Excel Preview Modal                                                 */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Excel Data Preview</DialogTitle>
-            <DialogDescription>
-              Previewing the first 100 rows of the selected report.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto border rounded-md relative bg-background">
-            {isPreviewing ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                <p className="text-sm font-medium">Fetching and parsing Excel data...</p>
-              </div>
-            ) : previewData.length > 0 ? (
-              <Table>
-                <TableHeader className="bg-muted/50 sticky top-0 z-10 shadow-sm">
-                  <TableRow>
-                    {previewHeaders.map((header, i) => (
-                      <TableHead key={i} className="whitespace-nowrap font-semibold">
-                        {header}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {previewData.slice(0, 100).map((row, rowIndex) => (
-                    <TableRow key={rowIndex} className="hover:bg-muted/50">
-                      {previewHeaders.map((header, colIndex) => (
-                        <TableCell key={colIndex} className="whitespace-nowrap text-sm">
-                          {row[header] !== undefined && row[header] !== null ? String(row[header]) : '-'}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-muted-foreground">
-                No data available in this report.
-              </div>
-            )}
-          </div>
-          <DialogFooter className="mt-4 flex sm:justify-between items-center bg-muted/30 p-4 rounded-lg border border-muted">
-            <div className="text-sm text-muted-foreground">
-              {previewData.length > 100 ? (
-                <span>Showing 100 of {previewData.length.toLocaleString()} rows</span>
-              ) : (
-                <span>Showing all {previewData.length} rows</span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowPreview(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => window.open(`/api/export/${previewType}?event_uuid=${selectedEventUuid}`, '_blank')}
-                disabled={isPreviewing}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Full Excel
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Advanced Search Filters                                           */}
+      {/* Tab Navigations                                                     */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <Card className="border-none shadow-md bg-muted/30">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Search className="h-5 w-5 text-primary" />
-                Advanced Search
-              </CardTitle>
-              <CardDescription>
-                Filter across participants, companies, and registration metadata.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleReset}>Reset</Button>
-              <Button size="sm" onClick={() => handleSearch(1)} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                Search
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
+      <Tabs defaultValue="advanced-search" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="advanced-search">Advanced Search</TabsTrigger>
+          <TabsTrigger value="hall-no-conference">Hall No Conference</TabsTrigger>
+        </TabsList>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* Advanced Search Tab                                                 */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="advanced-search" className="space-y-6">
+          <Card className="border-none shadow-md bg-muted/30">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Search className="h-5 w-5 text-primary" />
+                    Advanced Search
+                  </CardTitle>
+                  <CardDescription>
+                    Filter across participants, companies, and registration metadata.
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
+                    {exportingAdvanced ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2 text-primary" />}
+                    Export Advanced Search
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleReset}>Reset</Button>
+                  <Button size="sm" onClick={() => handleSearch(1)} disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                    Search
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-4">
 
@@ -526,6 +504,82 @@ export default function ReportsPage() {
           )}
         </CardContent>
       </Card>
+      </TabsContent>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Hall No Conference Tab                                              */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <TabsContent value="hall-no-conference" className="space-y-6">
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg">Hall No Conference</CardTitle>
+                <CardDescription>
+                  Registration records for participants that attended the Hall but not the Conference.
+                </CardDescription>
+              </div>
+              <Button size="sm" onClick={handleFetchHallNoConference} disabled={loadingHall || !selectedEventUuid}>
+                {loadingHall ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Load Data
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {loadingHall ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mb-3" />
+                <p className="text-sm">Loading...</p>
+              </div>
+            ) : hallData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                <Search className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {searchedHall ? 'No results found.' : 'Click Load Data to fetch records.'}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-md border max-h-[600px] overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                    <TableRow>
+                      <TableHead className="w-[130px]">Reg. Code</TableHead>
+                      <TableHead>Participant</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Job Position</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Hall Name</TableHead>
+                      <TableHead>Scanned At</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {hallData.map((r, i) => (
+                      <TableRow key={`${r.registration_code}-${i}`} className="hover:bg-muted/50 transition-colors">
+                        <TableCell className="font-mono text-xs text-muted-foreground">{r.registration_code || '-'}</TableCell>
+                        <TableCell className="font-medium">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}</TableCell>
+                        <TableCell>{r.email || '-'}</TableCell>
+                        <TableCell>{r.company_name || '-'}</TableCell>
+                        <TableCell>{r.job_position || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
+                        </TableCell>
+                        <TableCell>{r.hall_name || '-'}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      </Tabs>
     </div>
   )
 }
+

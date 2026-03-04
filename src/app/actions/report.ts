@@ -54,27 +54,19 @@ export async function advancedSearch(params: AdvancedSearchParams) {
   try {
     const headers = await getAuthHeaders()
 
-    // Build query params — attendee_type_codes needs to appear multiple times
-    const searchParams = new URLSearchParams()
-
-    if (params.start_date) searchParams.append('start_date', params.start_date)
-    if (params.end_date) searchParams.append('end_date', params.end_date)
-    if (params.country) searchParams.append('country', params.country)
-    if (params.keyword) searchParams.append('keyword', params.keyword)
-    if (params.page) searchParams.append('page', String(params.page))
-    if (params.limit) searchParams.append('limit', String(params.limit))
-
-    // Each attendee_type_code is appended separately for array format
-    if (params.attendee_type_codes && params.attendee_type_codes.length > 0) {
-      for (const code of params.attendee_type_codes) {
-        searchParams.append('attendee_type_codes', code)
-      }
+    // Map params to API expected body if necessary
+    const payload = {
+      start_date: params.start_date,
+      end_date: params.end_date,
+      attendee_type_codes: params.attendee_type_codes,
+      country: params.country,
+      keyword: params.keyword,
+      page: params.page,
+      limit: params.limit,
     }
 
-    const queryString = searchParams.toString()
-    const url = `/v1/admin/project/report/advanced-search${queryString ? `?${queryString}` : ''}`
-
-    const response = await api.get(url, { headers })
+    const url = '/v1/admin/project/report/advanced-search'
+    const response = await api.post(url, payload, { headers })
 
     return { success: true, data: response.data.data as AdvancedSearchResponse }
   } catch (error: unknown) {
@@ -101,5 +93,29 @@ export async function getEventsForReport() {
   } catch (error: unknown) {
     console.error('Error fetching events:', error)
     return { success: false, error: 'Failed to fetch events', events: [] as Event[] }
+  }
+}
+
+export interface HallNoConferenceResponse {
+  registration_code: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company_name: string;
+  job_position: string;
+  attendee_type_code: string;
+  hall_name: string;
+  scanned_at: string;
+}
+
+export async function getHallNoConference(event_uuid: string) {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get(`/v1/admin/project/report/hall-no-conference?event_uuid=${event_uuid}`, { headers })
+    return { success: true, data: (response.data?.data || []) as HallNoConferenceResponse[] }
+  } catch (error: unknown) {
+    console.error('Error fetching hall no conference data:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data'
+    return { success: false, error: errorMessage, data: [] }
   }
 }

@@ -20,9 +20,10 @@ export async function GET(
   const type = resolvedParams.type
 
   let endpoint = ''
+  let includeQuestionnaire = false
   switch (type) {
     case 'registrations-by-country':
-      endpoint = '/v1/admin/project/report/export-excel-registration-by-country'
+      endpoint = '/v1/admin/project/report/export-excel-registrations-by-country'
       break
     case 'questionnaires':
       endpoint = '/v1/admin/project/report/export-excel-questionnaire'
@@ -33,6 +34,13 @@ export async function GET(
     case 'edm-visitors':
       endpoint = '/v1/admin/project/report/export-excel-edm-visitor'
       break
+    case 'hall-no-conference':
+      endpoint = '/v1/admin/project/report/export-excel-hall-no-conference'
+      break
+    case 'participants':
+      endpoint = '/v1/admin/project/report/export-excel-participant'
+      includeQuestionnaire = request.nextUrl.searchParams.get('include_questionnaire') === 'true'
+      break
     default:
       return new NextResponse('Invalid export type', { status: 400 })
   }
@@ -41,7 +49,10 @@ export async function GET(
   const actualEventUuid = selectedEventUuid || projectUuid || ''
 
   // Construct URL with event_uuid
-  const url = `${API_URL}${endpoint}?event_uuid=${actualEventUuid}`
+  let url = `${API_URL}${endpoint}?event_uuid=${actualEventUuid}`
+  if (type === 'participants') {
+    url += `&include_questionnaire=${includeQuestionnaire}`
+  }
 
   try {
     const response = await fetch(url, {
