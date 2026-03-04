@@ -41,6 +41,7 @@ export default function ReportsPage() {
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
   const [events, setEvents] = useState<ReportEvent[]>([])
   const [selectedEventUuid, setSelectedEventUuid] = useState<string>("")
+  const [selectedHallEventUuid, setSelectedHallEventUuid] = useState<string>("")
 
   // Fetch attendee types and events on mount
   useEffect(() => {
@@ -50,7 +51,10 @@ export default function ReportsPage() {
     getEventsForReport().then(res => {
       if (res.success && res.events) {
         setEvents(res.events)
-        if (res.events.length > 0) setSelectedEventUuid(res.events[0].event_uuid)
+        if (res.events.length > 0) {
+          setSelectedEventUuid(res.events[0].event_uuid)
+          setSelectedHallEventUuid(res.events[0].event_uuid)
+        }
       }
     })
   }, [])
@@ -61,11 +65,11 @@ export default function ReportsPage() {
   const [searchedHall, setSearchedHall] = useState(false)
 
   const handleFetchHallNoConference = async () => {
-    if (!selectedEventUuid) return
+    if (!selectedHallEventUuid) return
     setLoadingHall(true)
     setSearchedHall(true)
     try {
-      const res = await getHallNoConference(selectedEventUuid)
+      const res = await getHallNoConference(selectedHallEventUuid)
       setHallData(res.success ? res.data : [])
     } catch {
       setHallData([])
@@ -254,7 +258,7 @@ export default function ReportsPage() {
                 disabled={!selectedEventUuid}
               >
                 <Download className="h-4 w-4 mr-2 text-primary" />
-                Hall No Conference
+                On Hall No Conference
               </Button>
               <Button 
                 variant="outline" 
@@ -278,7 +282,7 @@ export default function ReportsPage() {
       <Tabs defaultValue="advanced-search" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="advanced-search">Advanced Search</TabsTrigger>
-          <TabsTrigger value="hall-no-conference">Hall No Conference</TabsTrigger>
+          <TabsTrigger value="hall-no-conference">On Hall No Conference</TabsTrigger>
         </TabsList>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -528,17 +532,33 @@ export default function ReportsPage() {
       <TabsContent value="hall-no-conference" className="space-y-6">
         <Card className="border shadow-sm">
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <CardTitle className="text-lg">Hall No Conference</CardTitle>
+                <CardTitle className="text-lg">On Hall No Conference</CardTitle>
                 <CardDescription>
                   Registration records for participants that attended the Hall but not the Conference.
                 </CardDescription>
               </div>
-              <Button size="sm" onClick={handleFetchHallNoConference} disabled={loadingHall || !selectedEventUuid}>
-                {loadingHall ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                Load Data
-              </Button>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="w-full sm:w-[240px]">
+                  <Select value={selectedHallEventUuid} onValueChange={setSelectedHallEventUuid}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Select Event" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {events.map((e) => (
+                        <SelectItem key={e.event_uuid} value={e.event_uuid}>
+                          {e.event_code} - {e.event_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleFetchHallNoConference} disabled={loadingHall || !selectedHallEventUuid} className="whitespace-nowrap shrink-0">
+                  {loadingHall ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Load Data
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">

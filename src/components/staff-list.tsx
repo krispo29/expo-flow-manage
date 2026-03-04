@@ -79,9 +79,6 @@ export function StaffList({
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '')
 
-  useEffect(() => {
-    setSearchQuery(searchParams.get('keyword') || '')
-  }, [searchParams])
 
   const onPrintClick = async (p: Staff) => {
     toast.promise(printProjectStaffBadge(projectId, p.staff_uuid), {

@@ -220,11 +220,15 @@ function PrintedNoAttendance({ projectId }: { projectId: string }) {
     fetchRooms()
   }, [projectId])
 
-  function handleSearch(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setKeyword(searchInput)
-    setPage(1)
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (keyword !== searchInput) {
+        setKeyword(searchInput)
+        setPage(1)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput, keyword])
 
   const toggleAll = () => {
     if (selectedCodes.length === logs.length) {
@@ -291,16 +295,15 @@ function PrintedNoAttendance({ projectId }: { projectId: string }) {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search keyword..." 
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9 bg-background focus-visible:ring-primary"
           />
-          <Button type="submit" variant="secondary">
-            <Search className="h-4 w-4 mr-2" /> Search
-          </Button>
-        </form>
+        </div>
 
         <div className="border rounded-lg bg-background overflow-hidden relative">
           <Table>
