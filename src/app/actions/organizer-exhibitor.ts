@@ -44,6 +44,7 @@ export async function getOrganizerExhibitors() {
       boothNo: item.booth_no,
       isActive: item.is_active,
       usedQuota: item.used_quota || 0,
+      totalQuota: item.total_quota || 0,
       quota: 0,
       overQuota: 0,
       passwordNote: item.password_note
@@ -90,6 +91,7 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,
       usedQuota: 0,
+      totalQuota: rawData.total_quota || 0,
       createdAt: rawData.created_at,
       passwordNote: rawData.password_note
     }

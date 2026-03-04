@@ -36,6 +36,7 @@ export interface Exhibitor {
   country?: string
   postalCode?: string
   quota: number
+  totalQuota?: number
   usedQuota: number
   overQuota: number
   isActive: boolean
@@ -70,6 +71,7 @@ export async function getExhibitors(projectUuid: string) {
       boothNo: item.booth_no,
       isActive: item.is_active,
       usedQuota: item.used_quota || 0,
+      totalQuota: item.total_quota || 0,
       quota: 0, // Not provided in list
       overQuota: 0, // Not provided in list
       passwordNote: item.password_note
@@ -202,6 +204,7 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,
       usedQuota: 0, // usually comes from members length or separated field
+      totalQuota: rawData.total_quota || 0,
       createdAt: rawData.created_at,
       passwordNote: rawData.password_note
     }

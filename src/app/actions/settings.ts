@@ -25,7 +25,7 @@ export interface Room {
   location_detail: string
   capacity: number
   is_active: boolean
-  scanner_id?: string
+  device_id?: string
   room_type?: string
 }
 
@@ -68,7 +68,7 @@ export async function createRoom(projectUuid: string, data: {
   location_detail: string
   capacity: number
   is_active: boolean
-  scanner_id?: string
+  device_id?: string
   room_type?: string
 }) {
   try {
@@ -90,7 +90,7 @@ export async function updateRoom(projectUuid: string, data: {
   location_detail: string
   capacity: number
   is_active: boolean
-  scanner_id?: string
+  device_id?: string
   room_type?: string
 }) {
   try {

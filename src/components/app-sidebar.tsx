@@ -59,7 +59,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   const activeProject = projects?.find(p => p.id === projectId)
 
   const userData = {
-    name: user?.username || "Admin",
+    name: user?.username?.toUpperCase() || "ADMIN",
     email: user?.role || "Administrator",
     avatar: "/avatars/admin.jpg",
   }

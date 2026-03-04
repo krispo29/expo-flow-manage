@@ -301,6 +301,7 @@ export default function ExhibitorsPage() {
                     <TableHead className="font-semibold text-foreground">Booth No.</TableHead>
                     <TableHead className="font-semibold text-foreground">Status</TableHead>
                     <TableHead className="font-semibold text-foreground">Used Quota</TableHead>
+                    <TableHead className="font-semibold text-foreground">Total Quota</TableHead>
                     <TableHead className="font-semibold text-foreground">Quota Full</TableHead>
                     <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                   </TableRow>
@@ -308,7 +309,7 @@ export default function ExhibitorsPage() {
                 <TableBody>
                   {filteredExhibitors.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                         {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
                       </TableCell>
                     </TableRow>
@@ -326,6 +327,7 @@ export default function ExhibitorsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>{item.usedQuota}</TableCell>
+                        <TableCell>{item.totalQuota || 0}</TableCell>
                         <TableCell>
                           <Badge variant={item.is_quota_full || item.isQuotaFull ? "destructive" : "secondary"}>
                             {item.is_quota_full || item.isQuotaFull ? 'Full' : 'Available'}
