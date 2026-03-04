@@ -286,150 +286,166 @@ export default function ReportsPage() {
         {/* ═══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="advanced-search" className="space-y-6">
           <Card className="border-none shadow-md bg-muted/30">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Search className="h-5 w-5 text-primary" />
-                    Advanced Search
-                  </CardTitle>
-                  <CardDescription>
-                    Filter across participants, companies, and registration metadata.
-                  </CardDescription>
+            <CardHeader className="pb-4 border-b border-border/50">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Search className="h-5 w-5 text-primary" />
+                Advanced Search
+              </CardTitle>
+              <CardDescription>
+                Filter across participants, companies, and registration metadata.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-6">
+                {/* Main Search Bar & Actions */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by Name, Company, or ID..."
+                      className="pl-10 h-12 text-base bg-background shadow-sm"
+                      value={keyword}
+                      onChange={e => setKeyword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="lg" className="h-12 px-6" onClick={() => handleSearch(1)} disabled={loading}>
+                      {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Search className="h-5 w-5 mr-2" />}
+                      Search
+                    </Button>
+                    <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleReset}>
+                      Reset
+                    </Button>
+                    <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
+                      {exportingAdvanced ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Download className="h-5 w-5 mr-2 text-primary" />}
+                      Export
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
-                    {exportingAdvanced ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2 text-primary" />}
-                    Export Advanced Search
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleReset}>Reset</Button>
-                  <Button size="sm" onClick={() => handleSearch(1)} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                    Search
-                  </Button>
+
+                {/* Secondary Filters Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                  {/* Country Filter */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
+                      {country && (
+                        <button 
+                          onClick={() => setCountry("")}
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center"
+                        >
+                          Clear <X className="h-3 w-3 ml-0.5" />
+                        </button>
+                      )}
+                    </div>
+                    <CountrySelector
+                      value={country}
+                      onChange={setCountry}
+                      placeholder="Select country"
+                    />
+                  </div>
+
+                  {/* Registration Date Start */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date Start</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {dateStart ? format(dateStart, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={dateStart} onSelect={setDateStart} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Registration Date End */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date End</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {dateEnd ? format(dateEnd, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={dateEnd} onSelect={setDateEnd} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Attendee Type Popover */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendee Types</Label>
+                      {selectedTypeCodes.length > 0 && (
+                        <button 
+                          onClick={() => setSelectedTypeCodes([])}
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center"
+                        >
+                          Clear <X className="h-3 w-3 ml-0.5" />
+                        </button>
+                      )}
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between font-normal bg-background">
+                          <span className="truncate">
+                            {selectedTypeCodes.length === 0 
+                              ? <span className="text-muted-foreground">All Types</span>
+                              : `${selectedTypeCodes.length} type${selectedTypeCodes.length > 1 ? 's' : ''} selected`}
+                          </span>
+                          <ChevronRight className="h-4 w-4 opacity-50 rotate-90" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0" align="start">
+                        <div className="p-3 border-b border-border">
+                          <h4 className="font-medium text-sm">Select Attendee Types</h4>
+                        </div>
+                        <div className="p-3 max-h-[300px] overflow-y-auto space-y-3 flex flex-col">
+                          {attendeeTypes.length === 0 ? (
+                            <span className="text-sm text-muted-foreground">Loading types...</span>
+                          ) : (
+                            attendeeTypes.map(t => (
+                              <label key={t.type_code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded-md -mx-1 px-2">
+                                <Checkbox
+                                  checked={selectedTypeCodes.includes(t.type_code)}
+                                  onCheckedChange={() => toggleTypeCode(t.type_code)}
+                                />
+                                <span className="text-sm flex-1">{t.type_name}</span>
+                                <Badge variant="secondary" className="text-[10px] font-normal">{t.type_code}</Badge>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* Search Results                                                     */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          <Card className="border shadow-sm">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg">Search Results</CardTitle>
+                  <CardDescription>
+                    {searched
+                      ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
+                      : 'Use the filters above and click Search to find participants.'}
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-4">
-
-            {/* Keyword Search */}
-            <div className="space-y-2">
-              <Label htmlFor="keyword" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keyword</Label>
-              <Input
-                id="keyword"
-                placeholder="Name, Company, or ID..."
-                className="bg-background"
-                value={keyword}
-                onChange={e => setKeyword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
-              />
-            </div>
-
-            {/* Country Filter */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</Label>
-                {country && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => setCountry("")}
-                  >
-                    Clear <X className="h-3 w-3 ml-1" />
-                  </Button>
-                )}
-              </div>
-              <CountrySelector
-                value={country}
-                onChange={setCountry}
-                placeholder="Select country"
-              />
-            </div>
-
-            {/* Registration Date Start */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reg. Date Start</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateStart ? format(dateStart, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dateStart} onSelect={setDateStart} initialFocus />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Registration Date End */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reg. Date End</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateEnd ? format(dateEnd, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dateEnd} onSelect={setDateEnd} initialFocus />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Attendee Type Multi-Select (Checkboxes) */}
-            <div className="space-y-2 lg:col-span-2 xl:col-span-4">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendee Types</Label>
-              <div className="flex flex-wrap gap-3 p-3 rounded-lg border bg-background">
-                {attendeeTypes.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">Loading types...</span>
-                ) : (
-                  attendeeTypes.map(t => (
-                    <label key={t.type_code} className="flex items-center gap-1.5 cursor-pointer">
-                      <Checkbox
-                        checked={selectedTypeCodes.includes(t.type_code)}
-                        onCheckedChange={() => toggleTypeCode(t.type_code)}
-                      />
-                      <span className="text-sm">{t.type_name} ({t.type_code})</span>
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
-
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Search Results                                                     */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <Card className="border shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <CardTitle className="text-lg">Search Results</CardTitle>
-              <CardDescription>
-                {searched
-                  ? `Found ${total.toLocaleString()} participant${total !== 1 ? 's' : ''} matching your filters.`
-                  : 'Use the filters above and click Search to find participants.'}
-              </CardDescription>
-            </div>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Keyword search..."
-                className="pl-9 bg-background"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch(1)}
-              />
-            </div>
-          </div>
-        </CardHeader>
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
