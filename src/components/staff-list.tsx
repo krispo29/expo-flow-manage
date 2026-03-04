@@ -105,17 +105,22 @@ export function StaffList({
     })
   }
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
-    const params = new URLSearchParams(searchParams.toString())
-    if (searchQuery) {
-      params.set('keyword', searchQuery)
-    } else {
-      params.delete('keyword')
-    }
-    params.set('page', '1') // Reset to first page
-    router.push(`${pathname}?${params.toString()}`)
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentKeyword = searchParams.get('keyword') || ''
+      if (searchQuery !== currentKeyword) {
+        const params = new URLSearchParams(searchParams.toString())
+        if (searchQuery) {
+          params.set('keyword', searchQuery)
+        } else {
+          params.delete('keyword')
+        }
+        params.set('page', '1') // Reset to first page
+        router.push(`${pathname}?${params.toString()}`)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery, pathname, router, searchParams])
 
   function handlePageChange(newPage: number) {
     const params = new URLSearchParams(searchParams.toString())
@@ -191,17 +196,15 @@ export function StaffList({
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between gap-4">
-        <form onSubmit={handleSearch} className="flex gap-2 flex-1 max-w-sm">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search by name, company, code..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-background focus-visible:ring-primary"
           />
-          <Button type="submit" variant="secondary">
-            <Search className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Search</span>
-          </Button>
-        </form>
+        </div>
         <div className="flex gap-2">
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />

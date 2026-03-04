@@ -55,11 +55,15 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
     return () => { active = false }
   }, [page, limit, keyword, refreshCounter])
 
-  function handleSearch(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setKeyword(searchInput)
-    setPage(1)
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (keyword !== searchInput) {
+        setKeyword(searchInput)
+        setPage(1)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput, keyword])
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -121,18 +125,15 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
       {/* List Section */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row justify-between gap-4">
-          <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Search keyword..." 
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="max-w-md"
+              className="pl-9 bg-background focus-visible:ring-primary"
             />
-            <Button type="submit" variant="secondary">
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </Button>
-          </form>
+          </div>
         </div>
 
         <div className="border rounded-lg bg-background">

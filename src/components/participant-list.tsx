@@ -121,10 +121,6 @@ export function ParticipantList({
   const endIndex = startIndex + PAGE_SIZE
   const currentParticipants = filteredParticipants.slice(startIndex, endIndex)
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
-    setCurrentPage(1) // Reset to first page on search
-  }
 
   function handleTypeFilter(type: string) {
     setTypeFilter(type)
@@ -292,17 +288,18 @@ export function ParticipantList({
 
 
       <div className="flex flex-col md:flex-row justify-between gap-4">
-        <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search by name, email, company, code..." 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="pl-9 bg-background focus-visible:ring-primary"
           />
-          <Button type="submit" variant="secondary">
-            <Search className="h-4 w-4 mr-2" />
-            Search
-          </Button>
-        </form>
+        </div>
         <div className="flex gap-2">
           <Select value={typeFilter} onValueChange={handleTypeFilter}>
             <SelectTrigger className="w-[180px]">
