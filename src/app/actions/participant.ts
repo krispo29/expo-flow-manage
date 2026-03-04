@@ -454,3 +454,78 @@ export async function importAttendanceLogs(formData: FormData) {
   }
 }
 
+export async function getPrintLogs(page: number = 1, limit: number = 50, keyword: string = '') {
+  try {
+    const headers = await getAuthHeaders()
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })
+    if (keyword) {
+      params.append('keyword', keyword)
+    }
+
+    const response = await api.get(`/v1/admin/project/participants/print-logs?${params.toString()}`, {
+      headers
+    })
+
+    const data = response.data.data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { success: true, total: data.total as number, items: data.items as any[] }
+  } catch (error: unknown) {
+    console.error('Error fetching print logs:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch print logs'
+    return { success: false, error: errorMessage, total: 0, items: [] }
+  }
+}
+
+export async function getPrintedNoAttendance(page: number = 1, limit: number = 50, keyword: string = '') {
+  try {
+    const headers = await getAuthHeaders()
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })
+    if (keyword) {
+      params.append('keyword', keyword)
+    }
+
+    const response = await api.get(`/v1/admin/project/participants/printed_no_attendance?${params.toString()}`, {
+      headers
+    })
+
+    const data = response.data.data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { success: true, total: data.total as number, items: data.items as any[] }
+  } catch (error: unknown) {
+    console.error('Error fetching printed no attendance:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch printed no attendance'
+    return { success: false, error: errorMessage, total: 0, items: [] }
+  }
+}
+
+export async function generateAttendanceLogs(data: {
+  registration_codes: string[]
+  room_uuid: string
+  date: string
+  start_time: string
+  end_time: string
+}) {
+  try {
+    const headers = await getAuthHeaders()
+    
+    await api.post('/v1/admin/project/participants/attendance_logs/generate', data, {
+      headers
+    })
+    
+    revalidatePath('/admin/participants')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error generating attendance logs:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate attendance logs'
+    return { success: false, error: errorMessage }
+  }
+}
+

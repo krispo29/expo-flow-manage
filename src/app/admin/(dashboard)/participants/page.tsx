@@ -1,6 +1,7 @@
 import { getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
 import { AttendanceLogs } from '@/components/attendance-logs'
+import { PrintLogs } from '@/components/print-logs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { cookies } from 'next/headers'
@@ -31,6 +32,7 @@ export default async function ParticipantsPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="participants">Participant List</TabsTrigger>
           <TabsTrigger value="attendance-logs">Attendance Logs</TabsTrigger>
+          <TabsTrigger value="print-logs">Print Logs</TabsTrigger>
         </TabsList>
         <TabsContent value="participants">
           <ParticipantList 
@@ -40,6 +42,9 @@ export default async function ParticipantsPage() {
         </TabsContent>
         <TabsContent value="attendance-logs">
           <AttendanceLogs projectId={projectId} />
+        </TabsContent>
+        <TabsContent value="print-logs">
+          <PrintLogs projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>
