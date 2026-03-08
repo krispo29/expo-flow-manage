@@ -236,7 +236,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     }
 
     console.log('====== UPDATE ORGANIZER CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
-    await api.put('/v1/organizer/conferences', body, { headers })
+    await api.put(`/v1/organizer/conferences/${conferenceUuid}`, body, { headers })
 
     revalidatePath('/organizer/conferences')
     return { success: true }
