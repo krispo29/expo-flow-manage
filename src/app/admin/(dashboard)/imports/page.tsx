@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,8 +41,8 @@ const TEMPLATE_LINKS = {
 export default function ImportsPage() {
   const [events, setEvents] = useState<ImportEvent[]>([])
   const [exhibitors, setExhibitors] = useState<ImportExhibitor[]>([])
-  const [eventUuid, setEventUuid] = useState('')
-  const [exhibitorUuid, setExhibitorUuid] = useState('')
+  const [eventUuids, setEventUuids] = useState<Record<string, string>>({})
+  const [exhibitorUuids, setExhibitorUuids] = useState<Record<string, string>>({})
   const [files, setFiles] = useState<Record<ImportKind, File | null>>({
     exhibitors: null,
     'exhibitor-members': null,
@@ -66,12 +66,24 @@ export default function ImportsPage() {
 
       if (eventsRes.success) {
         setEvents(eventsRes.data)
-        if (eventsRes.data.length > 0) setEventUuid(eventsRes.data[0].event_uuid)
+        if (eventsRes.data.length > 0) {
+          const defaultUuid = eventsRes.data[0].event_uuid
+          setEventUuids({
+            exhibitors: defaultUuid,
+            registrations: defaultUuid,
+            conferences: defaultUuid,
+          })
+        }
       }
 
       if (exhibitorsRes.success) {
         setExhibitors(exhibitorsRes.data)
-        if (exhibitorsRes.data.length > 0) setExhibitorUuid(exhibitorsRes.data[0].exhibitor_uuid)
+        if (exhibitorsRes.data.length > 0) {
+          const defaultUuid = exhibitorsRes.data[0].exhibitor_uuid
+          setExhibitorUuids({
+            'exhibitor-members': defaultUuid,
+          })
+        }
       }
     }
 
@@ -102,6 +114,7 @@ export default function ImportsPage() {
     formData.append('file', file)
 
     if (kind === 'exhibitors' || kind === 'registrations' || kind === 'conferences') {
+      const eventUuid = eventUuids[kind]
       if (!eventUuid) {
         toast.error('Please select event')
         return
@@ -110,6 +123,7 @@ export default function ImportsPage() {
     }
 
     if (kind === 'exhibitor-members') {
+      const exhibitorUuid = exhibitorUuids[kind]
       if (!exhibitorUuid) {
         toast.error('Please select exhibitor')
         return
@@ -166,11 +180,10 @@ export default function ImportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Import Exhibitors</CardTitle>
-            <CardDescription>POST /v1/admin/project/import/exhibitors</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Label>Event</Label>
-            <Select value={eventUuid} onValueChange={setEventUuid}>
+            <Select value={eventUuids.exhibitors} onValueChange={(val) => setEventUuids(prev => ({ ...prev, exhibitors: val }))}>
               <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
               <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
             </Select>
@@ -187,11 +200,10 @@ export default function ImportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Import Exhibitor Members</CardTitle>
-            <CardDescription>POST /v1/admin/project/import/exhibitor-members</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Label>Exhibitor</Label>
-            <Select value={exhibitorUuid} onValueChange={setExhibitorUuid}>
+            <Select value={exhibitorUuids['exhibitor-members']} onValueChange={(val) => setExhibitorUuids(prev => ({ ...prev, 'exhibitor-members': val }))}>
               <SelectTrigger><SelectValue placeholder="Select exhibitor" /></SelectTrigger>
               <SelectContent>{exhibitorOptions.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}</SelectContent>
             </Select>
@@ -208,11 +220,10 @@ export default function ImportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Import Registrations</CardTitle>
-            <CardDescription>POST /v1/admin/project/import/registrations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Label>Event</Label>
-            <Select value={eventUuid} onValueChange={setEventUuid}>
+            <Select value={eventUuids.registrations} onValueChange={(val) => setEventUuids(prev => ({ ...prev, registrations: val }))}>
               <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
               <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
             </Select>
@@ -229,7 +240,6 @@ export default function ImportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Import Staff</CardTitle>
-            <CardDescription>POST /v1/admin/project/import/staff</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('staff', e.target.files?.[0] || null)} />
@@ -245,11 +255,10 @@ export default function ImportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Import Conferences</CardTitle>
-            <CardDescription>POST /v1/admin/project/import/conferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Label>Event</Label>
-            <Select value={eventUuid} onValueChange={setEventUuid}>
+            <Select value={eventUuids.conferences} onValueChange={(val) => setEventUuids(prev => ({ ...prev, conferences: val }))}>
               <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
               <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
             </Select>
@@ -266,7 +275,6 @@ export default function ImportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Import Invite Codes</CardTitle>
-            <CardDescription>POST /v1/admin/project/import/invite-codes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('invite-codes', e.target.files?.[0] || null)} />
