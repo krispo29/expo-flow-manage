@@ -18,7 +18,34 @@ async function getAuthHeaders(projectUuidParam?: string) {
   }
 }
 
-// ... Types (rest of the code unchanged)
+// ... Types
+export interface AdvancedSearchParams {
+  start_date?: string
+  end_date?: string
+  attendee_type_codes?: string[]
+  country?: string
+  keyword?: string
+  page?: number
+  limit?: number
+  include_questionnaire?: boolean
+  is_include_staff: boolean
+}
+
+export interface AdvancedSearchResult {
+  registration_uuid: string
+  registration_code: string
+  first_name: string
+  last_name: string
+  company_name: string
+  attendee_type_code: string
+  residence_country: string
+  registered_at: string
+}
+
+export interface AdvancedSearchResponse {
+  data: AdvancedSearchResult[]
+  total: number
+}
 
 // ─── Action ───────────────────────────────────────────────────────────────────
 
