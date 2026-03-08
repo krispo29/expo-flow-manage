@@ -320,7 +320,16 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                   {conference.status}
                                 </Badge>
                                 {conference.can_book && <Badge variant="outline">Can Book</Badge>}
-                                <Badge variant={conference.is_active ? 'default' : 'secondary'}>{conference.is_active ? 'Active' : 'Inactive'}</Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={conference.is_active
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800'
+                                    : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800'
+                                  }
+                                >
+                                  <span className={`inline-block size-1.5 rounded-full mr-1.5 ${conference.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+                                  {conference.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
                               </div>
                             </div>
 
@@ -364,13 +373,17 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                 size="sm"
                                 onClick={() => handleToggleActive(conference.conference_uuid, !conference.is_active)}
                                 disabled={togglingConferenceUuid === conference.conference_uuid}
+                                className={conference.is_active
+                                  ? 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all duration-200'
+                                  : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-all duration-200'
+                                }
                               >
                                 {togglingConferenceUuid === conference.conference_uuid ? (
                                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 ) : (
-                                  <Power className="h-4 w-4 mr-2" />
+                                  <Power className={`h-4 w-4 mr-2 ${conference.is_active ? 'text-red-500' : 'text-emerald-500'}`} />
                                 )}
-                                Toggle Active
+                                {conference.is_active ? 'Deactivate' : 'Activate'}
                               </Button>
 
                             <Button variant="ghost" size="sm" asChild>
