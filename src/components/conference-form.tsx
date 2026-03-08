@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock } from 'lucide-react'
+import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface ConferenceFormProps {
@@ -26,16 +26,62 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [showDates, setShowDates] = useState<ShowDate[]>([])
   const [isLoadingData, setIsLoadingData] = useState(true)
-  const [imageUrl, setImageUrl] = useState(conference?.image_url || '')
   const [isActive, setIsActive] = useState(conference?.is_active ?? true)
 
   const [conferenceType, setConferenceType] = useState<'public' | 'private'>(conference?.conference_type ?? 'public')
+  
+  const initialSpeakers = conference?.speakers && conference.speakers.length > 0
+    ? conference.speakers.map(s => ({
+        speaker_name: s.speaker_name,
+        speaker_info: s.speaker_info || '',
+        speaker_image: s.speaker_image || ''
+      }))
+    : [{ speaker_name: '', speaker_info: '', speaker_image: '' }]
 
+  const [speakersList, setSpeakersList] = useState(initialSpeakers)
+  const [speakerImageLoading, setSpeakerImageLoading] = useState<Record<number, boolean>>({})
+
+  const addSpeaker = () => setSpeakersList([...speakersList, { speaker_name: '', speaker_info: '', speaker_image: '' }])
+  const removeSpeaker = (index: number) => {
+    if (speakersList.length > 1) {
+      setSpeakersList(speakersList.filter((_, i) => i !== index))
+    }
+  }
+  const updateSpeaker = (index: number, field: 'speaker_name' | 'speaker_info' | 'speaker_image', value: string) => {
+    const newList = [...speakersList]
+    newList[index][field] = value
+    setSpeakersList(newList)
+  }
+
+  async function handleSpeakerImageChange(index: number, event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setSpeakerImageLoading(prev => ({ ...prev, [index]: true }))
+
+    try {
+      const formData = new FormData()
+      formData.append('image', file) // Component Action expects 'image', which then converts to 'file' for API
+
+      const uploadResult = await uploadConferenceImage(formData)
+      if (uploadResult.success && uploadResult.imageUrl) {
+        updateSpeaker(index, 'speaker_image', uploadResult.imageUrl)
+        toast.success('Speaker image uploaded')
+      } else {
+        toast.error(uploadResult.error || 'Failed to upload speaker image')
+      }
+    } catch (error) {
+      console.error('Error uploading speaker image:', error)
+      toast.error('Failed to upload speaker image')
+    } finally {
+      setSpeakerImageLoading(prev => ({ ...prev, [index]: false }))
+      event.target.value = ''
+    }
+  }
   useEffect(() => {
     async function fetchData() {
       try {
@@ -70,32 +116,6 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
 
     fetchData()
   }, [isOrganizer, projectId])
-
-  async function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsUploadingImage(true)
-
-    try {
-      const formData = new FormData()
-      formData.append('image', file)
-
-      const uploadResult = await uploadConferenceImage(formData)
-      if (uploadResult.success && uploadResult.imageUrl) {
-        setImageUrl(uploadResult.imageUrl)
-        toast.success('Image uploaded successfully')
-      } else {
-        toast.error(uploadResult.error || 'Failed to upload image')
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      toast.error('Failed to upload image')
-    } finally {
-      setIsUploadingImage(false)
-      event.target.value = ''
-    }
-  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -186,37 +206,88 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                 <Input id="title" name="title" defaultValue={conference?.title} placeholder="e.g. Future of AgriTech 2024" className="h-11" required />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="speaker_name">Speaker Name *</Label>
-                <Input id="speaker_name" name="speaker_name" defaultValue={conference?.speaker_name} placeholder="e.g. John Doe" className="h-11" required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="speakers">Speakers</Label>
-                <Textarea
-                  id="speakers"
-                  name="speakers"
-                  defaultValue={conference?.speakers?.join('\n') || ''}
-                  placeholder="One speaker per line"
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="speaker_info">Speaker Information</Label>
-                <Textarea id="speaker_info" name="speaker_info" defaultValue={conference?.speaker_info} placeholder="Title, Company, Bio..." rows={3} />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="image_upload">Image</Label>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <Input id="image_upload" type="file" accept="image/*" onChange={handleImageChange} disabled={isUploadingImage} className="max-w-md" />
-                    {isUploadingImage && <Loader2 className="h-4 w-4 animate-spin" />}
+              <div className="space-y-4 md:col-span-2">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div>
+                    <Label className="text-base">Speakers *</Label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Add details for each speaker presenting at this session.
+                    </p>
                   </div>
-                  {imageUrl ? <p className="text-xs text-muted-foreground break-all">{imageUrl}</p> : null}
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addSpeaker}
+                    className="h-8 gap-1.5"
+                  >
+                    <Plus className="size-3.5" />
+                    <span className="text-xs">Add Speaker</span>
+                  </Button>
                 </div>
-                <input type="hidden" name="image_url" value={imageUrl} />
+                
+                <div className="space-y-6">
+                  {speakersList.map((speaker, index) => (
+                    <Card key={index} className="shadow-sm border-slate-200 overflow-hidden relative">
+                      {speakersList.length > 1 && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => removeSpeaker(index)}
+                          >
+                            <X className="size-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Speaker Name *</Label>
+                          <Input
+                            value={speaker.speaker_name}
+                            onChange={(e) => updateSpeaker(index, 'speaker_name', e.target.value)}
+                            placeholder={`e.g. John Doe`}
+                            className="h-10"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Speaker Information</Label>
+                          <Textarea
+                            value={speaker.speaker_info}
+                            onChange={(e) => updateSpeaker(index, 'speaker_info', e.target.value)}
+                            placeholder="Title, Company, Bio..."
+                            rows={3}
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Speaker Image</Label>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3">
+                              <Input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handleSpeakerImageChange(index, e)} 
+                                disabled={speakerImageLoading[index]} 
+                                className="max-w-md" 
+                              />
+                              {speakerImageLoading[index] && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
+                            {speaker.speaker_image && (
+                              <div className="mt-2 relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border/50 bg-muted shadow-sm">
+                                <img src={speaker.speaker_image} alt="Speaker preview" className="object-cover w-full h-full" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                {/* Hidden input to pass to formData */}
+                <input type="hidden" name="speakers" value={JSON.stringify(speakersList.filter(s => s.speaker_name.trim() !== ''))} />
               </div>
 
               <div className="space-y-2 md:col-span-2 flex items-center gap-2 pt-2">
@@ -341,7 +412,7 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
         <Button type="button" variant="ghost" onClick={() => router.back()}>
           Cancel
         </Button>
-        <Button type="submit" size="lg" className="min-w-[200px] h-12 shadow-md hover:shadow-lg transition-all" disabled={isSubmitting || isUploadingImage}>
+        <Button type="submit" size="lg" className="min-w-[200px] h-12 shadow-md hover:shadow-lg transition-all" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />

@@ -16,12 +16,21 @@ async function getAuthHeaders() {
   }
 }
 
-function parseSpeakers(raw: string | null): string[] {
+function parseSpeakers(raw: string | null): { speaker_name: string; speaker_info?: string; speaker_image?: string }[] {
   if (!raw) return []
-  return raw
-    .split(/\r?\n|,/)
-    .map((value) => value.trim())
-    .filter(Boolean)
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed.map(s => ({
+        speaker_name: s.speaker_name,
+        speaker_info: s.speaker_info || undefined,
+        speaker_image: s.speaker_image || undefined
+      }))
+    }
+  } catch (e) {
+    console.warn('Failed to parse speakers JSON:', e)
+  }
+  return []
 }
 
 function parseIsActive(raw: FormDataEntryValue | null): boolean {
@@ -51,6 +60,16 @@ function extractImageUrl(payload: unknown): string | null {
   return null
 }
 
+export interface Speaker {
+  speaker_id: number
+  conference_uuid: string
+  speaker_name: string
+  speaker_info: string
+  speaker_image: string
+  sort_order: number
+  created_at: string
+}
+
 export interface Conference {
   conference_uuid: string
   project_uuid: string
@@ -58,7 +77,7 @@ export interface Conference {
   title: string
   speaker_name: string
   speaker_info: string
-  speakers?: string[]
+  speakers?: Speaker[]
   image_url?: string
   show_date: string
   start_time: string
@@ -101,7 +120,7 @@ export interface Room {
   device_id?: string
 }
 
-export async function getConferences(projectId: string) {
+export async function getConferences(_projectId: string) {
   try {
     const headers = await getAuthHeaders()
     const response = await api.get('/v1/admin/project/conferences', { headers })
@@ -140,10 +159,10 @@ export async function getConferenceLogs(conferenceUuid: string) {
     return { error: errorMessage }
   }
 }
-export async function toggleConferenceActive(conferenceUuid: string) {
+export async function toggleConferenceActive(conferenceUuid: string, nextIsActive: boolean) {
   try {
     const headers = await getAuthHeaders()
-    await api.patch(`/v1/admin/project/conferences/${conferenceUuid}/toggle-active`, {}, { headers })
+    await api.patch(`/v1/admin/project/conferences/${conferenceUuid}/toggle-active`, { is_active: nextIsActive }, { headers })
     revalidatePath('/admin/conferences')
     return { success: true }
   } catch (error: unknown) {
@@ -187,7 +206,7 @@ export async function uploadConferenceImage(formData: FormData) {
     }
 
     const uploadData = new FormData()
-    uploadData.append('image', image)
+    uploadData.append('file', image)
 
     const response = await api.post('/v1/admin/project/upload/image', uploadData, {
       headers: {
@@ -212,12 +231,15 @@ export async function uploadConferenceImage(formData: FormData) {
 export async function createConference(formData: FormData) {
   try {
     const headers = await getAuthHeaders()
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
 
     const title = formData.get('title') as string
     const eventUuid = formData.get('event_uuid') as string
-    const speakerName = formData.get('speaker_name') as string
     const speakerInfo = formData.get('speaker_info') as string
     const speakersRaw = formData.get('speakers') as string | null
+    const speakersParsed = parseSpeakers(speakersRaw)
+    const speakerName = (formData.get('speaker_name') as string) || (speakersParsed[0]?.speaker_name || '')
     const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
     const startTime = formData.get('start_time') as string
@@ -228,11 +250,12 @@ export async function createConference(formData: FormData) {
     const isActive = parseIsActive(formData.get('is_active'))
 
     const body = {
+      project_uuid: projectUuid,
       event_uuid: eventUuid,
       title,
       speaker_name: speakerName,
       speaker_info: speakerInfo,
-      speakers: parseSpeakers(speakersRaw),
+      speakers: speakersParsed,
       image_url: imageUrl || undefined,
       show_date: showDate,
       start_time: startTime,
@@ -243,6 +266,7 @@ export async function createConference(formData: FormData) {
       is_active: isActive,
     }
 
+    console.log('====== CREATE CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
     await api.post('/v1/admin/project/conferences', body, { headers })
 
     revalidatePath('/admin/conferences')
@@ -257,12 +281,15 @@ export async function createConference(formData: FormData) {
 export async function updateConference(conferenceUuid: string, formData: FormData) {
   try {
     const headers = await getAuthHeaders()
+    const cookieStore = await cookies()
+    const projectUuid = cookieStore.get('project_uuid')?.value
 
     const title = formData.get('title') as string
     const eventUuid = formData.get('event_uuid') as string
-    const speakerName = formData.get('speaker_name') as string
     const speakerInfo = formData.get('speaker_info') as string
     const speakersRaw = formData.get('speakers') as string | null
+    const speakersParsed = parseSpeakers(speakersRaw)
+    const speakerName = (formData.get('speaker_name') as string) || (speakersParsed[0]?.speaker_name || '')
     const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
     const startTime = formData.get('start_time') as string
@@ -273,12 +300,13 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     const isActive = parseIsActive(formData.get('is_active'))
 
     const body = {
+      project_uuid: projectUuid,
       conference_uuid: conferenceUuid,
       event_uuid: eventUuid,
       title,
       speaker_name: speakerName,
       speaker_info: speakerInfo,
-      speakers: parseSpeakers(speakersRaw),
+      speakers: speakersParsed,
       image_url: imageUrl || undefined,
       show_date: showDate,
       start_time: startTime,
@@ -289,6 +317,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
       is_active: isActive,
     }
 
+    console.log('====== UPDATE CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
     await api.put('/v1/admin/project/conferences', body, { headers })
 
     revalidatePath('/admin/conferences')

@@ -41,6 +41,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [previewConference, setPreviewConference] = useState<Conference | null>(null)
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   
   // Logs state
   const [logsConference, setLogsConference] = useState<Conference | null>(null)
@@ -133,7 +134,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     try {
       const result = isOrganizer
         ? await toggleOrganizerConferenceActive(conferenceUuid, nextIsActive)
-        : await toggleConferenceActive(conferenceUuid)
+        : await toggleConferenceActive(conferenceUuid, nextIsActive)
       if (result.success) {
         toast.success('Conference active status updated')
         router.refresh()
@@ -334,17 +335,43 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                             </div>
 
                             <div className="pt-3 space-y-3">
-                              {conference.speaker_name && (
-                                <div className="text-sm">
-                                  <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker</p>
-                                  <p className="text-foreground/90 line-clamp-1">{conference.speaker_name}</p>
+                              {conference.speakers && conference.speakers.length > 0 ? (
+                                <div className="space-y-4">
+                                  {conference.speakers.map((s, idx) => (
+                                    <div key={idx} className="flex gap-3">
+                                      {s.speaker_image && (
+                                        <div 
+                                          className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border/50 bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                                          onClick={() => setZoomedImage(s.speaker_image!)}
+                                        >
+                                          <img src={s.speaker_image} alt={s.speaker_name} className="h-full w-full object-cover" />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-0.5">Speaker {conference.speakers!.length > 1 ? idx + 1 : ''}</p>
+                                        <p className="text-foreground/90 line-clamp-1">{s.speaker_name}</p>
+                                        {s.speaker_info && (
+                                          <p className="text-foreground/70 text-xs mt-0.5 line-clamp-2">{s.speaker_info}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              )}
-                              {conference.speaker_info && (
-                                <div className="text-sm">
-                                  <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker Information</p>
-                                  <p className="text-foreground/90 line-clamp-2">{conference.speaker_info}</p>
-                                </div>
+                              ) : (
+                                <>
+                                  {conference.speaker_name && (
+                                    <div className="text-sm">
+                                      <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker</p>
+                                      <p className="text-foreground/90 line-clamp-1">{conference.speaker_name}</p>
+                                    </div>
+                                  )}
+                                  {conference.speaker_info && (
+                                    <div className="text-sm">
+                                      <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker Information</p>
+                                      <p className="text-foreground/90 line-clamp-2">{conference.speaker_info}</p>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -387,7 +414,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                               </Button>
 
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/conferences/${conference.conference_uuid}?projectId=${projectId}`}>
+                              <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${conference.conference_uuid}?projectId=${projectId}`}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </Link>
@@ -467,23 +494,53 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
 
                 <Separator />
 
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker</p>
-                  <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
-                    <p className="text-foreground font-medium">
-                      {previewConference.speaker_name || 'No speaker assigned'}
-                    </p>
+                {previewConference.speakers && previewConference.speakers.length > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speakers</p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {previewConference.speakers.map((s, idx) => (
+                        <div key={idx} className="bg-muted/30 p-4 rounded-lg border border-border/50 flex gap-4">
+                          {s.speaker_image && (
+                            <div 
+                              className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-border bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => setZoomedImage(s.speaker_image!)}
+                            >
+                              <img src={s.speaker_image} alt={s.speaker_name} className="h-full w-full object-cover" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-foreground font-semibold">{s.speaker_name}</p>
+                            {s.speaker_info && (
+                              <p className="text-foreground/80 text-sm mt-1 whitespace-pre-wrap leading-relaxed">
+                                {s.speaker_info}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker</p>
+                      <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
+                        <p className="text-foreground font-medium">
+                          {previewConference.speaker_name || 'No speaker assigned'}
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker Information</p>
-                  <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
-                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                      {previewConference.speaker_info || 'No speaker information provided.'}
-                    </p>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker Information</p>
+                      <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
+                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                          {previewConference.speaker_info || 'No speaker information provided.'}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t">
@@ -604,6 +661,30 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Zoom Modal */}
+      <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <DialogContent className="max-w-3xl flex justify-center items-center bg-transparent border-none shadow-none p-0 overflow-hidden" showCloseButton={false}>
+          {/* Accessibility requirements: DialogContent needs Title/Description. Rendering visually hidden ones. */}
+          <div className="sr-only">
+            <DialogTitle>Speaker Image Preview</DialogTitle>
+            <DialogDescription>Full size preview of the speaker image.</DialogDescription>
+          </div>
+          {zoomedImage && (
+            <div className="relative w-auto h-auto max-w-full max-h-[90vh]">
+              <img src={zoomedImage} alt="Zoomed in" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="absolute top-2 right-2 rounded-full bg-background/80 hover:bg-background"
+                onClick={() => setZoomedImage(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

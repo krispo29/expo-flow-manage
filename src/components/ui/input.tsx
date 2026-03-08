@@ -4,7 +4,9 @@ import { cn } from "@/lib/utils"
 
 function Input({ className, type, onChange, ...props }: React.ComponentProps<"input">) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.target.value = e.target.value.replaceAll(/[\u0E00-\u0E7F]/g, "")
+    if (type !== "file") {
+      e.target.value = e.target.value.replaceAll(/[\u0E00-\u0E7F]/g, "")
+    }
     if (onChange) {
       onChange(e)
     }
