@@ -4,60 +4,31 @@ import api from '@/lib/api'
 import { cookies } from 'next/headers'
 
 // Helper function to get headers with auth
-async function getAuthHeaders(projectUuid?: string) {
+async function getAuthHeaders(projectUuidParam?: string) {
   const cookieStore = await cookies()
   const token = cookieStore.get('access_token')?.value
+  const projectUuid = projectUuidParam || cookieStore.get('project_uuid')?.value
   
   return {
-    'X-Project-UUID': projectUuid || cookieStore.get('project_uuid')?.value,
-    ...(token && { Authorization: `Bearer ${token}` })
+    projectUuid,
+    headers: {
+      'X-Project-UUID': projectUuid,
+      ...(token && { Authorization: `Bearer ${token}` })
+    }
   }
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface AdvancedSearchParams {
-  start_date?: string    // e.g. "2024-01-01"
-  end_date?: string      // e.g. "2029-12-31"
-  attendee_type_codes?: string[]
-  country?: string
-  keyword?: string
-  page?: number
-  limit?: number
-  include_questionnaire?: boolean
-  is_include_staff?: boolean
-}
-
-export interface AdvancedSearchResult {
-  registration_uuid?: string
-  registration_code?: string
-  first_name?: string
-  last_name?: string
-  email?: string
-  company_name?: string
-  job_position?: string
-  attendee_type_code?: string
-  registered_at?: string
-  residence_country?: string
-  mobile_number?: string
-  [key: string]: unknown
-}
-
-export interface AdvancedSearchResponse {
-  data: AdvancedSearchResult[]
-  total: number
-  page: number
-  limit: number
-}
+// ... Types (rest of the code unchanged)
 
 // ─── Action ───────────────────────────────────────────────────────────────────
 
 export async function advancedSearch(params: AdvancedSearchParams) {
   try {
-    const headers = await getAuthHeaders()
+    const { headers, projectUuid } = await getAuthHeaders()
 
     // Map params to API expected body if necessary
     const payload = {
+      project_uuid: projectUuid,
       start_date: params.start_date,
       end_date: params.end_date,
       attendee_type_codes: params.attendee_type_codes,
@@ -82,9 +53,10 @@ export async function advancedSearch(params: AdvancedSearchParams) {
 
 export async function organizerAdvancedSearch(params: AdvancedSearchParams) {
   try {
-    const headers = await getAuthHeaders()
+    const { headers, projectUuid } = await getAuthHeaders()
 
     const payload = {
+      project_uuid: projectUuid,
       start_date: params.start_date,
       end_date: params.end_date,
       attendee_type_codes: params.attendee_type_codes,
@@ -109,9 +81,10 @@ export async function organizerAdvancedSearch(params: AdvancedSearchParams) {
 
 export async function exportOrganizerAdvancedSearch(params: AdvancedSearchParams) {
   try {
-    const headers = await getAuthHeaders()
+    const { headers, projectUuid } = await getAuthHeaders()
 
     const payload = {
+      project_uuid: projectUuid,
       start_date: params.start_date,
       end_date: params.end_date,
       attendee_type_codes: params.attendee_type_codes,
@@ -151,7 +124,7 @@ export interface Event {
 
 export async function getEventsForReport() {
   try {
-    const headers = await getAuthHeaders()
+    const { headers } = await getAuthHeaders()
     const response = await api.get('/v1/admin/project/events', { headers })
     const result = response.data
     return { success: true, events: (result.data || []) as Event[] }
@@ -175,7 +148,7 @@ export interface HallNoConferenceResponse {
 
 export async function getHallNoConference(event_uuid: string) {
   try {
-    const headers = await getAuthHeaders()
+    const { headers } = await getAuthHeaders()
     const response = await api.get(`/v1/admin/project/report/hall-no-conference?event_uuid=${event_uuid}`, { headers })
     return { success: true, data: (response.data?.data || []) as HallNoConferenceResponse[] }
   } catch (error: unknown) {
