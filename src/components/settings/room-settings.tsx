@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { getRooms, createRoom, updateRoom, getEvents, type Room, type Event } from "@/app/actions/settings"
+import { getRooms, createRoom, updateRoom, type Room } from "@/app/actions/settings"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,14 +19,13 @@ interface RoomSettingsProps {
 
 export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   const [rooms, setRooms] = useState<Room[]>([])
-  const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
 
   // Create form state
-  const [newRoom, setNewRoom] = useState({ event_uuid: '', room_name: '', location_detail: '', room_type: '', capacity: 0, is_active: true, device_id: '' })
+  const [newRoom, setNewRoom] = useState({ room_name: '', location_detail: '', room_type: '', capacity: 0, is_active: true, device_id: '' })
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -60,12 +59,8 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
 
   async function fetchData() {
     setLoading(true)
-    const [roomsResult, eventsResult] = await Promise.all([
-      getRooms(projectUuid),
-      getEvents(projectUuid),
-    ])
+    const roomsResult = await getRooms(projectUuid)
     if (roomsResult.success) setRooms(roomsResult.rooms)
-    if (eventsResult.success) setEvents(eventsResult.events)
     setLoading(false)
   }
 
@@ -76,17 +71,24 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
 
 
   async function handleCreate() {
-    if (!newRoom.event_uuid || !newRoom.room_name) {
-      toast.error("Please fill in Event and Room Name")
+    if (!newRoom.room_name) {
+      toast.error("Please fill in Room Name")
       return
     }
     setSaving(true)
-    const result = await createRoom(projectUuid, newRoom)
+    const result = await createRoom(projectUuid, {
+      room_name: newRoom.room_name,
+      location_detail: newRoom.location_detail,
+      capacity: newRoom.capacity,
+      is_active: newRoom.is_active,
+      device_id: newRoom.device_id,
+      room_type: newRoom.room_type,
+    })
     setSaving(false)
     if (result.success) {
       toast.success("Room created")
       setIsCreateOpen(false)
-      setNewRoom({ event_uuid: '', room_name: '', location_detail: '', room_type: '', capacity: 0, is_active: true, device_id: '' })
+      setNewRoom({ room_name: '', location_detail: '', room_type: '', capacity: 0, is_active: true, device_id: '' })
       fetchData()
     } else {
       toast.error(result.error || "Failed to create room")
@@ -98,7 +100,6 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
     setSaving(true)
     const result = await updateRoom(projectUuid, {
       room_uuid: editingRoom.room_uuid,
-      event_uuid: editingRoom.event_uuid,
       room_name: editingRoom.room_name,
       location_detail: editingRoom.location_detail,
       capacity: editingRoom.capacity,
@@ -286,19 +287,6 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Event</Label>
-              <Select value={newRoom.event_uuid} onValueChange={(v) => setNewRoom({ ...newRoom, event_uuid: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select event" />
-                </SelectTrigger>
-                <SelectContent>
-                  {events.map((e) => (
-                    <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
               <Label>Room Name</Label>
               <Input value={newRoom.room_name} onChange={(e) => setNewRoom({ ...newRoom, room_name: e.target.value })} placeholder="e.g. Room 1" />
             </div>
@@ -351,19 +339,6 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
           {editingRoom && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label>Event</Label>
-                <Select value={editingRoom.event_uuid} onValueChange={(v) => setEditingRoom({ ...editingRoom, event_uuid: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {events.map((e) => (
-                      <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
                 <Label>Room Name</Label>
                 <Input value={editingRoom.room_name} onChange={(e) => setEditingRoom({ ...editingRoom, room_name: e.target.value })} />
               </div>
@@ -409,3 +384,10 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
     </Card>
   )
 }
+
+
+
+
+
+
+

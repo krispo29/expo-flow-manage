@@ -5,6 +5,22 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { requireProjectContext } from '@/lib/authorization'
 
+export async function printParticipantBadge(projectId: string, registrationUuid: string) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+    await api.post(`/v1/admin/project/participants/${registrationUuid}/print`, {}, {
+      headers
+    })
+
+    revalidatePath('/admin/participants')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error printing participant badge:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to print participant badge'
+    return { success: false, error: errorMessage }
+  }
+}
+
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
   const cookieStore = await cookies()

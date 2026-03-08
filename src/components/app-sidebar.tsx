@@ -16,6 +16,8 @@ import {
   Calendar,
   DoorOpen,
   ContactRound,
+  BarChart3,
+  FileUp,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -135,17 +137,17 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
       <SidebarContent className="gap-0">
         {user?.role !== 'ORGANIZER' && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
               Navigation
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
+              <SidebarMenu className="gap-0">
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
                     tooltip="Dashboard" 
                     className={cn(
-                      "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                      "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                       isActive('/admin') 
                         ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                         : "hover:bg-sidebar-accent/50"
@@ -165,18 +167,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-4 mb-2">
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-2 mb-1">
               Event Management
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
+              <SidebarMenu className="gap-0">
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Exhibitors" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/exhibitors`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -197,7 +199,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Participants" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/participants`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -218,7 +220,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Staff" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/staff`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -239,7 +241,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Organizers" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/organizers`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -260,7 +262,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Conferences" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/conferences`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -281,7 +283,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Rooms" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/rooms`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -302,7 +304,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Events" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/events`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -323,7 +325,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Invitation Codes" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/invitation-codes`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -344,18 +346,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-4 mb-2">
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-2 mb-1">
               System & Tools
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
+              <SidebarMenu className="gap-0">
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Reports" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/reports`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -371,11 +373,51 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                 )}
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Questionnaires Stats"
+                      className={cn(
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        isActive(`${basePath}/questionnaires-stats`)
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
+                          : "hover:bg-sidebar-accent/50"
+                      )}
+                      isActive={isActive(`${basePath}/questionnaires-stats`)}
+                    >
+                      <Link href={projectId ? `${basePath}/questionnaires-stats?projectId=${projectId}` : `${basePath}/questionnaires-stats`}>
+                        <BarChart3 className="size-5 transition-transform group-hover:scale-110" />
+                        <span>Questionnaires Stats</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Imports"
+                      className={cn(
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        isActive(`${basePath}/imports`)
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
+                          : "hover:bg-sidebar-accent/50"
+                      )}
+                      isActive={isActive(`${basePath}/imports`)}
+                    >
+                      <Link href={projectId ? `${basePath}/imports?projectId=${projectId}` : `${basePath}/imports`}>
+                        <FileUp className="size-5 transition-transform group-hover:scale-110" />
+                        <span>Imports</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Utility" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/utilities`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -395,7 +437,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Settings" 
                       className={cn(
-                        "h-10 text-[15px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/settings`) 
                           ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                           : "hover:bg-sidebar-accent/50"
@@ -424,3 +466,6 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
     </Sidebar>
   )
 }
+
+
+

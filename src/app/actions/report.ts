@@ -25,6 +25,7 @@ export interface AdvancedSearchParams {
   page?: number
   limit?: number
   include_questionnaire?: boolean
+  is_include_staff?: boolean
 }
 
 export interface AdvancedSearchResult {
@@ -64,7 +65,8 @@ export async function advancedSearch(params: AdvancedSearchParams) {
       keyword: params.keyword,
       page: params.page,
       limit: params.limit,
-      include_questionnaire: params.include_questionnaire
+      include_questionnaire: params.include_questionnaire,
+      is_include_staff: params.is_include_staff
     }
 
     const url = '/v1/admin/project/report/advanced-search'
@@ -90,7 +92,8 @@ export async function organizerAdvancedSearch(params: AdvancedSearchParams) {
       keyword: params.keyword,
       page: params.page,
       limit: params.limit,
-      include_questionnaire: params.include_questionnaire
+      include_questionnaire: params.include_questionnaire,
+      is_include_staff: params.is_include_staff
     }
 
     const url = '/v1/organizer/report/advanced-search'
@@ -116,7 +119,8 @@ export async function exportOrganizerAdvancedSearch(params: AdvancedSearchParams
       keyword: params.keyword,
       page: params.page,
       limit: params.limit,
-      include_questionnaire: params.include_questionnaire
+      include_questionnaire: params.include_questionnaire,
+      is_include_staff: params.is_include_staff
     }
 
     const url = '/v1/organizer/report/export-excel-advanced-search'
@@ -180,3 +184,4 @@ export async function getHallNoConference(event_uuid: string) {
     return { success: false, error: errorMessage, data: [] }
   }
 }
+

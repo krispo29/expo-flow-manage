@@ -13,6 +13,8 @@ import {
   DoorOpen,
   Search,
   Plus,
+  BarChart3,
+  FileUp,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -104,6 +106,14 @@ export function CommandPalette() {
               <FileText className="mr-2 h-4 w-4" />
               <span>Reports</span>
             </CommandItem>
+            <CommandItem onSelect={() => navigate("/admin/questionnaires-stats")}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              <span>Questionnaires Stats</span>
+            </CommandItem>
+            <CommandItem onSelect={() => navigate("/admin/imports")}>
+              <FileUp className="mr-2 h-4 w-4" />
+              <span>Imports</span>
+            </CommandItem>
             <CommandItem onSelect={() => navigate("/admin/utilities")}>
               <Wrench className="mr-2 h-4 w-4" />
               <span>Utility</span>
@@ -130,3 +140,5 @@ export function CommandPalette() {
     </>
   )
 }
+
+

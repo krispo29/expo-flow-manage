@@ -29,6 +29,7 @@ export default function ReportsPage() {
   const [dateEnd, setDateEnd] = useState<Date>()
   const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([])
   const [includeQuestionnaire, setIncludeQuestionnaire] = useState(false)
+  const [includeStaff, setIncludeStaff] = useState(false)
 
   // ─── Pagination ──────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1)
@@ -117,7 +118,8 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: searchPage,
         limit,
-        include_questionnaire: includeQuestionnaire
+        include_questionnaire: includeQuestionnaire,
+        is_include_staff: includeStaff
       })
 
       if (res.success && res.data) {
@@ -134,7 +136,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeQuestionnaire])
+  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeQuestionnaire, includeStaff])
 
   // ─── Export handler ──────────────────────────────────────────────────────────
   const handleExport = async () => {
@@ -146,7 +148,8 @@ export default function ReportsPage() {
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
         country: country ? countries.find(c => c.code === country)?.name : undefined,
         keyword: keyword || undefined,
-        include_questionnaire: includeQuestionnaire
+        include_questionnaire: includeQuestionnaire,
+        is_include_staff: includeStaff
       })
 
       if (res.success && res.data) {
@@ -179,6 +182,7 @@ export default function ReportsPage() {
     setDateEnd(undefined)
     setSelectedTypeCodes([])
     setIncludeQuestionnaire(false)
+    setIncludeStaff(false)
     setPage(1)
     setResults([])
     setTotal(0)
@@ -393,7 +397,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Secondary Filters Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
               {/* Country Filter */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -505,6 +509,18 @@ export default function ReportsPage() {
                   Include Questionnaire
                 </Label>
               </div>
+
+              {/* Include Staff Checkbox */}
+              <div className="flex items-center justify-start sm:justify-center h-[38px] mt-1.5 sm:mt-6 space-x-2">
+                <Checkbox 
+                  id="is_include_staff" 
+                  checked={includeStaff}
+                  onCheckedChange={(checked) => setIncludeStaff(!!checked)}
+                />
+                <Label htmlFor="is_include_staff" className="text-sm font-medium leading-none cursor-pointer">
+                  Include Staff
+                </Label>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -603,3 +619,7 @@ export default function ReportsPage() {
     </div>
   )
 }
+
+
+
+

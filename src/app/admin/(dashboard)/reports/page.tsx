@@ -30,6 +30,7 @@ export default function ReportsPage() {
   const [dateStart, setDateStart] = useState<Date>()
   const [dateEnd, setDateEnd] = useState<Date>()
   const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([])
+  const [includeStaff, setIncludeStaff] = useState(false)
 
   // ─── Pagination ──────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1)
@@ -111,6 +112,9 @@ export default function ReportsPage() {
       case 'attendees-summary':
         url = `/api/export/attendees-summary?event_uuid=${exportEventUuid}`
         break
+      case 'attendees-summary-by-questionnaire':
+        url = `/api/export/attendees-summary-by-questionnaire?event_uuid=${exportEventUuid}`
+        break
       case 'edm-visitors':
         url = `/api/export/edm-visitors?event_uuid=${exportEventUuid}`
         break
@@ -127,6 +131,7 @@ export default function ReportsPage() {
       case 'registrations-by-country': return 'Registrations By Country'
       case 'questionnaires': return 'Questionnaires'
       case 'attendees-summary': return 'Attendees Summary'
+      case 'attendees-summary-by-questionnaire': return 'Attendees Summary By Questionnaire'
       case 'edm-visitors': return 'EDM Visitors'
       case 'participants': return 'Participants (with Questionnaire)'
       default: return 'Export Data'
@@ -147,7 +152,8 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: 1,
         limit: 100000, 
-        include_questionnaire: false
+        include_questionnaire: false,
+        is_include_staff: includeStaff
       }
       
       const response = await fetch('/api/export/advanced-search', {
@@ -188,6 +194,7 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: searchPage,
         limit,
+        is_include_staff: includeStaff,
       })
 
       if (res.success && res.data) {
@@ -204,7 +211,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit])
+  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeStaff])
 
   const handleReset = () => {
     setKeyword("")
@@ -212,6 +219,7 @@ export default function ReportsPage() {
     setDateStart(undefined)
     setDateEnd(undefined)
     setSelectedTypeCodes([])
+    setIncludeStaff(false)
     setPage(1)
     setResults([])
     setTotal(0)
@@ -269,6 +277,9 @@ export default function ReportsPage() {
             </Button>
             <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary')}>
               <Users className="mr-3 h-4 w-4" /> Attendees Summary <Download className="ml-auto h-3 w-3 opacity-50"/>
+            </Button>
+            <Button variant="ghost" title="Attendees Summary By Questionnaire" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary-by-questionnaire')}>
+              <FileBarChart className="mr-3 h-4 w-4" /> Attendees Summary By Quest... <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
             <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('edm-visitors')}>
               <Send className="mr-3 h-4 w-4" /> EDM Visitors <Download className="ml-auto h-3 w-3 opacity-50"/>
@@ -330,7 +341,7 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Secondary Filters Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
                       {/* Country Filter */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -429,6 +440,18 @@ export default function ReportsPage() {
                             </div>
                           </PopoverContent>
                         </Popover>
+                      </div>
+
+                      {/* Include Staff */}
+                      <div className="flex items-center justify-start sm:justify-center h-[38px] mt-1.5 sm:mt-6 space-x-2">
+                        <Checkbox
+                          id="is_include_staff"
+                          checked={includeStaff}
+                          onCheckedChange={(checked) => setIncludeStaff(!!checked)}
+                        />
+                        <Label htmlFor="is_include_staff" className="text-sm font-medium leading-none cursor-pointer">
+                          Include Staff
+                        </Label>
                       </div>
                     </div>
                   </div>
@@ -666,3 +689,8 @@ export default function ReportsPage() {
     </div>
   )
 }
+
+
+
+
+

@@ -63,7 +63,6 @@ export async function getRooms(projectUuid: string) {
 }
 
 export async function createRoom(projectUuid: string, data: {
-  event_uuid: string
   room_name: string
   location_detail: string
   capacity: number
@@ -85,7 +84,6 @@ export async function createRoom(projectUuid: string, data: {
 
 export async function updateRoom(projectUuid: string, data: {
   room_uuid: string
-  event_uuid: string
   room_name: string
   location_detail: string
   capacity: number
@@ -200,3 +198,5 @@ export async function updateInvitation(projectUuid: string, data: {
     return { success: false, error: errMsg }
   }
 }
+
+

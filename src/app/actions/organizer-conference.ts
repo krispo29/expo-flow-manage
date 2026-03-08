@@ -20,6 +20,19 @@ async function getOrganizerAuthHeaders() {
   }
 }
 
+function parseSpeakers(raw: string | null): string[] {
+  if (!raw) return []
+  return raw
+    .split(/\r?\n|,/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+}
+
+function parseIsActive(raw: FormDataEntryValue | null): boolean {
+  if (typeof raw !== 'string') return true
+  return raw === 'true' || raw === '1' || raw.toLowerCase() === 'on'
+}
+
 // GET /v1/organizer/conferences/
 export async function getOrganizerConferences() {
   try {
@@ -63,7 +76,7 @@ export async function getOrganizerConferenceLogs(conferenceUuid: string) {
   }
 }
 
-// GET show dates for organizer (reuses admin endpoint with organizer token)
+// GET show dates for organizer
 export async function getOrganizerProjectShowDates() {
   try {
     const headers = await getOrganizerAuthHeaders()
@@ -71,13 +84,12 @@ export async function getOrganizerProjectShowDates() {
     return { success: true, data: response.data.data as ShowDate[] }
   } catch (error: unknown) {
     console.error('Error fetching organizer project show dates:', error)
-    // Fallback: try admin endpoint
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch show dates'
     return { error: errorMessage }
   }
 }
 
-// GET rooms for organizer (reuses admin endpoint with organizer token)
+// GET rooms for organizer
 export async function getOrganizerRooms() {
   try {
     const headers = await getOrganizerAuthHeaders()
@@ -90,31 +102,58 @@ export async function getOrganizerRooms() {
   }
 }
 
+// GET events for organizer (fallback to organizer endpoint if needed)
+export async function getOrganizerEvents() {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+
+    try {
+      const response = await api.get('/v1/admin/project/events', { headers })
+      return { success: true, data: (response.data.data || []) as Array<{ event_uuid: string; event_code: string; event_name: string; is_active: boolean; order_index: number }> }
+    } catch {
+      const response = await api.get('/v1/organizer/project/events', { headers })
+      return { success: true, data: (response.data.data || []) as Array<{ event_uuid: string; event_code: string; event_name: string; is_active: boolean; order_index: number }> }
+    }
+  } catch (error: unknown) {
+    console.error('Error fetching organizer events:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events'
+    return { success: false, error: errorMessage, data: [] as Array<{ event_uuid: string; event_code: string; event_name: string; is_active: boolean; order_index: number }> }
+  }
+}
+
 // POST /v1/organizer/conferences/
 export async function createOrganizerConference(formData: FormData) {
   try {
     const headers = await getOrganizerAuthHeaders()
 
     const title = formData.get('title') as string
+    const eventUuid = formData.get('event_uuid') as string
     const speakerName = formData.get('speaker_name') as string
     const speakerInfo = formData.get('speaker_info') as string
+    const speakersRaw = formData.get('speakers') as string | null
+    const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
     const startTime = formData.get('start_time') as string
     const endTime = formData.get('end_time') as string
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const isActive = parseIsActive(formData.get('is_active'))
 
     const body = {
+      event_uuid: eventUuid,
       title,
       speaker_name: speakerName,
       speaker_info: speakerInfo,
+      speakers: parseSpeakers(speakersRaw),
+      image_url: imageUrl || undefined,
       show_date: showDate,
       start_time: startTime,
       end_time: endTime,
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
-      conference_type: conferenceType
+      conference_type: conferenceType,
+      is_active: isActive,
     }
 
     await api.post('/v1/organizer/conferences/', body, { headers })
@@ -134,26 +173,34 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     const headers = await getOrganizerAuthHeaders()
 
     const title = formData.get('title') as string
+    const eventUuid = formData.get('event_uuid') as string
     const speakerName = formData.get('speaker_name') as string
     const speakerInfo = formData.get('speaker_info') as string
+    const speakersRaw = formData.get('speakers') as string | null
+    const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
     const startTime = formData.get('start_time') as string
     const endTime = formData.get('end_time') as string
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const isActive = parseIsActive(formData.get('is_active'))
 
     const body = {
       conference_uuid: conferenceUuid,
+      event_uuid: eventUuid,
       title,
       speaker_name: speakerName,
       speaker_info: speakerInfo,
+      speakers: parseSpeakers(speakersRaw),
+      image_url: imageUrl || undefined,
       show_date: showDate,
       start_time: startTime,
       end_time: endTime,
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
-      conference_type: conferenceType
+      conference_type: conferenceType,
+      is_active: isActive,
     }
 
     await api.put('/v1/organizer/conferences/', body, { headers })
@@ -166,3 +213,23 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     return { error: errorMessage }
   }
 }
+
+export async function toggleOrganizerConferenceActive(conferenceUuid: string, isActive: boolean) {
+  try {
+    const headers = await getOrganizerAuthHeaders()
+
+    await api.patch(
+      `/v1/organizer/conferences/${conferenceUuid}/toggle-active`,
+      { is_active: isActive },
+      { headers },
+    )
+
+    revalidatePath('/organizer/conferences')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error toggling organizer conference active:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to toggle conference active status'
+    return { success: false, error: errorMessage }
+  }
+}
+

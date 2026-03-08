@@ -30,7 +30,8 @@ import { Label } from "@/components/ui/label"
 import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar } from 'lucide-react'
 import { 
   Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
-  resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation
+  resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
+  printParticipantBadge
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
@@ -74,14 +75,28 @@ export function ParticipantList({
   const [residenceCountry, setResidenceCountry] = useState('VN')
   const [mobileCountryCode, setMobileCountryCode] = useState('VN')
   
-  const onPrintClick = (p: Participant) => {
-    printBadge({
-      firstName: p.first_name || '',
-      lastName: p.last_name || '',
-      companyName: p.company_name || '',
-      country: (p as any).residence_country || 'THAILAND',
-      registrationCode: p.registration_code || '',
-      category: p.attendee_type_code || 'VISITOR',
+  const onPrintClick = async (p: Participant) => {
+    toast.promise(printParticipantBadge(projectId, p.registration_uuid), {
+      loading: 'Printing badge...',
+      success: (res) => {
+        if (!res.success) {
+          throw new Error(res.error || 'Failed to print badge')
+        }
+        try {
+          printBadge({
+            firstName: p.first_name || '',
+            lastName: p.last_name || '',
+            companyName: p.company_name || '',
+            country: (p as any).residence_country || 'THAILAND',
+            registrationCode: p.registration_code || '',
+            category: p.attendee_type_code || 'VISITOR',
+          })
+        } catch (e) {
+          console.error("Local print failed", e)
+        }
+        return 'Badge print triggered'
+      },
+      error: 'Failed to print badge'
     })
   }
 

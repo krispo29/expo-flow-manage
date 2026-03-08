@@ -188,7 +188,7 @@ export async function createProjectStaff(projectUuid: string, data: any) {
       first_name: data.first_name,
       last_name: data.last_name,
       company_name: data.company_name,
-      staff_type_code: data.staff_type_code,
+      staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
     }
 
     const response = await api.post('/v1/admin/project/staff', payload, { headers })
@@ -222,7 +222,6 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
       first_name: data.first_name,
       last_name: data.last_name,
       company_name: data.company_name,
-      staff_type_code: data.staff_type_code,
     }
 
     const response = await api.put(`/v1/admin/project/staff/${staffId}`, payload, { headers })
@@ -262,3 +261,5 @@ export async function printProjectStaffBadge(projectUuid: string, staffId: strin
     return { success: false, error: errMsg }
   }
 }
+
+

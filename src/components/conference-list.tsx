@@ -1,16 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Conference, getConferenceLogs, ConferenceLog } from '@/app/actions/conference'
-import { getOrganizerConferenceLogs } from '@/app/actions/organizer-conference'
+import { Conference, getConferenceLogs, ConferenceLog, toggleConferenceActive } from '@/app/actions/conference'
+import { getOrganizerConferenceLogs, toggleOrganizerConferenceActive } from '@/app/actions/organizer-conference'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -29,6 +30,7 @@ interface ConferenceListProps {
 
 export function ConferenceList({ conferences: initialConferences, projectId, userRole }: Readonly<ConferenceListProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
+  const router = useRouter()
   
   // Deduplicate conferences based on conference_uuid to prevent key collisions
   const conferences = Array.from(
@@ -44,6 +46,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   const [logsConference, setLogsConference] = useState<Conference | null>(null)
   const [logs, setLogs] = useState<ConferenceLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
+  const [togglingConferenceUuid, setTogglingConferenceUuid] = useState<string | null>(null)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -121,6 +124,27 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
       toast.error('An error occurred while fetching logs')
     } finally {
       setLoadingLogs(false)
+    }
+  }
+
+  async function handleToggleActive(conferenceUuid: string, nextIsActive: boolean) {
+    setTogglingConferenceUuid(conferenceUuid)
+
+    try {
+      const result = isOrganizer
+        ? await toggleOrganizerConferenceActive(conferenceUuid, nextIsActive)
+        : await toggleConferenceActive(conferenceUuid)
+      if (result.success) {
+        toast.success('Conference active status updated')
+        router.refresh()
+      } else {
+        toast.error(result.error || 'Failed to toggle active status')
+      }
+    } catch (error) {
+      console.error('Error toggling conference active:', error)
+      toast.error('Failed to toggle active status')
+    } finally {
+      setTogglingConferenceUuid(null)
     }
   }
 
@@ -296,6 +320,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                   {conference.status}
                                 </Badge>
                                 {conference.can_book && <Badge variant="outline">Can Book</Badge>}
+                                <Badge variant={conference.is_active ? 'default' : 'secondary'}>{conference.is_active ? 'Active' : 'Inactive'}</Badge>
                               </div>
                             </div>
 
@@ -314,7 +339,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
                             <Button 
                               variant="outline" 
@@ -333,6 +358,21 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </Button>
+                            
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleActive(conference.conference_uuid, !conference.is_active)}
+                                disabled={togglingConferenceUuid === conference.conference_uuid}
+                              >
+                                {togglingConferenceUuid === conference.conference_uuid ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Power className="h-4 w-4 mr-2" />
+                                )}
+                                Toggle Active
+                              </Button>
+
                             <Button variant="ghost" size="sm" asChild>
                               <Link href={`/admin/conferences/${conference.conference_uuid}?projectId=${projectId}`}>
                                 <Pencil className="h-4 w-4 mr-2" />
@@ -556,4 +596,19 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

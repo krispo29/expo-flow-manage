@@ -73,7 +73,7 @@ export function StaffList({
   
   const formRef = useRef<HTMLFormElement>(null)
   
-  const [staffType, setStaffType] = useState('ONSITE')
+  const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
   
   const [loading, setLoading] = useState(false)
@@ -127,14 +127,15 @@ export function StaffList({
 
   function openCreate() {
     setSelectedStaff(null)
-    setStaffType('ONSITE')
+    setStaffType('ST')
     setTitle('Mr.')
     setIsDialogOpen(true)
   }
 
   function openEdit(p: Staff) {
     setSelectedStaff(p)
-    setStaffType(p.staff_type_code || 'ONSITE')
+    const normalizedType = p.staff_type_code === 'ONSITE' ? 'ST' : p.staff_type_code === 'ORGANIZER' ? 'OR' : (p.staff_type_code || 'ST')
+    setStaffType(normalizedType)
     setTitle(p.title || 'Mr.')
     setIsDialogOpen(true)
   }
@@ -165,18 +166,21 @@ export function StaffList({
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const data = {
+    const commonData = {
       title: formData.get('title'),
       first_name: formData.get('first_name'),
       last_name: formData.get('last_name'),
       company_name: formData.get('company_name'),
-      staff_type_code: formData.get('staff_type_code'),
     }
 
     let result
     if (selectedStaff) {
-      result = await updateProjectStaff(projectId, selectedStaff.staff_uuid, data)
+      result = await updateProjectStaff(projectId, selectedStaff.staff_uuid, commonData)
     } else {
+      const data = {
+        ...commonData,
+        staff_type_code: formData.get('staff_type_code'),
+      }
       result = await createProjectStaff(projectId, data)
     }
 
@@ -314,13 +318,13 @@ export function StaffList({
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label htmlFor="staff_type_code">Staff Type <span className="text-red-500">*</span></Label>
-              <Select name="staff_type_code" value={staffType} onValueChange={setStaffType} required>
+              <Select name="staff_type_code" value={staffType} onValueChange={setStaffType} required disabled={!!selectedStaff}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ONSITE">Onsite</SelectItem>
-                  <SelectItem value="ORGANIZER">Organizer</SelectItem>
+                  <SelectItem value="ST">Onsite (ST)</SelectItem>
+                  <SelectItem value="OR">Organizer (OR)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -364,3 +368,7 @@ export function StaffList({
     </div>
   )
 }
+
+
+
+

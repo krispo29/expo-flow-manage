@@ -31,6 +31,9 @@ export async function GET(
     case 'attendees-summary':
       endpoint = '/v1/admin/project/report/export-excel-attendee-summary'
       break
+    case 'attendees-summary-by-questionnaire':
+      endpoint = '/v1/admin/project/report/export-excel-attendee-summary-by-questionnaire'
+      break
     case 'edm-visitors':
       endpoint = '/v1/admin/project/report/export-excel-edm-visitor'
       break

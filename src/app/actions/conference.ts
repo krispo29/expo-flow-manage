@@ -16,12 +16,50 @@ async function getAuthHeaders() {
   }
 }
 
+function parseSpeakers(raw: string | null): string[] {
+  if (!raw) return []
+  return raw
+    .split(/\r?\n|,/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+}
+
+function parseIsActive(raw: FormDataEntryValue | null): boolean {
+  if (typeof raw !== 'string') return true
+  return raw === 'true' || raw === '1' || raw.toLowerCase() === 'on'
+}
+
+function extractImageUrl(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null
+
+  const record = payload as Record<string, unknown>
+  const candidates = [
+    record.url,
+    record.image_url,
+    record.imageUrl,
+    (record.data as Record<string, unknown> | undefined)?.url,
+    (record.data as Record<string, unknown> | undefined)?.image_url,
+    (record.data as Record<string, unknown> | undefined)?.imageUrl,
+  ]
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate
+    }
+  }
+
+  return null
+}
+
 export interface Conference {
   conference_uuid: string
   project_uuid: string
+  event_uuid?: string
   title: string
   speaker_name: string
   speaker_info: string
+  speakers?: string[]
+  image_url?: string
   show_date: string
   start_time: string
   end_time: string
@@ -31,6 +69,7 @@ export interface Conference {
   conference_type: 'public' | 'private'
   reserved_count: number
   status: string
+  is_active?: boolean
   created_at: string
   can_book: boolean
 }
@@ -59,7 +98,7 @@ export interface Room {
   location_detail: string
   capacity: number
   is_active: boolean
-  scanner_id?: string
+  device_id?: string
 }
 
 export async function getConferences(projectId: string) {
@@ -101,6 +140,18 @@ export async function getConferenceLogs(conferenceUuid: string) {
     return { error: errorMessage }
   }
 }
+export async function toggleConferenceActive(conferenceUuid: string) {
+  try {
+    const headers = await getAuthHeaders()
+    await api.patch(`/v1/admin/project/conferences/${conferenceUuid}/toggle-active`, {}, { headers })
+    revalidatePath('/admin/conferences')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error toggling conference active:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to toggle conference active'
+    return { success: false, error: errorMessage }
+  }
+}
 
 export async function getProjectShowDates() {
   try {
@@ -126,30 +177,70 @@ export async function getRooms() {
   }
 }
 
+export async function uploadConferenceImage(formData: FormData) {
+  try {
+    const headers = await getAuthHeaders()
+    const image = formData.get('image') as File | null
+
+    if (!image) {
+      return { success: false, error: 'Image file is required' }
+    }
+
+    const uploadData = new FormData()
+    uploadData.append('image', image)
+
+    const response = await api.post('/v1/admin/project/upload/image', uploadData, {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    const imageUrl = extractImageUrl(response.data)
+    if (!imageUrl) {
+      return { success: false, error: 'Upload succeeded but no image URL returned' }
+    }
+
+    return { success: true, imageUrl }
+  } catch (error: unknown) {
+    console.error('Error uploading conference image:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to upload image'
+    return { success: false, error: errorMessage }
+  }
+}
+
 export async function createConference(formData: FormData) {
   try {
     const headers = await getAuthHeaders()
 
     const title = formData.get('title') as string
+    const eventUuid = formData.get('event_uuid') as string
     const speakerName = formData.get('speaker_name') as string
     const speakerInfo = formData.get('speaker_info') as string
+    const speakersRaw = formData.get('speakers') as string | null
+    const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
     const startTime = formData.get('start_time') as string
     const endTime = formData.get('end_time') as string
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const isActive = parseIsActive(formData.get('is_active'))
 
     const body = {
+      event_uuid: eventUuid,
       title,
       speaker_name: speakerName,
       speaker_info: speakerInfo,
+      speakers: parseSpeakers(speakersRaw),
+      image_url: imageUrl || undefined,
       show_date: showDate,
       start_time: startTime,
       end_time: endTime,
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
-      conference_type: conferenceType
+      conference_type: conferenceType,
+      is_active: isActive,
     }
 
     await api.post('/v1/admin/project/conferences', body, { headers })
@@ -168,26 +259,34 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     const headers = await getAuthHeaders()
 
     const title = formData.get('title') as string
+    const eventUuid = formData.get('event_uuid') as string
     const speakerName = formData.get('speaker_name') as string
     const speakerInfo = formData.get('speaker_info') as string
+    const speakersRaw = formData.get('speakers') as string | null
+    const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
     const startTime = formData.get('start_time') as string
     const endTime = formData.get('end_time') as string
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const isActive = parseIsActive(formData.get('is_active'))
 
     const body = {
       conference_uuid: conferenceUuid,
+      event_uuid: eventUuid,
       title,
       speaker_name: speakerName,
       speaker_info: speakerInfo,
+      speakers: parseSpeakers(speakersRaw),
+      image_url: imageUrl || undefined,
       show_date: showDate,
       start_time: startTime,
       end_time: endTime,
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
-      conference_type: conferenceType
+      conference_type: conferenceType,
+      is_active: isActive,
     }
 
     await api.put('/v1/admin/project/conferences', body, { headers })
@@ -243,3 +342,4 @@ export async function importConferences(data: Array<{
     return { error: errorMessage }
   }
 }
+
