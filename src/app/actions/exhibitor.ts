@@ -40,6 +40,7 @@ export interface Exhibitor {
   usedQuota: number
   overQuota: number
   isActive: boolean
+  isQuotaFull?: boolean
   inviteCode?: string
   projectId?: string
   password?: string
@@ -203,6 +204,7 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
       quota: rawData.quota,
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,
+      isQuotaFull: rawData.is_quota_full,
       usedQuota: 0, // usually comes from members length or separated field
       totalQuota: rawData.total_quota || 0,
       createdAt: rawData.created_at,

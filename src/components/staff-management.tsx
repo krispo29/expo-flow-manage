@@ -281,7 +281,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Staff Members</CardTitle>
-        <Button onClick={() => handleOpenDialog()} size="sm">
+        <Button onClick={() => handleOpenDialog()} size="sm" disabled={exhibitor?.isQuotaFull || exhibitor?.is_quota_full}>
           <Plus className="mr-2 h-4 w-4" /> Add Staff
         </Button>
       </CardHeader>

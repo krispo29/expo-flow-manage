@@ -96,6 +96,7 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
       quota: rawData.quota,
       overQuota: rawData.over_quota,
       isActive: rawData.is_active,
+      isQuotaFull: rawData.is_quota_full,
       usedQuota: 0,
       totalQuota: rawData.total_quota || 0,
       createdAt: rawData.created_at,
