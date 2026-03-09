@@ -38,8 +38,8 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   const filteredRooms = rooms.filter(room => 
     room.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     room.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (room.location_detail && room.location_detail.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (room.device_id && room.device_id.toLowerCase().includes(searchQuery.toLowerCase()))
+    (room.location_detail?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (room.device_id?.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   // Calculate pagination based on FILTERED data
@@ -159,10 +159,10 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
           </div>
         ) : (
           <div className="border rounded-md">
-            <div className="grid grid-cols-8 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
+            <div className="grid grid-cols-7 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
               <div>Room Name</div>
               <div>Room Type</div>
-              <div>Event</div>
+
               <div>Location</div>
               <div>Device ID</div>
               <div>Capacity</div>
@@ -170,7 +170,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               <div className="text-right">Actions</div>
             </div>
             {paginatedRooms.map((room) => (
-              <div key={room.room_uuid} className="grid grid-cols-8 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
+              <div key={room.room_uuid} className="grid grid-cols-7 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
                 <div className="font-medium flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   {room.room_name}
@@ -178,7 +178,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
                 <div className="text-muted-foreground">
                   {room.room_type ? room.room_type.charAt(0).toUpperCase() + room.room_type.slice(1) : '—'}
                 </div>
-                <div className="text-muted-foreground">{room.event_name}</div>
+
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <MapPin className="h-3 w-3" />
                   {room.location_detail || '—'}
@@ -312,7 +312,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
             </div>
             <div className="grid gap-2">
               <Label>Capacity</Label>
-              <Input type="number" value={newRoom.capacity} onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) || 0 })} />
+              <Input type="number" value={newRoom.capacity} onChange={(e) => setNewRoom({ ...newRoom, capacity: Number.parseInt(e.target.value) || 0 })} />
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={newRoom.is_active} onCheckedChange={(v) => setNewRoom({ ...newRoom, is_active: v })} />
@@ -364,7 +364,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
               </div>
               <div className="grid gap-2">
                 <Label>Capacity</Label>
-                <Input type="number" value={editingRoom.capacity} onChange={(e) => setEditingRoom({ ...editingRoom, capacity: parseInt(e.target.value) || 0 })} />
+                <Input type="number" value={editingRoom.capacity} onChange={(e) => setEditingRoom({ ...editingRoom, capacity: Number.parseInt(e.target.value) || 0 })} />
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={editingRoom.is_active} onCheckedChange={(v) => setEditingRoom({ ...editingRoom, is_active: v })} />

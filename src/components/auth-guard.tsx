@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Loader2 } from 'lucide-react'
@@ -8,18 +8,23 @@ import { Loader2 } from 'lucide-react'
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { isAuthenticated, user, isHydrated } = useAuthStore()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     // Wait for hydration to finish
-    if (!isHydrated) return
+    if (!isHydrated || !mounted) return
 
     // Check if user is authenticated
     if (!isAuthenticated || !user) {
       router.push('/login')
     }
-  }, [isAuthenticated, user, router, isHydrated])
+  }, [isAuthenticated, user, router, isHydrated, mounted])
 
-  const isLoading = !isHydrated || !isAuthenticated || !user;
+  const isLoading = !mounted || !isHydrated || !isAuthenticated || !user;
 
   return (
     <>

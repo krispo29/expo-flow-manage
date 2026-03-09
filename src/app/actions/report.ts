@@ -161,7 +161,7 @@ export async function getEventsForReport() {
   }
 }
 
-export interface HallNoConferenceResponse {
+export interface ConferenceNoHallResponse {
   registration_code: string;
   first_name: string;
   last_name: string;
@@ -169,17 +169,17 @@ export interface HallNoConferenceResponse {
   company_name: string;
   job_position: string;
   attendee_type_code: string;
-  hall_name: string;
+  conference_name: string;
   scanned_at: string;
 }
 
-export async function getHallNoConference(event_uuid: string) {
+export async function getConferenceNoHall(event_uuid: string) {
   try {
     const { headers } = await getAuthHeaders()
-    const response = await api.get(`/v1/admin/project/report/hall-no-conference?event_uuid=${event_uuid}`, { headers })
-    return { success: true, data: (response.data?.data || []) as HallNoConferenceResponse[] }
+    const response = await api.get(`/v1/admin/project/report/conference-no-hall?event_uuid=${event_uuid}`, { headers })
+    return { success: true, data: (response.data?.data || []) as ConferenceNoHallResponse[] }
   } catch (error: unknown) {
-    console.error('Error fetching hall no conference data:', error)
+    console.error('Error fetching conference no hall data:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data'
     return { success: false, error: errorMessage, data: [] }
   }

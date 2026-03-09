@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn } from 'lucide-react'
+import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -302,7 +302,7 @@ export default function ExhibitorsPage() {
                     <TableHead className="font-semibold text-foreground">Status</TableHead>
                     <TableHead className="font-semibold text-foreground">Used Quota</TableHead>
                     <TableHead className="font-semibold text-foreground">Total Quota</TableHead>
-                    <TableHead className="font-semibold text-foreground">Quota Full</TableHead>
+                    <TableHead className="font-semibold text-foreground text-center">Quota Status</TableHead>
                     <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -328,10 +328,18 @@ export default function ExhibitorsPage() {
                         </TableCell>
                         <TableCell>{item.usedQuota}</TableCell>
                         <TableCell>{item.totalQuota || 0}</TableCell>
-                        <TableCell>
-                          <Badge variant={item.is_quota_full || item.isQuotaFull ? "destructive" : "secondary"}>
-                            {item.is_quota_full || item.isQuotaFull ? 'Full' : 'Available'}
-                          </Badge>
+                        <TableCell className="text-center">
+                          {item.is_quota_full || item.isQuotaFull ? (
+                            <Badge variant="destructive" className="flex w-fit mx-auto items-center gap-1">
+                              <XCircle className="w-3 h-3" />
+                              <span>Full</span>
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="flex w-fit mx-auto items-center gap-1 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Available</span>
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

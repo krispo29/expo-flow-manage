@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { setProjectCookie } from '@/app/actions/auth'
@@ -19,10 +19,15 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
   const lastProjectIdRef = useRef<string | null>(null)
   const { user, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     // Wait for hydration to finish so user role is available
-    if (!isHydrated) return
+    if (!isHydrated || !mounted) return
 
     // If we are on the projects page, do nothing
     if (pathname === '/admin/projects') return
@@ -49,9 +54,9 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
         console.error('Failed to set project cookie:', err)
       })
     }
-  }, [projectId, pathname, router, projects, isOrganizer, isHydrated])
+  }, [projectId, pathname, router, projects, isOrganizer, isHydrated, mounted])
 
-  const isLoading = !isHydrated || (pathname !== '/admin/projects' && !projectId && !isOrganizer);
+  const isLoading = !mounted || !isHydrated || (pathname !== '/admin/projects' && !projectId && !isOrganizer);
 
   return (
     <>

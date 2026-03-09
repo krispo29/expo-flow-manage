@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Search, ChevronLeft, ChevronRight, CheckSquare, RefreshCw, Printer } from 'lucide-react'
+import { Loader2, Search, ChevronLeft, ChevronRight, CheckSquare, RefreshCw, Printer, CheckCircle2, XCircle } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -52,6 +52,11 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
   // Selection
   const [selectedCodes, setSelectedCodes] = useState<string[]>([])
   
+  // History Dialog
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
+  const [historyLogs, setHistoryLogs] = useState<{created_at: string, created_by: string}[]>([])
+  const [historyTargetName, setHistoryTargetName] = useState('')
+
   // Generate Attendance Dialog
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -256,14 +261,23 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                     <TableHead className="font-semibold">Name</TableHead>
                     <TableHead className="font-semibold hidden md:table-cell">Company</TableHead>
                     <TableHead className="font-semibold hidden lg:table-cell">Position</TableHead>
-                    <TableHead className="font-semibold">Print Status</TableHead>
-                    <TableHead className="font-semibold text-right">Check-in</TableHead>
+                    {filterStatus === 'pending' && (
+                      <>
+                        <TableHead className="font-semibold text-center">Attendance</TableHead>
+                        <TableHead className="font-semibold text-center">Hall</TableHead>
+                        <TableHead className="font-semibold text-center">Conf</TableHead>
+                        <TableHead className="font-semibold text-center">Active</TableHead>
+                        <TableHead className="font-semibold text-center">Email</TableHead>
+                        <TableHead className="font-semibold text-center">Conf Count</TableHead>
+                      </>
+                    )}
+                    <TableHead className="font-semibold text-right">Print Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={filterStatus === 'pending' ? 7 : 6} className="text-center py-12">
+                      <TableCell colSpan={filterStatus === 'pending' ? 12 : 5} className="text-center py-12">
                         <div className="flex flex-col items-center justify-center space-y-3">
                           <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
                           <span className="text-sm text-muted-foreground">Loading logs...</span>
@@ -272,7 +286,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                     </TableRow>
                   ) : logs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={filterStatus === 'pending' ? 7 : 6} className="text-center py-12">
+                      <TableCell colSpan={filterStatus === 'pending' ? 12 : 5} className="text-center py-12">
                         <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
                           <Printer className="h-10 w-10 opacity-20" />
                           <p>No print logs found.</p>
@@ -281,11 +295,8 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                     </TableRow>
                   ) : (
                     logs.map((log, i) => {
-                      const isPending = filterStatus === 'pending' || log.is_attended === false || log.scanned_at === null;
-                      const isCheckedIn = filterStatus !== 'pending' && (log.is_attended === true || log.scanned_at !== null || log.has_attendance === true);
-                      
                       return (
-                        <TableRow key={log.registration_uuid || i} className="hover:bg-muted/30">
+                        <TableRow key={log.print_log_uuid || log.registration_uuid || i} className="hover:bg-muted/30">
                           {filterStatus === 'pending' && (
                             <TableCell>
                               <Checkbox 
@@ -302,26 +313,63 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                           </TableCell>
                           <TableCell className="hidden md:table-cell">{log.company_name}</TableCell>
                           <TableCell className="text-muted-foreground hidden lg:table-cell">{log.job_position || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-0 font-medium">
-                              <Printer className="w-3 h-3 mr-1 opacity-70" />
-                              Printed
-                            </Badge>
-                          </TableCell>
+                          {filterStatus === 'pending' && (
+                            <>
+                              <TableCell className="text-center">
+                                {log.has_attendance ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-rose-400 mx-auto opacity-50" />
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {log.has_hall ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-rose-400 mx-auto opacity-50" />
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {log.has_conference ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-rose-400 mx-auto opacity-50" />
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {log.is_active ? (
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] py-0">Active</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-slate-50 text-slate-400 border-slate-200 text-[10px] py-0">Inactive</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {log.is_email_sent ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-rose-400 mx-auto opacity-50" />
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center font-mono text-xs">
+                                {log.conference_count || 0}
+                              </TableCell>
+                            </>
+                          )}
                           <TableCell className="text-right">
-                            {isCheckedIn ? (
-                              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-medium border-0 shadow-none">
-                                Checked-in
-                              </Badge>
-                            ) : isPending ? (
-                              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 font-medium border-0 shadow-none">
-                                Pending
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-slate-500 font-medium">
-                                Unknown
-                              </Badge>
-                            )}
+                            <Badge 
+                              variant="secondary" 
+                              className={`bg-slate-100 text-slate-700 border-0 font-medium ${filterStatus === 'all' ? 'hover:bg-slate-200 cursor-pointer' : ''}`}
+                              onClick={() => {
+                                if (filterStatus === 'all') {
+                                  setHistoryLogs(log.print_history || [])
+                                  setHistoryTargetName(`${log.first_name} ${log.last_name}`)
+                                  setIsHistoryDialogOpen(true)
+                                }
+                              }}
+                            >
+                              <Printer className="w-3 h-3 mr-1 opacity-70" />
+                              Printed ({log.print_count || 1})
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       )
@@ -370,6 +418,39 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
             )}
           </div>
         </CardContent>
+
+        <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Print History</DialogTitle>
+              <DialogDescription>
+                Badge printing timeline for <strong>{historyTargetName}</strong>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[300px] overflow-y-auto pr-2 space-y-3 py-4">
+              {historyLogs.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">No detailed history found</div>
+              ) : (
+                [...historyLogs].reverse().map((h, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">{format(new Date(h.created_at), 'MMM dd, yyyy')}</span>
+                      <span className="text-xs text-muted-foreground">{format(new Date(h.created_at), 'hh:mm:ss a')}</span>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className="text-[10px] uppercase font-bold">
+                        {h.created_by || 'System'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsHistoryDialogOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">

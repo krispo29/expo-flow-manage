@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock, Plus, X } from 'lucide-react'
 import Link from 'next/link'
@@ -290,10 +291,26 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                 <input type="hidden" name="speakers" value={JSON.stringify(speakersList.filter(s => s.speaker_name.trim() !== ''))} />
               </div>
 
-              <div className="space-y-2 md:col-span-2 flex items-center gap-2 pt-2">
-                <input id="is_active" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="h-4 w-4" />
-                <Label htmlFor="is_active">Active</Label>
-                <input type="hidden" name="is_active" value={isActive ? 'true' : 'false'} />
+              <div className="md:col-span-2 pt-2">
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-background">
+                  <div className="space-y-0.5">
+                    <Label className="text-base" htmlFor="is_active">Active Status</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Determine whether this conference is currently active and visible to attendees.
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Switch
+                      id="is_active"
+                      checked={isActive}
+                      onCheckedChange={setIsActive}
+                    />
+                    <Label htmlFor="is_active" className="text-sm font-medium w-12 cursor-pointer">
+                      {isActive ? 'Active' : 'Inactive'}
+                    </Label>
+                    <input type="hidden" name="is_active" value={isActive ? 'true' : 'false'} />
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

@@ -37,8 +37,8 @@ export async function GET(
     case 'edm-visitors':
       endpoint = '/v1/admin/project/report/export-excel-edm-visitor'
       break
-    case 'hall-no-conference':
-      endpoint = '/v1/admin/project/report/export-excel-hall-no-conference'
+    case 'conference-no-hall':
+      endpoint = '/v1/admin/project/report/export-excel-conference-no-hall'
       break
     case 'participants':
       endpoint = '/v1/admin/project/report/export-excel-participant'
@@ -55,6 +55,11 @@ export async function GET(
   let url = `${API_URL}${endpoint}?event_uuid=${actualEventUuid}`
   if (type === 'participants') {
     url += `&include_questionnaire=${includeQuestionnaire}`
+  }
+  
+  const dateParam = request.nextUrl.searchParams.get('date')
+  if ((type === 'attendees-summary' || type === 'attendees-summary-by-questionnaire') && dateParam) {
+    url += `&date=${dateParam}`
   }
 
   try {

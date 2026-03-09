@@ -448,11 +448,18 @@ export async function getAttendanceLogs(page: number = 1, limit: number = 50, ke
 export async function importAttendanceLogs(formData: FormData) {
   try {
     const file = formData.get('file') as File
+    const projectId = formData.get('projectId') as string
+
     if (!file) {
       return { success: false, error: 'File is required' }
     }
 
-    const headers = await getAuthHeaders()
+    // Verify user has access to this project
+    if (projectId) {
+      await requireProjectContext(projectId)
+    }
+
+    const headers = await getAuthHeaders(projectId)
     
     await api.post('/v1/admin/project/participants/attendance_logs/import', formData, {
       headers: {

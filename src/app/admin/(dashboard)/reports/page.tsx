@@ -14,12 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, Building2, Users, FileSpreadsheet, Send, FileText, FileBarChart } from "lucide-react"
 import { format } from "date-fns"
-import { advancedSearch, getEventsForReport, getHallNoConference, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type HallNoConferenceResponse } from "@/app/actions/report"
+import { advancedSearch, getEventsForReport, getConferenceNoHall, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type ConferenceNoHallResponse } from "@/app/actions/report"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 import { CountrySelector } from "@/components/CountrySelector"
 import { countries } from "@/lib/countries"
 
-type ReportView = 'advanced-search' | 'hall-no-conference';
+type ReportView = 'advanced-search' | 'conference-no-hall';
 
 export default function ReportsPage() {
   const [activeView, setActiveView] = useState<ReportView>('advanced-search')
@@ -62,17 +62,17 @@ export default function ReportsPage() {
     })
   }, [])
 
-  // ─── Hall No Conference State & Logic ──────────────────────────────────────────
-  const [hallData, setHallData] = useState<HallNoConferenceResponse[]>([])
+  // ─── Conference No Hall State & Logic ──────────────────────────────────────────
+  const [hallData, setHallData] = useState<ConferenceNoHallResponse[]>([])
   const [loadingHall, setLoadingHall] = useState(false)
   const [searchedHall, setSearchedHall] = useState(false)
 
-  const fetchHallNoConference = useCallback(async (eventUuid: string) => {
+  const fetchConferenceNoHall = useCallback(async (eventUuid: string) => {
     if (!eventUuid) return
     setLoadingHall(true)
     setSearchedHall(true)
     try {
-      const res = await getHallNoConference(eventUuid)
+      const res = await getConferenceNoHall(eventUuid)
       setHallData(res.success ? res.data : [])
     } catch {
       setHallData([])
@@ -83,19 +83,21 @@ export default function ReportsPage() {
 
   // Auto-fetch when selectedHallEventUuid changes
   useEffect(() => {
-    if (activeView === 'hall-no-conference' && selectedHallEventUuid) {
-      fetchHallNoConference(selectedHallEventUuid)
+    if (activeView === 'conference-no-hall' && selectedHallEventUuid) {
+      fetchConferenceNoHall(selectedHallEventUuid)
     }
-  }, [activeView, selectedHallEventUuid, fetchHallNoConference])
+  }, [activeView, selectedHallEventUuid, fetchConferenceNoHall])
 
   // ─── Export Dialog Logic ─────────────────────────────────────────────────────
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [exportType, setExportType] = useState<string>('')
   const [exportEventUuid, setExportEventUuid] = useState<string>('')
+  const [exportDate, setExportDate] = useState<Date>()
 
   const openExportDialog = (type: string) => {
     setExportType(type)
     setExportEventUuid(events.length > 0 ? events[0].event_uuid : '')
+    setExportDate(undefined)
     setExportDialogOpen(true)
   }
 
@@ -110,10 +112,10 @@ export default function ReportsPage() {
         url = `/api/export/questionnaires?event_uuid=${exportEventUuid}`
         break
       case 'attendees-summary':
-        url = `/api/export/attendees-summary?event_uuid=${exportEventUuid}`
+        url = `/api/export/attendees-summary?event_uuid=${exportEventUuid}${exportDate ? `&date=${format(exportDate, 'yyyy-MM-dd')}` : ''}`
         break
       case 'attendees-summary-by-questionnaire':
-        url = `/api/export/attendees-summary-by-questionnaire?event_uuid=${exportEventUuid}`
+        url = `/api/export/attendees-summary-by-questionnaire?event_uuid=${exportEventUuid}${exportDate ? `&date=${format(exportDate, 'yyyy-MM-dd')}` : ''}`
         break
       case 'edm-visitors':
         url = `/api/export/edm-visitors?event_uuid=${exportEventUuid}`
@@ -259,11 +261,11 @@ export default function ReportsPage() {
               <Search className="mr-3 h-4 w-4" /> Advanced Search
             </Button>
             <Button 
-              variant={activeView === 'hall-no-conference' ? 'secondary' : 'ghost'} 
+              variant={activeView === 'conference-no-hall' ? 'secondary' : 'ghost'} 
               className="w-full justify-start font-medium" 
-              onClick={() => setActiveView('hall-no-conference')}
+              onClick={() => setActiveView('conference-no-hall')}
             >
-              <Building2 className="mr-3 h-4 w-4" /> On Hall No Conference
+              <Building2 className="mr-3 h-4 w-4" /> On Conference No Hall
             </Button>
           </div>
 
@@ -335,7 +337,7 @@ export default function ReportsPage() {
                         </Button>
                         <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
                           {exportingAdvanced ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Download className="h-5 w-5 mr-2 text-primary" />}
-                          Export CSV
+                          Export
                         </Button>
                       </div>
                     </div>
@@ -549,18 +551,18 @@ export default function ReportsPage() {
             </>
           )}
 
-          {/* ────── Hall No Conference View ────── */}
-          {activeView === 'hall-no-conference' && (
+          {/* ────── Conference No Hall View ────── */}
+          {activeView === 'conference-no-hall' && (
             <Card className="border shadow-sm">
               <CardHeader className="pb-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <CardTitle className="text-lg">On Hall No Conference</CardTitle>
+                    <CardTitle className="text-lg">On Conference No Hall</CardTitle>
                     <CardDescription>
-                      Registration records for participants that attended the Hall but not the Conference.
+                      Registration records for participants that attended the Conference but not the Hall.
                     </CardDescription>
                   </div>
-                  {/* Contextual Toolbar for Hall No Conference */}
+                  {/* Contextual Toolbar for Conference No Hall */}
                   <div className="flex items-center gap-3 w-full sm:w-auto p-2 bg-muted/30 rounded-md border border-border/50">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-2">Event:</span>
@@ -581,7 +583,7 @@ export default function ReportsPage() {
                     <div className="h-5 w-[1px] bg-border mx-1" />
                     <Button 
                       variant="outline" 
-                      onClick={() => window.open(`/api/export/hall-no-conference?event_uuid=${selectedHallEventUuid}`, '_blank')}
+                      onClick={() => window.open(`/api/export/conference-no-hall?event_uuid=${selectedHallEventUuid}`, '_blank')}
                       disabled={!selectedHallEventUuid || loadingHall} 
                       className="h-9 px-3 gap-2 bg-background border-muted-foreground/20 hover:bg-primary/5 shadow-sm"
                     >
@@ -615,7 +617,7 @@ export default function ReportsPage() {
                           <TableHead>Company</TableHead>
                           <TableHead>Job Position</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Hall Name</TableHead>
+                          <TableHead>Conference Name</TableHead>
                           <TableHead>Scanned At</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -630,7 +632,7 @@ export default function ReportsPage() {
                             <TableCell>
                               <Badge variant="outline" className="font-normal">{r.attendee_type_code || '-'}</Badge>
                             </TableCell>
-                            <TableCell>{r.hall_name || '-'}</TableCell>
+                            <TableCell>{r.conference_name || '-'}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : '-'}
                             </TableCell>
@@ -677,6 +679,24 @@ export default function ReportsPage() {
                 </Select>
               </div>
             </div>
+            {['attendees-summary', 'attendees-summary-by-questionnaire'].includes(exportType) && (
+              <div className="grid grid-cols-4 items-center gap-4 mt-2">
+                <Label className="text-right">Date (Optional)</Label>
+                <div className="col-span-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {exportDate ? format(exportDate, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={exportDate} onSelect={setExportDate} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Cancel</Button>

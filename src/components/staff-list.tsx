@@ -69,7 +69,9 @@ export function StaffList({
   const searchParams = useSearchParams()
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
+  const [staffToDelete, setStaffToDelete] = useState<string | null>(null)
   
   const formRef = useRef<HTMLFormElement>(null)
   
@@ -83,22 +85,26 @@ export function StaffList({
   const onPrintClick = async (p: Staff) => {
     toast.promise(printProjectStaffBadge(projectId, p.staff_uuid), {
       loading: 'Printing badge...',
-      success: () => {
-        try {
-          printBadge({
-             firstName: p.first_name || '',
-             lastName: p.last_name || '',
-             companyName: p.company_name || '',
-             country: 'THAILAND',
-             registrationCode: p.staff_code || '',
-             category: p.staff_type_code || 'STAFF',
-          })
-        } catch (e) {
-          console.error("Local print failed", e)
+      success: (result) => {
+        if (result.success && result.data) {
+          const data = result.data
+          try {
+            printBadge({
+               firstName: data.first_name || '',
+               lastName: data.last_name || '',
+               companyName: data.company_name || '',
+               country: 'THAILAND',
+               registrationCode: data.staff_code || '',
+               category: data.staff_type_code || 'STAFF',
+            })
+          } catch (e) {
+            console.error("Local print failed", e)
+          }
+          return 'Badge print triggered'
         }
-        return 'Badge print triggered'
+        throw new Error(result.error || 'Failed to print badge')
       },
-      error: 'Failed to print badge'
+      error: (err) => err instanceof Error ? err.message : 'Failed to print badge'
     })
   }
 
@@ -141,24 +147,25 @@ export function StaffList({
   }
 
   function handleDelete(staffUuid: string) {
-    toast("Delete this staff member?", {
-      description: "This action cannot be undone.",
-      action: {
-        label: "Delete",
-        onClick: async () => {
-          setLoading(true)
-          const result = await deleteProjectStaff(projectId, staffUuid)
-          setLoading(false)
+    setStaffToDelete(staffUuid)
+    setIsDeleteDialogOpen(true)
+  }
 
-          if (result.success) {
-            toast.success('Staff deleted')
-            router.refresh()
-          } else {
-            toast.error(result.error || 'Failed to delete staff')
-          }
-        },
-      },
-    })
+  async function confirmDelete() {
+    if (!staffToDelete) return
+    
+    setLoading(true)
+    const result = await deleteProjectStaff(projectId, staffToDelete)
+    setLoading(false)
+    setIsDeleteDialogOpen(false)
+    setStaffToDelete(null)
+
+    if (result.success) {
+      toast.success('Staff deleted')
+      router.refresh()
+    } else {
+      toast.error(result.error || 'Failed to delete staff')
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -363,6 +370,28 @@ export function StaffList({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete this staff member? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={loading}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
