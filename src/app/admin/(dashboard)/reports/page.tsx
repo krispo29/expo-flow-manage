@@ -16,8 +16,6 @@ import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, Chevr
 import { format } from "date-fns"
 import { advancedSearch, getEventsForReport, getConferenceNoHall, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type ConferenceNoHallResponse } from "@/app/actions/report"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
-import { CountrySelector } from "@/components/CountrySelector"
-import { countries } from "@/lib/countries"
 
 type ReportView = 'advanced-search' | 'conference-no-hall';
 
@@ -150,7 +148,7 @@ export default function ReportsPage() {
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
-        country: country ? countries.find(c => c.code === country)?.name : undefined,
+        country: country || undefined,
         keyword: keyword || undefined,
         page: 1,
         limit: 100000, 
@@ -192,7 +190,7 @@ export default function ReportsPage() {
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
-        country: country ? countries.find(c => c.code === country)?.name : undefined,
+        country: country || undefined,
         keyword: keyword || undefined,
         page: searchPage,
         limit,
@@ -357,11 +355,16 @@ export default function ReportsPage() {
                             </button>
                           )}
                         </div>
-                        <CountrySelector
-                          value={country}
-                          onChange={setCountry}
-                          placeholder="Select country"
-                        />
+                        <Select value={country} onValueChange={setCountry}>
+                          <SelectTrigger className="w-full bg-background h-10">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="local">Local</SelectItem>
+                            <SelectItem value="oversea">Oversea</SelectItem>
+                            <SelectItem value="others">Others</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Registration Date Start */}

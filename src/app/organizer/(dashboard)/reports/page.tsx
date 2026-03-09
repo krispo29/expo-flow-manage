@@ -17,8 +17,6 @@ import { organizerAdvancedSearch, exportOrganizerAdvancedSearch, getEventsForRep
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import * as XLSX from "xlsx"
-import { CountrySelector } from "@/components/CountrySelector"
-import { countries } from "@/lib/countries"
 import { toast } from "sonner"
 
 export default function ReportsPage() {
@@ -114,7 +112,7 @@ export default function ReportsPage() {
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
-        country: country ? countries.find(c => c.code === country)?.name : undefined,
+        country: country || undefined,
         keyword: keyword || undefined,
         page: searchPage,
         limit,
@@ -146,7 +144,7 @@ export default function ReportsPage() {
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
-        country: country ? countries.find(c => c.code === country)?.name : undefined,
+        country: country || undefined,
         keyword: keyword || undefined,
         include_questionnaire: includeQuestionnaire,
         is_include_staff: includeStaff
@@ -411,11 +409,16 @@ export default function ReportsPage() {
                     </button>
                   )}
                 </div>
-                <CountrySelector
-                  value={country}
-                  onChange={setCountry}
-                  placeholder="Select country"
-                />
+                <Select value={country} onValueChange={setCountry}>
+                  <SelectTrigger className="w-full bg-background h-10">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="local">Local</SelectItem>
+                    <SelectItem value="oversea">Oversea</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Registration Date Start */}
@@ -619,7 +622,3 @@ export default function ReportsPage() {
     </div>
   )
 }
-
-
-
-
