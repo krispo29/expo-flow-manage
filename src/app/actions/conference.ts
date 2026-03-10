@@ -1,6 +1,6 @@
 'use server'
 
-import api from '@/lib/api'
+import api, { getErrorMessage } from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 
@@ -120,7 +120,7 @@ export interface Room {
   device_id?: string
 }
 
-export async function getConferences(_projectId: string) {
+export async function getConferences() {
   try {
     const headers = await getAuthHeaders()
     const response = await api.get('/v1/admin/project/conferences', { headers })
@@ -128,8 +128,7 @@ export async function getConferences(_projectId: string) {
     return { success: true, data: response.data.data as Conference[] }
   } catch (error: unknown) {
     console.error('Error fetching conferences:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conferences'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -141,8 +140,7 @@ export async function getConferenceById(id: string) {
     return { success: true, conference: response.data.data as Conference }
   } catch (error: unknown) {
     console.error('Error fetching conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -155,8 +153,7 @@ export async function getConferenceLogs(conferenceUuid: string) {
     return { success: true, data: data as ConferenceLog[] }
   } catch (error: unknown) {
     console.error('Error fetching conference logs:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference logs'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 export async function toggleConferenceActive(conferenceUuid: string, nextIsActive: boolean) {
@@ -167,8 +164,7 @@ export async function toggleConferenceActive(conferenceUuid: string, nextIsActiv
     return { success: true }
   } catch (error: unknown) {
     console.error('Error toggling conference active:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to toggle conference active'
-    return { success: false, error: errorMessage }
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 
@@ -179,8 +175,7 @@ export async function getProjectShowDates() {
     return { success: true, data: response.data.data as ShowDate[] }
   } catch (error: unknown) {
     console.error('Error fetching project show dates:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch show dates'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -191,8 +186,7 @@ export async function getRooms() {
     return { success: true, data: response.data.data as Room[] }
   } catch (error: unknown) {
     console.error('Error fetching rooms:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch rooms'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -223,8 +217,7 @@ export async function uploadConferenceImage(formData: FormData) {
     return { success: true, imageUrl }
   } catch (error: unknown) {
     console.error('Error uploading conference image:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to upload image'
-    return { success: false, error: errorMessage }
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 
@@ -273,8 +266,7 @@ export async function createConference(formData: FormData) {
     return { success: true }
   } catch (error: unknown) {
     console.error('Error creating conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create conference'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -324,8 +316,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     return { success: true }
   } catch (error: unknown) {
     console.error('Error updating conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update conference'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -367,8 +358,7 @@ export async function importConferences(data: Array<{
     return { success: true, count: successCount }
   } catch (error: unknown) {
     console.error('Error importing conferences:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to import conferences'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 

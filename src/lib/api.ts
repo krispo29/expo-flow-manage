@@ -78,4 +78,27 @@ api.interceptors.response.use(
   }
 )
 
+export function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data
+    if (data && typeof data === 'object') {
+      const errorObj = data as { code?: number; message?: string }
+      if (errorObj.message) {
+        // Beautify common error messages
+        let msg = errorObj.message
+        if (msg === 'end_time must be after start_time') {
+          return 'End time must be after Start time'
+        }
+        // Capitalize first letter if it's a simple sentence
+        if (msg.length > 0 && /^[a-z]/.test(msg)) {
+          msg = msg.charAt(0).toUpperCase() + msg.slice(1)
+        }
+        return msg
+      }
+    }
+    return error.message
+  }
+  return error instanceof Error ? error.message : 'An unexpected error occurred'
+}
+
 export default api

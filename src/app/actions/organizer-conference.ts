@@ -1,6 +1,6 @@
 'use server'
 
-import api from '@/lib/api'
+import api, { getErrorMessage } from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 
@@ -57,8 +57,7 @@ export async function getOrganizerConferences() {
     return { success: true, data: response.data.data as import('./conference').Conference[] }
   } catch (error: unknown) {
     console.error('Error fetching organizer conferences:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conferences'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -71,8 +70,7 @@ export async function getOrganizerConferenceById(id: string) {
     return { success: true, conference: response.data.data as import('./conference').Conference }
   } catch (error: unknown) {
     console.error('Error fetching organizer conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -86,8 +84,7 @@ export async function getOrganizerConferenceLogs(conferenceUuid: string) {
     return { success: true, data: data as import('./conference').ConferenceLog[] }
   } catch (error: unknown) {
     console.error('Error fetching organizer conference logs:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference logs'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -105,8 +102,7 @@ export async function getOrganizerProjectShowDates() {
     }
   } catch (error: unknown) {
     console.error('Error fetching organizer project show dates:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch show dates'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -124,8 +120,7 @@ export async function getOrganizerRooms() {
     }
   } catch (error: unknown) {
     console.error('Error fetching organizer rooms:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch rooms'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -143,8 +138,7 @@ export async function getOrganizerEvents() {
     }
   } catch (error: unknown) {
     console.error('Error fetching organizer events:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events'
-    return { success: false, error: errorMessage, data: [] as Array<{ event_uuid: string; event_code: string; event_name: string; is_active: boolean; order_index: number }> }
+    return { success: false, error: getErrorMessage(error), data: [] as Array<{ event_uuid: string; event_code: string; event_name: string; is_active: boolean; order_index: number }> }
   }
 }
 
@@ -192,8 +186,7 @@ export async function createOrganizerConference(formData: FormData) {
     return { success: true }
   } catch (error: unknown) {
     console.error('Error creating organizer conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create conference'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -242,8 +235,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     return { success: true }
   } catch (error: unknown) {
     console.error('Error updating organizer conference:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update conference'
-    return { error: errorMessage }
+    return { error: getErrorMessage(error) }
   }
 }
 
@@ -264,8 +256,7 @@ export async function toggleOrganizerConferenceActive(conferenceUuid: string, is
     return { success: true }
   } catch (error: unknown) {
     console.error('Error toggling organizer conference active:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to toggle conference active status'
-    return { success: false, error: errorMessage }
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 
