@@ -120,9 +120,12 @@ export interface Room {
   device_id?: string
 }
 
-export async function getConferences() {
+export async function getConferences(projectId?: string) {
   try {
     const headers = await getAuthHeaders()
+    if (projectId) {
+      Object.assign(headers, { 'X-Project-UUID': projectId })
+    }
     const response = await api.get('/v1/admin/project/conferences', { headers })
 
     return { success: true, data: response.data.data as Conference[] }
@@ -235,8 +238,8 @@ export async function createConference(formData: FormData) {
     const speakerName = (formData.get('speaker_name') as string) || (speakersParsed[0]?.speaker_name || '')
     const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
-    const startTime = formData.get('start_time') as string
-    const endTime = formData.get('end_time') as string
+    const startTime = (formData.get('start_time') as string)?.substring(0, 5)
+    const endTime = (formData.get('end_time') as string)?.substring(0, 5)
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
@@ -284,8 +287,8 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     const speakerName = (formData.get('speaker_name') as string) || (speakersParsed[0]?.speaker_name || '')
     const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
-    const startTime = formData.get('start_time') as string
-    const endTime = formData.get('end_time') as string
+    const startTime = (formData.get('start_time') as string)?.substring(0, 5)
+    const endTime = (formData.get('end_time') as string)?.substring(0, 5)
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
@@ -342,8 +345,8 @@ export async function importConferences(data: Array<{
           speaker_name: conf.speaker_name,
           speaker_info: conf.speaker_info,
           show_date: conf.show_date,
-          start_time: conf.start_time,
-          end_time: conf.end_time,
+          start_time: conf.start_time?.substring(0, 5),
+          end_time: conf.end_time?.substring(0, 5),
           location: conf.location,
           quota: conf.quota,
           conference_type: conf.conference_type

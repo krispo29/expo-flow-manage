@@ -155,8 +155,8 @@ export async function createOrganizerConference(formData: FormData) {
     const speakerName = (formData.get('speaker_name') as string) || (speakersParsed[0]?.speaker_name || '')
     const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
-    const startTime = formData.get('start_time') as string
-    const endTime = formData.get('end_time') as string
+    const startTime = (formData.get('start_time') as string)?.substring(0, 5)
+    const endTime = (formData.get('end_time') as string)?.substring(0, 5)
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
@@ -203,8 +203,8 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     const speakerName = (formData.get('speaker_name') as string) || (speakersParsed[0]?.speaker_name || '')
     const imageUrl = formData.get('image_url') as string | null
     const showDate = formData.get('show_date') as string
-    const startTime = formData.get('start_time') as string
-    const endTime = formData.get('end_time') as string
+    const startTime = (formData.get('start_time') as string)?.substring(0, 5)
+    const endTime = (formData.get('end_time') as string)?.substring(0, 5)
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string

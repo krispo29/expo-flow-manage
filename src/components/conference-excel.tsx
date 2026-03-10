@@ -103,8 +103,8 @@ export function ConferenceExcelOperations({ conferences: initialConferences, pro
         speaker_name: row.SpeakerName || '',
         speaker_info: row.SpeakerInfo || '',
         show_date: row.ShowDate || new Date().toISOString().split('T')[0],
-        start_time: row.StartTime || '09:00',
-        end_time: row.EndTime || '10:00',
+        start_time: String(row.StartTime || '09:00').substring(0, 5),
+        end_time: String(row.EndTime || '10:00').substring(0, 5),
         location: row.Location || '',
         quota: Number.parseInt(row.Quota || '0'),
         conference_type: (row.ConferenceType === 'private' ? 'private' : 'public') as 'public' | 'private'

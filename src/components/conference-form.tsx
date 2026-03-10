@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { TimePicker24 } from '@/components/ui/time-picker-24'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock, Plus, X } from 'lucide-react'
 import Link from 'next/link'
@@ -32,6 +33,8 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
   const [showDates, setShowDates] = useState<ShowDate[]>([])
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [isActive, setIsActive] = useState(conference?.is_active ?? true)
+  const [startTime, setStartTime] = useState(conference?.start_time?.substring(0, 5) || '')
+  const [endTime, setEndTime] = useState(conference?.end_time?.substring(0, 5) || '')
 
   const [conferenceType, setConferenceType] = useState<'public' | 'private'>(conference?.conference_type ?? 'public')
   
@@ -361,14 +364,28 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                   <Clock className="size-3.5 text-slate-400" />
                   Start Time *
                 </Label>
-                <Input id="start_time" name="start_time" type="time" className="h-11" defaultValue={conference?.start_time?.substring(0, 5)} required />
+                <TimePicker24
+                  id="start_time"
+                  name="start_time"
+                  value={startTime}
+                  onChange={setStartTime}
+                  placeholder="Select start time"
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end_time" className="flex items-center gap-1.5">
                   <Clock className="size-3.5 text-slate-400" />
                   End Time *
                 </Label>
-                <Input id="end_time" name="end_time" type="time" className="h-11" defaultValue={conference?.end_time?.substring(0, 5)} required />
+                <TimePicker24
+                  id="end_time"
+                  name="end_time"
+                  value={endTime}
+                  onChange={setEndTime}
+                  placeholder="Select end time"
+                  required
+                />
               </div>
             </div>
           </CardContent>
