@@ -13,10 +13,53 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { TimePicker24 } from '@/components/ui/time-picker-24'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock, Plus, X } from 'lucide-react'
 import Link from 'next/link'
+
+function addDurationToTime(timeStr: string, minutesToAdd: number) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const date = new Date();
+  date.setHours(h, m, 0, 0);
+  date.setMinutes(date.getMinutes() + minutesToAdd);
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+const MINUTES = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+
+function TimeSelector({ value, onChange, name, id }: { value: string, onChange: (v: string) => void, name: string, id: string }) {
+  const [h, m] = value ? value.split(':') : ['09', '00'];
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={h} onValueChange={(newH) => onChange(`${newH}:${m}`)}>
+        <SelectTrigger id={`${id}-h`} className="h-12 w-[85px] text-lg font-medium shadow-sm bg-white">
+          <SelectValue placeholder="HH" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[250px] z-50">
+          {HOURS.map((hour) => (
+            <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <span className="text-xl font-bold text-slate-400 select-none pb-1">:</span>
+      <Select value={m} onValueChange={(newM) => onChange(`${h}:${newM}`)}>
+        <SelectTrigger id={`${id}-m`} className="h-12 w-[85px] text-lg font-medium shadow-sm bg-white">
+          <SelectValue placeholder="MM" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[250px] z-50">
+          {MINUTES.map((minute) => (
+            <SelectItem key={minute} value={minute}>{minute}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <input type="hidden" name={name} value={value} />
+    </div>
+  )
+}
 
 interface ConferenceFormProps {
   projectId: string
@@ -35,6 +78,21 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
   const [isActive, setIsActive] = useState(conference?.is_active ?? true)
   const [startTime, setStartTime] = useState(conference?.start_time?.substring(0, 5) || '')
   const [endTime, setEndTime] = useState(conference?.end_time?.substring(0, 5) || '')
+
+  const handleStartTimeChange = (newStart: string) => {
+    setStartTime(newStart)
+    if (newStart && !endTime) {
+      setEndTime(addDurationToTime(newStart, 60))
+    }
+  }
+
+  const setDuration = (minutes: number) => {
+    if (startTime) {
+      setEndTime(addDurationToTime(startTime, minutes))
+    } else {
+      toast.error('Please select a start time first')
+    }
+  }
 
   const [conferenceType, setConferenceType] = useState<'public' | 'private'>(conference?.conference_type ?? 'public')
   
@@ -123,6 +181,12 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (startTime && endTime && startTime >= endTime) {
+      toast.error('End time must be after start time')
+      return;
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -358,34 +422,50 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_time" className="flex items-center gap-1.5">
-                  <Clock className="size-3.5 text-slate-400" />
-                  Start Time *
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-5 rounded-xl border border-slate-200">
+              <div className="space-y-3">
+                <Label htmlFor="start_time-h" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                  <Clock className="size-4 text-primary" />
+                  Start Time <span className="text-red-500">*</span>
                 </Label>
-                <TimePicker24
-                  id="start_time"
-                  name="start_time"
-                  value={startTime}
-                  onChange={setStartTime}
-                  placeholder="Select start time"
-                  required
-                />
+                <div className="relative">
+                  <TimeSelector
+                    id="start_time"
+                    name="start_time"
+                    value={startTime}
+                    onChange={handleStartTimeChange}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_time" className="flex items-center gap-1.5">
-                  <Clock className="size-3.5 text-slate-400" />
-                  End Time *
+              <div className="space-y-3">
+                <Label htmlFor="end_time-h" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                  <Clock className="size-4 text-primary" />
+                  End Time <span className="text-red-500">*</span>
                 </Label>
-                <TimePicker24
-                  id="end_time"
-                  name="end_time"
-                  value={endTime}
-                  onChange={setEndTime}
-                  placeholder="Select end time"
-                  required
-                />
+                <div className="relative">
+                  <TimeSelector
+                    id="end_time"
+                    name="end_time"
+                    value={endTime}
+                    onChange={setEndTime}
+                  />
+                </div>
+                {startTime && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setDuration(30)} className="h-7 text-[11px] px-2 rounded-full border-primary/20 hover:bg-primary/5 text-primary">
+                      +30m
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setDuration(60)} className="h-7 text-[11px] px-2 rounded-full border-primary/20 hover:bg-primary/5 text-primary">
+                      +1h
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setDuration(90)} className="h-7 text-[11px] px-2 rounded-full border-primary/20 hover:bg-primary/5 text-primary">
+                      +1.5h
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setDuration(120)} className="h-7 text-[11px] px-2 rounded-full border-primary/20 hover:bg-primary/5 text-primary">
+                      +2h
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

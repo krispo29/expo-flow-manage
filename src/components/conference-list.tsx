@@ -414,7 +414,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                               </Button>
 
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${conference.conference_uuid}?projectId=${projectId}`}>
+                              <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${conference.conference_uuid}?projectId=${conference.project_uuid || projectId}`}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </Link>
@@ -548,7 +548,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                   Close
                 </Button>
                 <Button asChild>
-                  <Link href={`/admin/conferences/${previewConference.conference_uuid}?projectId=${projectId}`}>
+                  <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${previewConference.conference_uuid}?projectId=${previewConference.project_uuid || projectId}`}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Edit Conference
                   </Link>
