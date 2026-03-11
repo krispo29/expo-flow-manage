@@ -135,7 +135,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="gap-0">
-        {user?.role !== 'ORGANIZER' && (
+        {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
             <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
               Navigation
@@ -148,13 +148,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     tooltip="Dashboard" 
                     className={cn(
                       "h-9 text-[14px] font-medium px-4 transition-all duration-200",
-                      isActive('/admin') 
+                      isActive(basePath) 
                         ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
                         : "hover:bg-sidebar-accent/50"
                     )}
-                    isActive={isActive('/admin')}
+                    isActive={isActive(basePath)}
                   >
-                    <Link href={projectId ? `/admin?projectId=${projectId}` : "/admin"}>
+                    <Link href={projectId ? `${basePath}?projectId=${projectId}` : basePath}>
                       <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
                       <span>Dashboard</span>
                     </Link>

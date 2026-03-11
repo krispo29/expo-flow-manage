@@ -31,10 +31,6 @@ export default async function Page(props: Props) {
   const searchParams = await props.searchParams
   const projectId = searchParams?.projectId as string | undefined
 
-  if (!projectId) {
-    return null
-  }
-
   // Single API call for all dashboard data
   const result = await getDashboard(projectId)
   const failed = !result.success || !result.data
@@ -172,7 +168,7 @@ export default async function Page(props: Props) {
                 <CardDescription>Conference schedule overview</CardDescription>
               </div>
               {uniqueConferences.length > 3 && (
-                <a href={`/admin/conferences?projectId=${projectId}`} className="text-xs text-primary font-medium flex items-center gap-0.5 hover:underline flex-shrink-0">
+                <a href={projectId ? `/organizer/conferences?projectId=${projectId}` : `/organizer/conferences`} className="text-xs text-primary font-medium flex items-center gap-0.5 hover:underline flex-shrink-0">
                   View All <ArrowUpRight className="h-3 w-3" />
                 </a>
               )}
@@ -215,11 +211,7 @@ export default async function Page(props: Props) {
               <CardTitle className="flex items-center gap-2 text-base"><Contact className="h-4 w-4 text-primary" /> Recent Registrations</CardTitle>
               <CardDescription>Latest participants joining the event</CardDescription>
             </div>
-            {(summary?.total_participants ?? 0) > 5 && (
-              <a href={`/admin/participants?projectId=${projectId}`} className="text-xs text-primary font-medium flex items-center gap-0.5 hover:underline flex-shrink-0">
-                View All <ArrowUpRight className="h-3 w-3" />
-              </a>
-            )}
+
           </div>
         </CardHeader>
         <CardContent>
