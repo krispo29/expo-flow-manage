@@ -28,6 +28,7 @@ export default function ReportsPage() {
   const [dateStart, setDateStart] = useState<Date>()
   const [dateEnd, setDateEnd] = useState<Date>()
   const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([])
+  const [includeQuestionnaire, setIncludeQuestionnaire] = useState(false)
   const [includeStaff, setIncludeStaff] = useState(false)
 
   // ─── Pagination ──────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: 1,
         limit: 100000, 
-        include_questionnaire: false,
+        include_questionnaire: includeQuestionnaire,
         is_include_staff: includeStaff
       }
       
@@ -194,6 +195,7 @@ export default function ReportsPage() {
         keyword: keyword || undefined,
         page: searchPage,
         limit,
+        include_questionnaire: includeQuestionnaire,
         is_include_staff: includeStaff,
       })
 
@@ -211,7 +213,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeStaff])
+  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeQuestionnaire, includeStaff])
 
   const handleReset = () => {
     setKeyword("")
@@ -219,6 +221,7 @@ export default function ReportsPage() {
     setDateStart(undefined)
     setDateEnd(undefined)
     setSelectedTypeCodes([])
+    setIncludeQuestionnaire(false)
     setIncludeStaff(false)
     setPage(1)
     setResults([])
@@ -341,7 +344,7 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Secondary Filters Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
                       {/* Country Filter */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -445,6 +448,18 @@ export default function ReportsPage() {
                             </div>
                           </PopoverContent>
                         </Popover>
+                      </div>
+
+                      {/* Include Questionnaire */}
+                      <div className="flex items-center justify-start sm:justify-center h-[38px] mt-1.5 sm:mt-6 space-x-2">
+                        <Checkbox
+                          id="include_questionnaire"
+                          checked={includeQuestionnaire}
+                          onCheckedChange={(checked) => setIncludeQuestionnaire(!!checked)}
+                        />
+                        <Label htmlFor="include_questionnaire" className="text-sm font-medium leading-none cursor-pointer">
+                          Include Questionnaire
+                        </Label>
                       </div>
 
                       {/* Include Staff */}

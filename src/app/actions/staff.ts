@@ -201,6 +201,18 @@ export async function createProjectStaff(projectUuid: string, data: any) {
   }
 }
 
+// GET /v1/admin/project/staff/types
+export async function getStaffTypes(projectUuid?: string) {
+  try {
+    const headers = await getAuthHeaders(projectUuid || '')
+    const response = await api.get('/v1/admin/project/staff/types', { headers })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error fetching staff types:', error)
+    return { success: false, error: 'Failed to fetch staff types' }
+  }
+}
+
 // GET /v1/admin/project/staff/{staffID}
 export async function getProjectStaffById(projectUuid: string, staffId: string) {
   try {

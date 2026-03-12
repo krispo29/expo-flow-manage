@@ -249,7 +249,7 @@ export default function TestEndpointsPage() {
             </CardHeader>
             <CardContent>
               <Button 
-                onClick={() => testEndpoint('Resend Email', () => resendEmailConfirmation([participantId]))}
+                onClick={() => testEndpoint('Resend Email', () => resendEmailConfirmation([{ registration_uuid: participantId }]))}
                 disabled={loading}
                 className="w-full"
               >

@@ -233,12 +233,14 @@ export async function generateInviteCode(projectUuid: string, exhibitorId: strin
 }
 
 // Custom action for sending credentials
-export async function sendExhibitorCredentials(projectUuid: string, exhibitorId: string) {
+export async function sendExhibitorCredentials(projectUuid: string, exhibitorId: string, email?: string) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    await api.post('/v1/admin/project/exhibitors/send_mail_credential', [
-      exhibitorId
-    ], { headers })
+    const payload = email 
+      ? [{ exhibitor_uuid: exhibitorId, email }] 
+      : [exhibitorId]
+      
+    await api.post('/v1/admin/project/exhibitors/send_mail_credential', payload, { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error sending credentials:', error)

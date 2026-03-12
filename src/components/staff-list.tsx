@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
 import { 
-  createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge
+  createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes
 } from '@/app/actions/staff'
 import { toast } from 'sonner'
 import { printBadge } from '@/utils/print-badge'
@@ -80,6 +80,17 @@ export function StaffList({
   
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '')
+  
+  // Staff Types state
+  const [staffTypes, setStaffTypes] = useState<{type_code: string, type_name: string}[]>([])
+
+  useEffect(() => {
+    getStaffTypes(projectId).then(res => {
+      if (res.success && res.data) {
+        setStaffTypes(res.data)
+      }
+    })
+  }, [projectId])
 
 
   const onPrintClick = async (p: Staff) => {
@@ -330,8 +341,18 @@ export function StaffList({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ST">Onsite (ST)</SelectItem>
-                  <SelectItem value="OR">Organizer (OR)</SelectItem>
+                  {staffTypes.length > 0 ? (
+                    staffTypes.map((t) => (
+                      <SelectItem key={t.type_code} value={t.type_code}>
+                        {t.type_name} ({t.type_code})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="ST">Onsite (ST)</SelectItem>
+                      <SelectItem value="OR">Organizer (OR)</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

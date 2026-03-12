@@ -169,10 +169,13 @@ export default function ExhibitorsPage() {
     setSendingEmail(true)
     let result
     if (isOrganizer) {
-      result = await sendMailCredentialOrganizerExhibitor([selectedExhibitor.id])
+      result = await sendMailCredentialOrganizerExhibitor([{
+        exhibitor_uuid: selectedExhibitor.id,
+        email: targetEmail
+      }])
     } else {
       if (!projectId) return
-      result = await sendExhibitorCredentials(projectId, selectedExhibitor.id)
+      result = await sendExhibitorCredentials(projectId, selectedExhibitor.id, targetEmail)
     }
     setSendingEmail(false)
     
@@ -439,7 +442,7 @@ export default function ExhibitorsPage() {
                   onChange={e => setNewPassword(e.target.value)} 
                   autoComplete="new-password"
                   className="pr-10" 
-                  placeholder="Min 6 characters"
+                  placeholder="Min 6 chars (A-Z, a-z, 0-9)"
                 />
                 <Button
                   type="button"
@@ -456,7 +459,7 @@ export default function ExhibitorsPage() {
                 </Button>
               </div>
               <div className="col-start-2 col-span-3">
-                <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters</p>
+                <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters (A-Z, a-z, 0-9 only)</p>
               </div>
             </div>
           </div>

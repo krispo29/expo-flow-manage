@@ -232,7 +232,10 @@ export function ParticipantList({
   async function handleSendEmail() {
     if (!emailTarget) return
     setSendingEmail(true)
-    const result = await resendEmailConfirmation([emailTarget.registration_uuid])
+    const result = await resendEmailConfirmation([{
+      registration_uuid: emailTarget.registration_uuid,
+      email: targetEmail
+    }])
     setSendingEmail(false)
 
     if (result.success) {

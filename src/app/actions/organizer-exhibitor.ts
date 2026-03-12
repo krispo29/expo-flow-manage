@@ -211,10 +211,10 @@ export async function toggleStatusOrganizerExhibitor(exhibitorUuid: string) {
 }
 
 // POST /v1/organizer/exhibitors/send_mail_credential
-export async function sendMailCredentialOrganizerExhibitor(exhibitorUuids: string[]) {
+export async function sendMailCredentialOrganizerExhibitor(exhibitors: { exhibitor_uuid: string, email?: string }[]) {
   try {
     const { headers } = await getOrganizerAuthHeaders()
-    await api.post('/v1/organizer/exhibitors/send_mail_credential', exhibitorUuids, { headers })
+    await api.post('/v1/organizer/exhibitors/send_mail_credential', exhibitors, { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error sending organizer exhibitor credentials:', error)
