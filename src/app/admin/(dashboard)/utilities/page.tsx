@@ -16,6 +16,7 @@ import { ImportHistory } from "@/lib/mock-service"
 import { BadgePrint } from "@/components/badge-print"
 import { useSearchParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { printBadges } from "@/utils/print-badge"
 
 function UtilitiesContent() {
   const searchParams = useSearchParams()
@@ -23,6 +24,7 @@ function UtilitiesContent() {
   
   const [printSearch, setPrintSearch] = useState("")
   const [participants, setParticipants] = useState<RealParticipant[]>([])
+  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false)
   
@@ -97,15 +99,18 @@ function UtilitiesContent() {
     
     setIsSearching(true)
     setParticipants([])
+    setSelectedParticipantId(null)
     
     try {
       const codes = printSearch.split(/[\n,]/).map(c => c.trim()).filter(Boolean)
       const result = await searchParticipantsByCodes(projectId, codes)
       
       if (result.success && result.data) {
-        setParticipants(result.data as RealParticipant[])
-        if (result.data.length > 0) {
-          toast.success(`Found ${result.data.length} participant(s)`)
+        const foundParticipants = result.data as RealParticipant[]
+        setParticipants(foundParticipants)
+        if (foundParticipants.length > 0) {
+          setSelectedParticipantId(foundParticipants[0].registration_uuid)
+          toast.success(`Found ${foundParticipants.length} participant(s)`)
         } else {
           toast.error("No participants found")
         }
@@ -128,6 +133,20 @@ function UtilitiesContent() {
       const result = await printParticipantBadgesBulk(projectId, codes)
       if (result.success) {
         toast.success(`Successfully submitted ${codes.length} badge(s) to print queue`)
+        
+        const badgeData = participants.map(p => {
+          const participantFull = p as any
+          return {
+            firstName: p.first_name || '',
+            lastName: p.last_name || '',
+            companyName: p.company_name || '',
+            country: participantFull.residence_country || 'THAILAND',
+            registrationCode: p.registration_code,
+            category: p.attendee_type_code || 'VISITOR',
+          }
+        })
+        
+        printBadges(badgeData)
       } else {
         toast.error(result.error || "Failed to bulk print")
       }
@@ -221,21 +240,25 @@ function UtilitiesContent() {
                         <div className="flex justify-between items-start mb-4">
                             <div>
                                 <h4 className="font-semibold text-lg">{participants.length} Participant(s) Found</h4>
-                                <p className="text-sm text-muted-foreground">Previewing first badge</p>
+                                <p className="text-sm text-muted-foreground">Previewing selected badge</p>
                             </div>
                             <Badge variant="outline" className="bg-background">Found</Badge>
                         </div>
                         
                         <div className="border rounded-lg bg-white shadow-inner overflow-hidden h-[340px] relative mb-4">
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 scale-[0.52] origin-top print-area">
-                                <BadgePrint participant={participants[0] as any} />
+                                <BadgePrint participant={(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]) as RealParticipant & { title_other?: string }} />
                             </div>
                         </div>
 
                         {participants.length > 1 && (
                             <div className="max-h-32 overflow-y-auto mb-4 border rounded-md divide-y custom-scrollbar">
                                 {participants.map(p => (
-                                    <div key={p.registration_uuid} className="p-2 text-sm flex justify-between items-center bg-white">
+                                    <div 
+                                      key={p.registration_uuid} 
+                                      className={`p-2 text-sm flex justify-between items-center cursor-pointer hover:bg-muted/50 transition-colors ${selectedParticipantId === p.registration_uuid ? 'bg-muted/50 font-medium' : 'bg-white'}`}
+                                      onClick={() => setSelectedParticipantId(p.registration_uuid)}
+                                    >
                                         <span>{p.first_name} {p.last_name}</span>
                                         <Badge variant="secondary" className="text-xs">{p.registration_code}</Badge>
                                     </div>
