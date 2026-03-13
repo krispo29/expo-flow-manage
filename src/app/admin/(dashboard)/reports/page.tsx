@@ -89,12 +89,11 @@ export default function ReportsPage() {
 
   // ─── Conference Summary State & Logic ──────────────────────────────────────────
   const [conferenceSummary, setConferenceSummary] = useState<ConferenceSummaryResponse[]>([])
+  const [conferenceKeyword, setConferenceKeyword] = useState("")
   const [loadingSummary, setLoadingSummary] = useState(false)
-  const [searchedSummary, setSearchedSummary] = useState(false)
 
   const fetchConferenceSummary = useCallback(async () => {
     setLoadingSummary(true)
-    setSearchedSummary(true)
     try {
       const res = await getConferenceSummary()
       setConferenceSummary(res.success ? res.data : [])
@@ -706,15 +705,26 @@ export default function ReportsPage() {
                       Summary of attendance for each conference session.
                     </CardDescription>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => window.open('/api/export/conference-summary', '_blank')}
-                    disabled={loadingSummary} 
-                    className="h-9 px-3 gap-2 bg-background border-muted-foreground/20 hover:bg-primary/5 shadow-sm"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>Export</span>
-                  </Button>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search title or room..."
+                        className="pl-9 h-9"
+                        value={conferenceKeyword}
+                        onChange={(e) => setConferenceKeyword(e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.open('/api/export/conference-summary', '_blank')}
+                      disabled={loadingSummary} 
+                      className="h-9 px-3 gap-2 bg-background border-muted-foreground/20 hover:bg-primary/5 shadow-sm shrink-0"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span className="hidden sm:inline">Export</span>
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
@@ -747,7 +757,12 @@ export default function ReportsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {conferenceSummary.map((c, i) => (
+                        {conferenceSummary
+                          .filter(c => 
+                            c.title.toLowerCase().includes(conferenceKeyword.toLowerCase()) || 
+                            c.room_name.toLowerCase().includes(conferenceKeyword.toLowerCase())
+                          )
+                          .map((c, i) => (
                           <TableRow key={`${c.conference_uuid}-${i}`} className="hover:bg-muted/50 transition-colors">
                             <TableCell className="font-medium">{c.title}</TableCell>
                             <TableCell className="whitespace-nowrap">{c.show_date}</TableCell>
