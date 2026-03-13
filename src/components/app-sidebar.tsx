@@ -87,14 +87,14 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
             {user?.role === 'ORGANIZER' ? (
               <SidebarMenuButton 
                 size="lg" 
-                className="border border-primary/10 bg-gradient-to-br from-primary/5 to-transparent cursor-default hover:bg-primary/10 transition-all duration-500 rounded-xl h-14"
+                className="border border-white/5 bg-white/5 cursor-default hover:bg-white/10 transition-all duration-300 rounded-xl h-14"
               >
-                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-primary/5 group-hover:scale-105 transition-transform duration-500">
+                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-black/20 group-hover:scale-105 transition-transform duration-500">
                   <Frame className="size-5" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight ml-2">
-                  <span className="truncate font-bold text-[14px] tracking-tight text-foreground">Organizer</span>
-                  <span className="truncate text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-[0.1em] mt-0.5">Management Hub</span>
+                  <span className="truncate font-bold text-[14px] tracking-tight text-sidebar-foreground">Organizer</span>
+                  <span className="truncate text-[10px] text-sidebar-foreground/50 font-semibold uppercase tracking-[0.1em] mt-0.5">Management Hub</span>
                 </div>
               </SidebarMenuButton>
             ) : (
@@ -102,14 +102,14 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton 
                     size="lg" 
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-primary/10 bg-gradient-to-br from-primary/5 to-transparent hover:bg-primary/10 transition-all duration-500 rounded-xl h-14"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-xl h-14"
                   >
-                    <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-primary/5 group-hover:scale-105 transition-transform duration-500">
+                    <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-black/20 group-hover:scale-105 transition-transform duration-500">
                       <Frame className="size-5" />
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight ml-2">
-                      <span className="truncate text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-[0.1em] mb-0.5">Active Project</span>
-                      <span className="truncate font-bold text-[14px] tracking-tight text-foreground">
+                      <span className="truncate text-[10px] text-sidebar-foreground/50 font-semibold uppercase tracking-[0.1em] mb-0.5">Active Project</span>
+                      <span className="truncate font-bold text-[14px] tracking-tight text-sidebar-foreground">
                         {activeProject?.name || "Select Project"}
                       </span>
                     </div>
@@ -122,7 +122,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <DropdownMenuItem
                       key={project.id}
                       onClick={() => handleProjectChange(project.id)}
-                      className="gap-2 p-2 focus:bg-primary/5 focus:text-primary cursor-pointer"
+                      className="gap-2 p-2 focus:bg-primary/10 focus:text-primary cursor-pointer"
                     >
                       <Frame className="size-4" />
                       <span className="font-medium">{project.name}</span>
@@ -137,7 +137,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
       <SidebarContent className="gap-0">
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 mb-1">
               Navigation
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -149,8 +149,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     className={cn(
                       "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                       isActive(basePath) 
-                        ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                        : "hover:bg-sidebar-accent/50"
+                        ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                        : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                     )}
                     isActive={isActive(basePath)}
                   >
@@ -167,7 +167,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-2 mb-1">
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 mt-2 mb-1">
               Event Management
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -180,8 +180,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/exhibitors`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/exhibitors`)}
                     >
@@ -201,8 +201,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/participants`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/participants`)}
                     >
@@ -222,8 +222,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/staff`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/staff`)}
                     >
@@ -243,8 +243,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/organizers`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/organizers`)}
                     >
@@ -264,8 +264,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/conferences`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/conferences`)}
                     >
@@ -285,8 +285,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/rooms`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/rooms`)}
                     >
@@ -306,8 +306,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/events`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/events`)}
                     >
@@ -327,8 +327,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/invitation-codes`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/invitation-codes`)}
                     >
@@ -346,7 +346,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-2 mb-1">
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 mt-2 mb-1">
               System & Tools
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -359,8 +359,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/reports`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/reports`)}
                     >
@@ -379,8 +379,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/questionnaires-stats`)
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/questionnaires-stats`)}
                     >
@@ -399,8 +399,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/imports`)
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/imports`)}
                     >
@@ -419,8 +419,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/utilities`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/utilities`)}
                     >
@@ -439,8 +439,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       className={cn(
                         "h-9 text-[14px] font-medium px-4 transition-all duration-200",
                         isActive(`${basePath}/settings`) 
-                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/settings`)}
                     >
