@@ -15,8 +15,12 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock, Plus, X } from 'lucide-react'
+import { ArrowLeft, Loader2, Mic, CalendarDays, Clock, MapPin, Users, Globe, Lock, Plus, X, FileText } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+import 'react-quill-new/dist/quill.snow.css'
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
 
 function addDurationToTime(timeStr: string, minutesToAdd: number) {
   if (!timeStr) return '';
@@ -95,6 +99,7 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
   }
 
   const [conferenceType, setConferenceType] = useState<'public' | 'private'>(conference?.conference_type ?? 'public')
+  const [detail, setDetail] = useState(conference?.detail || '')
   
   const initialSpeakers = conference?.speakers && conference.speakers.length > 0
     ? conference.speakers.map(s => ({
@@ -516,6 +521,53 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
               </RadioGroup>
               <input type="hidden" name="conference_type" value={conferenceType} />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b pb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <FileText className="size-4" />
+              </div>
+              <CardTitle className="text-lg">Description</CardTitle>
+            </div>
+            <CardDescription>Detailed information about the conference session.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="min-h-[250px] flex flex-col">
+              <ReactQuill 
+                theme="snow" 
+                value={detail} 
+                onChange={setDetail}
+                className="flex-1"
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                  ],
+                }}
+              />
+              <input type="hidden" name="detail" value={detail} />
+            </div>
+            <style jsx global>{`
+              .ql-container {
+                min-height: 200px;
+                font-size: 16px;
+                border-bottom-left-radius: 0.5rem;
+                border-bottom-right-radius: 0.5rem;
+              }
+              .ql-toolbar {
+                border-top-left-radius: 0.5rem;
+                border-top-right-radius: 0.5rem;
+                background-color: #f8fafc;
+              }
+              .ql-editor {
+                min-height: 200px;
+              }
+            `}</style>
           </CardContent>
         </Card>
       </div>

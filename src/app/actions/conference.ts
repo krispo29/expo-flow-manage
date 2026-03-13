@@ -89,6 +89,7 @@ export interface Conference {
   reserved_count: number
   status: string
   is_active?: boolean
+  detail?: string
   created_at: string
   can_book: boolean
 }
@@ -244,6 +245,7 @@ export async function createConference(formData: FormData) {
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
     const isActive = parseIsActive(formData.get('is_active'))
+    const detail = formData.get('detail') as string
 
     const body = {
       project_uuid: projectUuid,
@@ -260,6 +262,7 @@ export async function createConference(formData: FormData) {
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
       is_active: isActive,
+      detail: detail || undefined,
     }
 
     console.log('====== CREATE CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
@@ -293,6 +296,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
     const isActive = parseIsActive(formData.get('is_active'))
+    const detail = formData.get('detail') as string
 
     const body = {
       project_uuid: projectUuid,
@@ -310,6 +314,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
       is_active: isActive,
+      detail: detail || undefined,
     }
 
     console.log('====== UPDATE CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))

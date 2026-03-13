@@ -189,6 +189,7 @@ export function StaffList({
       first_name: formData.get('first_name'),
       last_name: formData.get('last_name'),
       company_name: formData.get('company_name'),
+      staff_type_code: formData.get('staff_type_code'),
     }
 
     let result

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power } from 'lucide-react'
+import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power, Info, Quote } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -31,7 +31,31 @@ interface ConferenceListProps {
 export function ConferenceList({ conferences: initialConferences, projectId, userRole }: Readonly<ConferenceListProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
-  
+
+  // Function to truncate HTML content to a character limit
+  function truncateHtml(html: string, maxLength: number = 200): string {
+    if (!html) return ''
+    
+    // Strip HTML tags to count only visible text
+    const tempDiv = typeof window !== 'undefined' ? document.createElement('div') : null
+    if (tempDiv) {
+      tempDiv.innerHTML = html
+      const text = tempDiv.textContent || tempDiv.innerText || ''
+      if (text.length <= maxLength) return html
+    } else {
+      // Fallback for SSR - simple regex to strip tags
+      const text = html.replace(/<[^>]*>/g, '')
+      if (text.length <= maxLength) return html
+    }
+    
+    // Truncate and add ellipsis
+    const strippedText = html.replace(/<[^>]*>/g, '')
+    if (strippedText.length <= maxLength) return html
+    
+    const truncated = strippedText.substring(0, maxLength).trim()
+    return truncated + '...'
+  }
+
   // Deduplicate conferences based on conference_uuid to prevent key collisions
   const conferences = Array.from(
     new Map(initialConferences.map(c => [c.conference_uuid, c])).values()
@@ -374,6 +398,18 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                 </>
                               )}
                             </div>
+
+                            {conference.detail && (
+                              <div className="mt-4 pt-3 border-t border-dashed">
+                                <p className="font-semibold text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Description</p>
+                                <div className="text-sm text-foreground/80 leading-relaxed">
+                                  <div
+                                    className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0"
+                                    dangerouslySetInnerHTML={{ __html: truncateHtml(conference.detail, 200) }}
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
@@ -434,7 +470,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
 
       {/* Preview Modal */}
       <Dialog open={!!previewConference} onOpenChange={() => setPreviewConference(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto sm:max-w-4xl">
           {previewConference && (
             <>
               <DialogHeader>
@@ -491,6 +527,26 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                     </div>
                   </div>
                 </div>
+
+                {previewConference.detail && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                          <Info className="size-4" />
+                        </div>
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Session Description</p>
+                      </div>
+                      <div className="bg-slate-50/50 rounded-xl border border-slate-200 p-5 shadow-sm">
+                        <div 
+                          className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0"
+                          dangerouslySetInnerHTML={{ __html: previewConference.detail }}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <Separator />
 

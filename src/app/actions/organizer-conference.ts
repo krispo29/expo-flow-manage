@@ -161,6 +161,7 @@ export async function createOrganizerConference(formData: FormData) {
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
     const isActive = parseIsActive(formData.get('is_active'))
+    const detail = formData.get('detail') as string
 
     const body = {
       project_uuid: projectUuid,
@@ -177,6 +178,7 @@ export async function createOrganizerConference(formData: FormData) {
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
       is_active: isActive,
+      detail: detail || undefined,
     }
 
     console.log('====== CREATE ORGANIZER CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
@@ -209,6 +211,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
     const isActive = parseIsActive(formData.get('is_active'))
+    const detail = formData.get('detail') as string
 
     const body = {
       project_uuid: projectUuid,
@@ -226,6 +229,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
       is_active: isActive,
+      detail: detail || undefined,
     }
 
     console.log('====== UPDATE ORGANIZER CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))

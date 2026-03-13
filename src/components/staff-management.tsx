@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff, getStaffTypes } from '@/app/actions/staff'
 import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
 import { countries } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
@@ -53,7 +53,18 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
   const [targetEmail, setTargetEmail] = useState('')
   const [sendingEmail, setSendingEmail] = useState(false)
-  
+
+  // Staff Types state
+  const [staffTypes, setStaffTypes] = useState<{type_code: string, type_name: string}[]>([])
+
+  useEffect(() => {
+    getStaffTypes(projectId).then(res => {
+      if (res.success && res.data) {
+        setStaffTypes(res.data)
+      }
+    })
+  }, [projectId])
+
   // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
   // but for production consistency, RHF + Zod is better. 
   // I'll stick to controlled inputs for now to save setup time unless complex validation is needed.
@@ -76,7 +87,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     mobile: '',
     companyName: '',
     companyCountry: 'TH',
-    companyTel: ''
+    companyTel: '',
+    staffTypeCode: 'EXHIBITOR'
   })
   const [isOtherTitle, setIsOtherTitle] = useState(false)
   const [customTitle, setCustomTitle] = useState('')
@@ -111,7 +123,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         createdAt: new Date().toISOString(),
         companyName: m.company_name || '',
         companyCountry: m.company_country || 'TH',
-        companyTel: m.company_tel || ''
+        companyTel: m.company_tel || '',
+        staff_type_code: m.staff_type_code || 'EXHIBITOR'
       }))
       setStaffList(mappedStaff)
     } else {
@@ -145,7 +158,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         mobile: staff.mobile || '',
         companyName: staff.companyName || exhibitor?.companyName || '',
         companyCountry: staff.companyCountry || getInitialCountry(),
-        companyTel: staff.companyTel || exhibitor?.phone || ''
+        companyTel: staff.companyTel || exhibitor?.phone || '',
+        staffTypeCode: staff.staff_type_code || 'EXHIBITOR'
       })
       
       if (!isStandard && staff.title) {
@@ -166,7 +180,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         mobile: '',
         companyName: exhibitor?.companyName || '',
         companyCountry: getInitialCountry(),
-        companyTel: exhibitor?.phone || ''
+        companyTel: exhibitor?.phone || '',
+        staffTypeCode: 'EXHIBITOR'
       })
       setIsOtherTitle(false)
       setCustomTitle('')
@@ -190,7 +205,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
       exhibitorId: exhibitorId,
       companyName: formData.companyName,
       companyCountry: formData.companyCountry,
-      companyTel: formData.companyTel
+      companyTel: formData.companyTel,
+      staffTypeCode: formData.staffTypeCode
     }
 
     let result
@@ -263,9 +279,15 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     setSendingEmail(true)
     let result
     if (isOrganizer) {
-      result = await resendEmailOrganizerMember([selectedStaff.id])
+      result = await resendEmailOrganizerMember([{
+        member_uuid: selectedStaff.id,
+        email: targetEmail
+      }])
     } else {
-      result = await sendStaffCredentials(projectId, selectedStaff.id)
+      result = await sendStaffCredentials(projectId, [{
+        member_uuid: selectedStaff.id,
+        email: targetEmail
+      }])
     }
     setSendingEmail(false)
     
@@ -330,7 +352,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       
-                       <Button variant="ghost" size="icon" title="Send Credentials" onClick={() => handleOpenEmailDialog(staff)}>
+                       <Button variant="ghost" size="icon" title="Resend Email" onClick={() => handleOpenEmailDialog(staff)}>
                         <Mail className="h-4 w-4 text-purple-500" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
@@ -395,6 +417,30 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="staffTypeCode" className="text-right">Staff Type</Label>
+                <div className="col-span-3">
+                  <Select 
+                    value={formData.staffTypeCode} 
+                    onValueChange={(value) => setFormData({...formData, staffTypeCode: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Staff Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffTypes.length > 0 ? (
+                        staffTypes.map((t) => (
+                          <SelectItem key={t.type_code} value={t.type_code}>
+                            {t.type_name} ({t.type_code})
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="EXHIBITOR">Exhibitor (EXHIBITOR)</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="firstName" className="text-right">First Name</Label>
                 <Input id="firstName" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="col-span-3" required />
               </div>
@@ -456,7 +502,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Credentials</DialogTitle>
+            <DialogTitle>Resend Email Confirmation</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -474,7 +520,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSendCredentials} disabled={sendingEmail}>
               {sendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-              Send Credentials
+              Resend Email
             </Button>
           </DialogFooter>
         </DialogContent>

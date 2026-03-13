@@ -20,6 +20,7 @@ export interface Project {
   banner_2_url: string
   copy_right: string
   country_code?: string
+  timezone?: string
   conference_booking_url?: string
   exhibitor_portal_url?: string
   created_at: string
@@ -40,7 +41,51 @@ export async function getProjects() {
     const response = await api.get('/v1/admin/projects', { headers })
     const result = response.data
     console.log('Projects API response:', result)
-    return { success: true, projects: (result.data || []) as Project[] }
+    
+    let projects = (result.data || []) as Project[]
+    
+    // TEMPORARY: Add mock projects for testing project selection page
+    if (projects.length <= 1) {
+      projects = [
+        ...projects,
+        {
+          project_uuid: 'mock-uuid-1',
+          project_name: 'Mock Project: ILDEX 2026',
+          project_code: 'ILD26',
+          project_site_url: 'https://example.com/ildex',
+          is_open_registration: true,
+          start_date: new Date('2026-03-01').toISOString(),
+          end_date: new Date('2026-03-05').toISOString(),
+          cutoff_date_exhibitor_edit: new Date('2026-02-15').toISOString(),
+          logo_url: '',
+          banner_url: '',
+          banner_2_url: '',
+          copy_right: '© 2026 Mock Corp',
+          timezone: 'Asia/Bangkok',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Project,
+        {
+          project_uuid: 'mock-uuid-2',
+          project_name: 'Mock Project: Horti Agri 2027',
+          project_code: 'HAN27',
+          project_site_url: 'https://example.com/horti',
+          is_open_registration: false,
+          start_date: new Date('2027-05-10').toISOString(),
+          end_date: new Date('2027-05-14').toISOString(),
+          cutoff_date_exhibitor_edit: new Date('2027-04-01').toISOString(),
+          logo_url: '',
+          banner_url: '',
+          banner_2_url: '',
+          copy_right: '© 2027 Mock Corp',
+          timezone: 'Asia/Ho_Chi_Minh',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Project,
+      ]
+    }
+
+    return { success: true, projects }
   } catch (error: any) {
     console.error('Error fetching projects:', error)
     console.error('Error details:', error.response?.data)
@@ -110,6 +155,116 @@ export async function getProjectShowDates(uuid: string) {
       error: 'Failed to fetch show dates',
       showDates: [] as ShowDate[],
     }
+  }
+}
+
+export interface Country {
+  code: string
+  name: string
+  nationality: string
+}
+
+// GET /v1/admin/project/countries
+export async function getCountries(projectUuid?: string) {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    if (projectUuid) {
+      headers['X-Project-UUID'] = projectUuid
+    }
+
+    const response = await api.get('/v1/admin/project/countries', { headers })
+    return { success: true, data: (response.data.data || []) as Country[] }
+  } catch (error: any) {
+    console.error('Error fetching countries:', error)
+    return { success: false, error: 'Failed to fetch countries', data: [] }
+  }
+}
+
+export interface Nationality {
+  code: string
+  nationality: string
+}
+
+// GET /v1/admin/project/nationalities
+export async function getNationalities(projectUuid?: string) {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    if (projectUuid) {
+      headers['X-Project-UUID'] = projectUuid
+    }
+
+    const response = await api.get('/v1/admin/project/nationalities', { headers })
+    return { success: true, data: (response.data.data || []) as Nationality[] }
+  } catch (error: any) {
+    console.error('Error fetching nationalities:', error)
+    return { success: false, error: 'Failed to fetch nationalities', data: [] }
+  }
+}
+
+export interface MobilePrefix {
+  code: string
+  prefix: string
+  name: string
+}
+
+// GET /v1/admin/project/mobile-prefixes
+export async function getMobilePrefixes(projectUuid?: string) {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    if (projectUuid) {
+      headers['X-Project-UUID'] = projectUuid
+    }
+
+    const response = await api.get('/v1/admin/project/mobile-prefixes', { headers })
+    return { success: true, data: (response.data.data || []) as MobilePrefix[] }
+  } catch (error: any) {
+    console.error('Error fetching mobile prefixes:', error)
+    return { success: false, error: 'Failed to fetch mobile prefixes', data: [] }
+  }
+}
+
+export interface Timezone {
+  label: string
+  value: string
+}
+
+// GET /v1/admin/project/timezones
+export async function getTimezones(projectUuid?: string) {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('access_token')?.value
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    if (projectUuid) {
+      headers['X-Project-UUID'] = projectUuid
+    }
+
+    const response = await api.get('/v1/admin/project/timezones', { headers })
+    return { success: true, data: (response.data.data || []) as Timezone[] }
+  } catch (error: any) {
+    console.error('Error fetching timezones:', error)
+    return { success: false, error: 'Failed to fetch timezones', data: [] }
   }
 }
 

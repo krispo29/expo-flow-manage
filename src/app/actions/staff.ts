@@ -33,6 +33,7 @@ export interface Staff {
   companyName?: string
   companyCountry?: string
   companyTel?: string
+  staff_type_code?: string
 }
 
 // GET /v1/admin/project/exhibitors/staff
@@ -69,7 +70,8 @@ export async function createStaff(projectUuid: string, data: any) {
       email: data.email,
       company_name: data.companyName || "",
       company_country: data.companyCountry || "TH",
-      company_tel: data.companyTel || ""
+      company_tel: data.companyTel || "",
+      staff_type_code: data.staffTypeCode
     }
 
     const response = await api.post('/v1/admin/project/exhibitors/members', payload, { headers })
@@ -99,7 +101,8 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
       email: data.email,
       company_name: data.companyName || "",
       company_country: data.companyCountry || "TH",
-      company_tel: data.companyTel || ""
+      company_tel: data.companyTel || "",
+      staff_type_code: data.staffTypeCode
     }
 
     const response = await api.put('/v1/admin/project/exhibitors/members/', payload, { headers })
@@ -132,12 +135,10 @@ export async function deleteStaff(projectUuid: string, memberId: string, exhibit
 }
 
 // POST /v1/admin/project/exhibitors/members/resend_email_comfirmation
-export async function sendStaffCredentials(projectUuid: string, memberId: string) {
+export async function sendStaffCredentials(projectUuid: string, data: { member_uuid: string, email?: string }[]) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    await api.post('/v1/admin/project/exhibitors/members/resend_email_comfirmation', [
-      memberId
-    ], { headers })
+    await api.post('/v1/admin/project/exhibitors/members/resend_email_comfirmation', data, { headers })
     return { success: true }
   } catch (error: any) {
     console.error('Error sending credentials:', error)
@@ -234,6 +235,7 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
       first_name: data.first_name,
       last_name: data.last_name,
       company_name: data.company_name,
+      staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
     }
 
     const response = await api.put(`/v1/admin/project/staff/${staffId}`, payload, { headers })

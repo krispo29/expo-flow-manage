@@ -317,7 +317,7 @@ export async function getRecentScannerImports() {
 export async function resendEmailConfirmation(data: { registration_uuid: string, email?: string }[]) {
   try {
     const headers = await getAuthHeaders()
-    await api.post('/v1/admin/project/participants/send_email_comfirmation', data, {
+    await api.post('/v1/admin/project/participants/resend_email_comfirmation', data, {
       headers
     })
 

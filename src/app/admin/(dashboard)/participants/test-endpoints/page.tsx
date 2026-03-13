@@ -245,10 +245,10 @@ export default function TestEndpointsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">8. Resend Email</CardTitle>
-              <CardDescription className="text-xs">POST /v1/admin/project/participants/send_email_comfirmation</CardDescription>
+              <CardDescription className="text-xs">POST /v1/admin/project/participants/resend_email_comfirmation</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
+              <Button
                 onClick={() => testEndpoint('Resend Email', () => resendEmailConfirmation([{ registration_uuid: participantId }]))}
                 disabled={loading}
                 className="w-full"

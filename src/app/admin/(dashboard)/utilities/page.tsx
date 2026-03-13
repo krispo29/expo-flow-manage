@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Printer, Upload, FileText, CheckCircle, Clock, Loader2, Search } from "lucide-react"
+import { Printer, Upload, FileText, CheckCircle, Clock, Loader2, Search, List, Globe, UserCheck, Phone, Timer } from "lucide-react"
 import { useState, useEffect, useRef, Suspense } from "react"
 import { searchParticipantByCode, processScannerData, getRecentScannerImports, Participant as RealParticipant } from "@/app/actions/participant"
+import { getCountries, getNationalities, getMobilePrefixes, getTimezones, Country, Nationality, MobilePrefix, Timezone } from "@/app/actions/project"
 import { toast } from "sonner"
 import { ImportHistory } from "@/lib/mock-service"
 import { BadgePrint } from "@/components/badge-print"
 import { useSearchParams } from "next/navigation"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 function UtilitiesContent() {
   const searchParams = useSearchParams()
@@ -26,9 +28,17 @@ function UtilitiesContent() {
   const [history, setHistory] = useState<ImportHistory[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [countries, setCountries] = useState<Country[]>([])
+  const [nationalities, setNationalities] = useState<Nationality[]>([])
+  const [prefixes, setPrefixes] = useState<MobilePrefix[]>([])
+  const [timezones, setTimezones] = useState<Timezone[]>([])
+  const [isLoadingLists, setIsLoadingLists] = useState(false)
+  const [listSearch, setListSearch] = useState("")
+
   useEffect(() => {
     fetchHistory()
-  }, [])
+    fetchSystemLists(projectId)
+  }, [projectId])
 
   async function fetchHistory() {
     const result = await getRecentScannerImports()
@@ -36,6 +46,49 @@ function UtilitiesContent() {
       setHistory(result.data)
     }
   }
+
+  async function fetchSystemLists(uuid: string) {
+    setIsLoadingLists(true)
+    try {
+      const [cRes, nRes, pRes, tRes] = await Promise.all([
+        getCountries(uuid),
+        getNationalities(uuid),
+        getMobilePrefixes(uuid),
+        getTimezones(uuid)
+      ])
+
+      if (cRes.success) setCountries(cRes.data || [])
+      if (nRes.success) setNationalities(nRes.data || [])
+      if (pRes.success) setPrefixes(pRes.data || [])
+      if (tRes.success) setTimezones(tRes.data || [])
+    } catch (error) {
+      console.error("Error fetching system lists:", error)
+    } finally {
+      setIsLoadingLists(false)
+    }
+  }
+
+  const filteredCountries = countries.filter(c => 
+    c.name.toLowerCase().includes(listSearch.toLowerCase()) || 
+    c.code.toLowerCase().includes(listSearch.toLowerCase()) ||
+    c.nationality.toLowerCase().includes(listSearch.toLowerCase())
+  )
+
+  const filteredNationalities = nationalities.filter(n => 
+    n.nationality.toLowerCase().includes(listSearch.toLowerCase()) || 
+    n.code.toLowerCase().includes(listSearch.toLowerCase())
+  )
+
+  const filteredPrefixes = prefixes.filter(p => 
+    p.name.toLowerCase().includes(listSearch.toLowerCase()) || 
+    p.prefix.toLowerCase().includes(listSearch.toLowerCase()) ||
+    p.code.toLowerCase().includes(listSearch.toLowerCase())
+  )
+
+  const filteredTimezones = timezones.filter(t => 
+    t.label.toLowerCase().includes(listSearch.toLowerCase()) || 
+    t.value.toLowerCase().includes(listSearch.toLowerCase())
+  )
 
   async function handleSearch() {
     if (!printSearch.trim()) return
@@ -256,6 +309,171 @@ function UtilitiesContent() {
         </Card>
 
       </div>
+
+      {/* System Lists Utility */}
+      <Card>
+          <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                  <List className="h-5 w-5" />
+                  System Lists
+              </CardTitle>
+              <CardDescription>
+                  View global system configurations and reference data.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <div className="relative mb-6">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Search system lists..." 
+                      className="pl-10"
+                      value={listSearch}
+                      onChange={(e) => setListSearch(e.target.value)}
+                  />
+              </div>
+
+              <Tabs defaultValue="countries" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4 mb-4">
+                      <TabsTrigger value="countries" className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          <span className="hidden sm:inline">Countries</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="nationalities" className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4" />
+                          <span className="hidden sm:inline">Nationalities</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="prefixes" className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          <span className="hidden sm:inline">Mobile Prefixes</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="timezones" className="flex items-center gap-2">
+                          <Timer className="h-4 w-4" />
+                          <span className="hidden sm:inline">Timezones</span>
+                      </TabsTrigger>
+                  </TabsList>
+
+                  <div className="border rounded-md min-h-[400px]">
+                      {isLoadingLists ? (
+                          <div className="flex flex-col items-center justify-center h-[400px]">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                              <p className="text-sm text-muted-foreground">Loading system data...</p>
+                          </div>
+                      ) : (
+                          <>
+                              <TabsContent value="countries" className="m-0">
+                                  <div className="max-h-[500px] overflow-auto">
+                                      <Table>
+                                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                                              <TableRow>
+                                                  <TableHead className="w-[100px]">Code</TableHead>
+                                                  <TableHead>Country Name</TableHead>
+                                                  <TableHead>Nationality</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {filteredCountries.map((c) => (
+                                                  <TableRow key={c.code}>
+                                                      <TableCell className="font-mono text-xs">{c.code}</TableCell>
+                                                      <TableCell className="font-medium">{c.name}</TableCell>
+                                                      <TableCell className="text-muted-foreground">{c.nationality}</TableCell>
+                                                  </TableRow>
+                                              ))}
+                                              {filteredCountries.length === 0 && (
+                                                  <TableRow>
+                                                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No countries found</TableCell>
+                                                  </TableRow>
+                                              )}
+                                          </TableBody>
+                                      </Table>
+                                  </div>
+                              </TabsContent>
+
+                              <TabsContent value="nationalities" className="m-0">
+                                  <div className="max-h-[500px] overflow-auto">
+                                      <Table>
+                                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                                              <TableRow>
+                                                  <TableHead className="w-[100px]">Code</TableHead>
+                                                  <TableHead>Nationality</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {filteredNationalities.map((n) => (
+                                                  <TableRow key={n.code}>
+                                                      <TableCell className="font-mono text-xs">{n.code}</TableCell>
+                                                      <TableCell className="font-medium">{n.nationality}</TableCell>
+                                                  </TableRow>
+                                              ))}
+                                              {filteredNationalities.length === 0 && (
+                                                  <TableRow>
+                                                      <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">No nationalities found</TableCell>
+                                                  </TableRow>
+                                              )}
+                                          </TableBody>
+                                      </Table>
+                                  </div>
+                              </TabsContent>
+
+                              <TabsContent value="prefixes" className="m-0">
+                                  <div className="max-h-[500px] overflow-auto">
+                                      <Table>
+                                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                                              <TableRow>
+                                                  <TableHead className="w-[100px]">Code</TableHead>
+                                                  <TableHead className="w-[120px]">Prefix</TableHead>
+                                                  <TableHead>Country</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {filteredPrefixes.map((p) => (
+                                                  <TableRow key={p.code}>
+                                                      <TableCell className="font-mono text-xs">{p.code}</TableCell>
+                                                      <TableCell className="font-semibold text-primary">{p.prefix}</TableCell>
+                                                      <TableCell className="font-medium">{p.name}</TableCell>
+                                                  </TableRow>
+                                              ))}
+                                              {filteredPrefixes.length === 0 && (
+                                                  <TableRow>
+                                                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No prefixes found</TableCell>
+                                                  </TableRow>
+                                              )}
+                                          </TableBody>
+                                      </Table>
+                                  </div>
+                              </TabsContent>
+
+                              <TabsContent value="timezones" className="m-0">
+                                  <div className="max-h-[500px] overflow-auto">
+                                      <Table>
+                                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                                              <TableRow>
+                                                  <TableHead>Label</TableHead>
+                                                  <TableHead>Value (TZ Database Name)</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {filteredTimezones.map((t, idx) => (
+                                                  <TableRow key={`${t.value}-${idx}`}>
+                                                      <TableCell className="font-medium">{t.label}</TableCell>
+                                                      <TableCell className="font-mono text-xs text-muted-foreground">{t.value}</TableCell>
+                                                  </TableRow>
+                                              ))}
+                                              {filteredTimezones.length === 0 && (
+                                                  <TableRow>
+                                                      <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">No timezones found</TableCell>
+                                                  </TableRow>
+                                              )}
+                                          </TableBody>
+                                      </Table>
+                                  </div>
+                              </TabsContent>
+                          </>
+                      )}
+                  </div>
+              </Tabs>
+          </CardContent>
+      </Card>
+
     </div>
   )
 }

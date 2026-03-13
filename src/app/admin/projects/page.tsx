@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getProjects, updateProject, type Project } from '@/app/actions/project'
+import { getProjects, updateProject, getTimezones, type Project, type Timezone } from '@/app/actions/project'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,27 +20,39 @@ import { toast } from 'sonner'
 export default function ProjectsPage() {
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
+  const [timezones, setTimezones] = useState<Timezone[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [saving, setSaving] = useState(false)
+  const [selectedTimezone, setSelectedTimezone] = useState<string>('')
 
   async function fetchProjects() {
     setLoading(true)
     setError(null)
-    const result = await getProjects()
-    if (result.success && result.projects) {
-      // Auto-redirect if only one project exists (equivalent to Vue beforeMount)
-      if (result.projects.length === 1) {
-        router.push(`/admin?projectId=${result.projects[0].project_uuid}`)
+    
+    // Fetch projects first to get a valid UUID
+    const projectResult = await getProjects()
+    
+    if (projectResult.success && projectResult.projects) {
+      if (projectResult.projects.length === 1) {
+        router.push(`/admin?projectId=${projectResult.projects[0].project_uuid}`)
         return
       }
-      setProjects(result.projects)
+      setProjects(projectResult.projects)
+      
+      // Use the first project's UUID to fetch timezones
+      const firstUuid = projectResult.projects[0].project_uuid
+      const tzResult = await getTimezones(firstUuid)
+      if (tzResult.success && tzResult.data) {
+        setTimezones(tzResult.data)
+      }
     } else {
-      setError(result.error || 'Failed to load projects')
+      setError(projectResult.error || 'Failed to load projects')
     }
+
     setLoading(false)
   }
 
@@ -69,6 +82,7 @@ export default function ProjectsPage() {
       copy_right: formData.get('copy_right') as string,
       exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
       conference_booking_url: formData.get('conference_booking_url') as string,
+      timezone: selectedTimezone,
     }
 
     const result = await updateProject(projectData)
@@ -95,6 +109,7 @@ export default function ProjectsPage() {
   function openEditDialog(project: Project, e: React.MouseEvent) {
     e.stopPropagation()
     setEditingProject(project)
+    setSelectedTimezone(project.timezone || '')
     setIsEditOpen(true)
   }
 
@@ -312,6 +327,22 @@ export default function ProjectsPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="conference_booking_url">Conference Booking URL</Label>
                   <Input id="conference_booking_url" name="conference_booking_url" defaultValue={editingProject.conference_booking_url} />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Timezone</Label>
+                  <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
