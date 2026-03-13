@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff, getStaffTypes } from '@/app/actions/staff'
+import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
 import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
 import { countries } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
@@ -54,16 +54,6 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   const [targetEmail, setTargetEmail] = useState('')
   const [sendingEmail, setSendingEmail] = useState(false)
 
-  // Staff Types state
-  const [staffTypes, setStaffTypes] = useState<{type_code: string, type_name: string}[]>([])
-
-  useEffect(() => {
-    getStaffTypes(projectId).then(res => {
-      if (res.success && res.data) {
-        setStaffTypes(res.data)
-      }
-    })
-  }, [projectId])
 
   // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
   // but for production consistency, RHF + Zod is better. 
@@ -414,30 +404,6 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                       className="flex-1"
                     />
                   )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="staffTypeCode" className="text-right">Staff Type</Label>
-                <div className="col-span-3">
-                  <Select 
-                    value={formData.staffTypeCode} 
-                    onValueChange={(value) => setFormData({...formData, staffTypeCode: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Staff Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staffTypes.length > 0 ? (
-                        staffTypes.map((t) => (
-                          <SelectItem key={t.type_code} value={t.type_code}>
-                            {t.type_name} ({t.type_code})
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="EXHIBITOR">Exhibitor (EXHIBITOR)</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
