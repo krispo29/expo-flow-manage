@@ -1,80 +1,96 @@
 'use client'
 
 import React from 'react'
-import { Participant } from '@/app/actions/participant'
+import Image from 'next/image'
+import { Participant, ParticipantDetail } from '@/app/actions/participant'
 import { QRCodeSVG } from 'qrcode.react'
 
 interface BadgePrintProps {
-  participant: Participant
+  participant: Participant | ParticipantDetail
 }
 
-export function BadgePrint({ participant }: BadgePrintProps) {
+export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
+  const eventDate = '20-22 May 2026'
+  const venue = 'SAIGON EXHIBITION AND CONVENTION CENTER (SECC), HO CHI MINH CITY'
+  const logoUrl = 'https://static.thedeft.co/expoflow/ILDEX_VN_LOGO.jpg'
+  const organizerName = 'VNU Asia Pacific'
+
   return (
-    <div className="print-badge w-[4in] h-[6in] border border-gray-200 bg-white p-4 flex flex-col items-center justify-between text-center mx-auto mb-8 break-after-page relative overflow-hidden">
-      {/* Header / Logo Area */}
-      <div className="w-full pt-8">
-        <div className="text-3xl font-bold uppercase tracking-wider text-primary">
-          EXPO FLOW
-        </div>
-        <div className="text-sm text-muted-foreground mt-1">
-          MANAGEMENT 2024
-        </div>
+    <div className="print-badge-container font-montserrat bg-white shadow-xl overflow-hidden w-[500px] text-left">
+      <div className="h-2 bg-gradient-to-r from-[#1a5c4c] to-[#2d8b6f]"></div>
+      
+      <div className="p-[20px_24px] flex justify-end items-start h-[100px]">
+        <Image src={logoUrl} alt="Event Logo" width={150} height={50} className="h-[50px] w-auto object-contain" unoptimized />
       </div>
 
-      {/* Participant Info */}
-      <div className="w-full flex-1 flex flex-col justify-center gap-2">
-        <h1 className="text-4xl font-extrabold text-slate-900 break-words leading-tight">
+      <div className="p-[12px_24px] flex items-center gap-3 border-b border-[#eee]">
+        <span className="text-[13px] font-semibold text-[#1a5c4c] tracking-[1px]">{eventDate}</span>
+        <span className="w-2 h-2 bg-[#1a5c4c] rounded-full"></span>
+        <span className="text-[11px] text-[#1a5c4c] tracking-[1px] uppercase font-medium">{venue}</span>
+      </div>
+
+      <div className="p-[30px_24px] text-center">
+        <div className="text-[26px] font-bold text-[#1a1a1a] mb-2 uppercase tracking-[1px] leading-tight">
           {participant.first_name} {participant.last_name}
-        </h1>
-        <h2 className="text-xl text-slate-600 font-medium mt-2">
-          {participant.job_position || 'Visitor'}
-        </h2>
-        <h3 className="text-lg text-slate-500 font-medium">
+        </div>
+        <div className="text-[14px] text-[#1a5c4c] font-semibold mb-1 uppercase tracking-[1px]">
           {participant.company_name || 'N/A'}
-        </h3>
+        </div>
+        <div className="text-[12px] text-[#d4a853] font-medium tracking-[1px] uppercase">
+          {(participant as ParticipantDetail).residence_country?.toUpperCase() || 'THAILAND'}
+        </div>
       </div>
 
-      {/* Footer / QR / Type */}
-      <div className="w-full flex flex-col items-center gap-4 pb-8">
-        <div className="border-4 border-slate-900 p-2 rounded-lg">
-           <QRCodeSVG value={participant.registration_code || participant.registration_uuid} size={120} />
+      <div className="p-5 text-center">
+        <div className="w-[140px] h-[140px] mx-auto mb-4 bg-white p-2 border border-[#ddd]">
+          <QRCodeSVG value={participant.registration_code || participant.registration_uuid} size={124} h-full w-full />
         </div>
+        <div className="text-[10px] text-[#888] tracking-[2px] mb-1 font-medium">REGISTRATION CODE</div>
+        <div className="text-[22px] font-bold text-[#1a5c4c] tracking-[2px]">
+          {participant.registration_code}
+        </div>
+      </div>
+
+      <div className="bg-[#1a5c4c] p-[16px_24px] flex justify-between items-center text-white">
+        <div className="text-[18px] font-bold tracking-[3px] uppercase">
+          {participant.attendee_type_code || 'VISITOR'}
+        </div>
+        <div className="text-right">
+          <div className="text-[8px] text-white/70 tracking-[1px] font-medium uppercase">Organized by</div>
+          <div className="text-[11px] font-semibold">{organizerName}</div>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
         
-        <div className="w-full border-t-2 border-slate-200 pt-4 mt-2">
-             <span className="inline-block bg-slate-900 text-white text-xl font-bold px-6 py-2 rounded-full uppercase tracking-widest">
-                {participant.attendee_type_code}
-            </span>
-             <div className="text-xs text-slate-400 mt-2 font-mono">
-                {participant.registration_code}
-            </div>
-        </div>
-      </div>
-
-       <style jsx global>{`
         @media print {
           @page {
-            size: 4in 6in;
+            size: auto;
             margin: 0;
           }
           body {
+            margin: 0;
+            padding: 0;
+            background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
           }
-          .print-badge {
-            border: none;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            break-after: page;
-          }
-           /* Hide everything else */
           body > *:not(.print-area) {
-            display: none;
+            display: none !important;
           }
           .print-area {
-            display: block;
-            width: 100%;
-            height: 100%;
+            display: block !important;
+            width: 100% !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .print-badge-container {
+            width: 500px !important;
+            box-shadow: none !important;
+            margin: auto !important;
+            border: none !important;
           }
         }
       `}</style>
