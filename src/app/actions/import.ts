@@ -22,6 +22,19 @@ export interface ImportEvent {
   order_index: number
 }
 
+export interface ImportHistory {
+  import_uuid: string
+  project_uuid: string
+  import_type: string
+  original_file_url: string
+  original_file_name: string
+  total_rows: number
+  success_count: number
+  failed_count: number
+  created_by: string
+  created_at: string
+}
+
 export interface ImportExhibitor {
   exhibitor_uuid: string
   event_name: string
@@ -56,6 +69,18 @@ export async function getImportExhibitors() {
     console.error('Error fetching import exhibitors:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exhibitors'
     return { success: false, error: errorMessage, data: [] as ImportExhibitor[] }
+  }
+}
+
+export async function getImportHistories() {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/import/histories', { headers })
+    return { success: true, data: (response.data?.data || []) as ImportHistory[] }
+  } catch (error: unknown) {
+    console.error('Error fetching import histories:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch import histories'
+    return { success: false, error: errorMessage, data: [] as ImportHistory[] }
   }
 }
 

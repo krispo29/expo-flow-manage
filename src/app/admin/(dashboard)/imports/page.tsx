@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import {
   getImportEvents,
   getImportExhibitors,
+  getImportHistories,
   importConferencesExcel,
   importExhibitorMembers,
   importExhibitors,
@@ -19,7 +20,19 @@ import {
   importStaff,
   type ImportEvent,
   type ImportExhibitor,
+  type ImportHistory,
 } from '@/app/actions/import'
+import { getAllAttendeeTypes, type AttendeeType } from '@/app/actions/participant'
+import { format } from 'date-fns'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 type ImportKind =
   | 'exhibitors'
@@ -41,6 +54,8 @@ const TEMPLATE_LINKS = {
 export default function ImportsPage() {
   const [events, setEvents] = useState<ImportEvent[]>([])
   const [exhibitors, setExhibitors] = useState<ImportExhibitor[]>([])
+  const [histories, setHistories] = useState<ImportHistory[]>([])
+  const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
   const [eventUuids, setEventUuids] = useState<Record<string, string>>({})
   const [exhibitorUuids, setExhibitorUuids] = useState<Record<string, string>>({})
   const [files, setFiles] = useState<Record<ImportKind, File | null>>({
@@ -60,9 +75,25 @@ export default function ImportsPage() {
     'invite-codes': false,
   })
 
+  // Export Dialog State
+  const [exportHistoryUuid, setExportHistoryUuid] = useState<string | null>(null)
+  const [exportAttendeeType, setExportAttendeeType] = useState<string>('')
+
+  const fetchHistories = async () => {
+    const res = await getImportHistories()
+    if (res.success) {
+      setHistories(res.data)
+    }
+  }
+
   useEffect(() => {
     const run = async () => {
-      const [eventsRes, exhibitorsRes] = await Promise.all([getImportEvents(), getImportExhibitors()])
+      const [eventsRes, exhibitorsRes, historiesRes, typesRes] = await Promise.all([
+        getImportEvents(), 
+        getImportExhibitors(),
+        getImportHistories(),
+        getAllAttendeeTypes()
+      ])
 
       if (eventsRes.success) {
         setEvents(eventsRes.data)
@@ -84,6 +115,14 @@ export default function ImportsPage() {
             'exhibitor-members': defaultUuid,
           })
         }
+      }
+
+      if (historiesRes.success) {
+        setHistories(historiesRes.data)
+      }
+
+      if (typesRes.success) {
+        setAttendeeTypes(typesRes.data)
       }
     }
 
@@ -158,6 +197,7 @@ export default function ImportsPage() {
       if (result.success) {
         toast.success('Import completed successfully')
         setFile(kind, null)
+        void fetchHistories()
       } else {
         toast.error(result.error || 'Import failed')
       }
@@ -287,6 +327,107 @@ export default function ImportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">Import History</h2>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>File Name</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Total Rows</TableHead>
+                <TableHead>Success</TableHead>
+                <TableHead>Failed</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {histories.length > 0 ? (
+                histories.map((h) => (
+                  <TableRow key={h.import_uuid}>
+                    <TableCell className="font-medium capitalize text-xs">
+                      {h.import_type}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={h.original_file_name}>
+                      <a href={h.original_file_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                        {h.original_file_name}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {format(new Date(h.created_at), 'dd MMM yyyy HH:mm')}
+                    </TableCell>
+                    <TableCell>{h.total_rows}</TableCell>
+                    <TableCell className="text-emerald-600 font-medium">{h.success_count}</TableCell>
+                    <TableCell className="text-rose-600 font-medium">{h.failed_count}</TableCell>
+                    <TableCell className="text-right">
+                      {h.import_type === 'registrations' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setExportHistoryUuid(h.import_uuid)
+                            setExportAttendeeType('')
+                          }}
+                        >
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Download Codes
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No import history found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <Dialog open={!!exportHistoryUuid} onOpenChange={(open) => !open && setExportHistoryUuid(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Download Codes</DialogTitle>
+            <DialogDescription>Select attendee type to include in the exported codes file.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Attendee Type <span className="text-red-500">*</span></Label>
+              <Select value={exportAttendeeType} onValueChange={setExportAttendeeType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {attendeeTypes.map((t) => (
+                    <SelectItem key={t.type_code} value={t.type_code}>
+                      {t.type_name} ({t.type_code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportHistoryUuid(null)}>Cancel</Button>
+            <Button 
+              disabled={!exportAttendeeType} 
+              onClick={() => {
+                if (!exportHistoryUuid || !exportAttendeeType) return
+                window.open(`/api/export/import-history-codes?uuid=${exportHistoryUuid}&attendee_type_code=${exportAttendeeType}`, '_blank')
+                setExportHistoryUuid(null)
+              }}
+            >
+              <FileDown className="mr-2 h-4 w-4" /> Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

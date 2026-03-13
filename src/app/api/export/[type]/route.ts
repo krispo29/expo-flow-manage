@@ -26,6 +26,31 @@ export async function GET(
   const isOrganizer = userRole === 'ORGANIZER'
   const baseEndpoint = isOrganizer ? '/v1/organizer/report' : '/v1/admin/project/report'
 
+  if (type === 'import-history-codes') {
+    const uuid = request.nextUrl.searchParams.get('uuid')
+    const attendeeCode = request.nextUrl.searchParams.get('attendee_type_code')
+    
+    if (!uuid) return new NextResponse('Missing UUID', { status: 400 })
+
+    let customUrl = `${API_URL}/v1/admin/project/import/histories/${uuid}/codes?format=excel`
+    if (attendeeCode) customUrl += `&attendee_type_code=${attendeeCode}`
+
+    try {
+      const fetchRes = await fetch(customUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-Project-UUID': projectUuid || '',
+        }
+      })
+      if (!fetchRes.ok) return new NextResponse('Error', { status: fetchRes.status })
+      const fetchHeaders = new Headers(fetchRes.headers)
+      return new NextResponse(fetchRes.body, { status: fetchRes.status, headers: fetchHeaders })
+    } catch (err) {
+      return new NextResponse('Internal Server Error', { status: 500 })
+    }
+  }
+
   switch (type) {
     case 'registrations-by-country':
       endpoint = `${baseEndpoint}/export-excel-registrations-by-country`
