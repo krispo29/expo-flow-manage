@@ -173,6 +173,20 @@ export interface ConferenceNoHallResponse {
   scanned_at: string;
 }
 
+export interface ConferenceSummaryResponse {
+  conference_uuid: string;
+  title: string;
+  show_date: string;
+  start_time: string;
+  end_time: string;
+  room_name: string;
+  quota: number;
+  pre_registration: number;
+  total_on_show: number;
+  pre_registration_show_up: number;
+  walk_in: number;
+}
+
 export async function getConferenceNoHall(event_uuid: string) {
   try {
     const { headers } = await getAuthHeaders()
@@ -181,6 +195,61 @@ export async function getConferenceNoHall(event_uuid: string) {
   } catch (error: unknown) {
     console.error('Error fetching conference no hall data:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data'
+    return { success: false, error: errorMessage, data: [] }
+  }
+}
+
+export async function getConferenceSummary() {
+  try {
+    const { headers } = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/report/conference-summary', { headers })
+    return { success: true, data: (response.data?.data || []) as ConferenceSummaryResponse[] }
+  } catch (error: unknown) {
+    console.error('Error fetching conference summary:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference summary'
+    return { success: false, error: errorMessage, data: [] }
+  }
+}
+
+export async function exportConferenceSummary() {
+  try {
+    const { headers } = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/report/export-excel-conference-summary', { 
+      headers,
+      responseType: 'arraybuffer'
+    })
+    return { 
+      success: true, 
+      data: response.data,
+      contentType: response.headers['content-type']
+    }
+  } catch (error: unknown) {
+    console.error('Error exporting conference summary:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to export conference summary'
+    return { success: false, error: errorMessage }
+  }
+}
+
+export async function getOrganizerConferenceNoHall(event_uuid: string) {
+  try {
+    const { headers } = await getAuthHeaders()
+    const response = await api.get(`/v1/organizer/report/conference-no-hall?event_uuid=${event_uuid}`, { headers })
+    return { success: true, data: (response.data?.data || []) as ConferenceNoHallResponse[] }
+  } catch (error: unknown) {
+    console.error('Error fetching organizer conference no hall data:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data'
+    return { success: false, error: errorMessage, data: [] }
+  }
+}
+
+export async function getOrganizerConferenceSummary() {
+  try {
+    const { headers } = await getAuthHeaders()
+    const response = await api.get('/v1/admin/project/report/conference-summary', { headers })
+    return { success: true, data: (response.data?.data || []) as ConferenceSummaryResponse[] }
+  } catch (error: unknown) {
+    console.error('Error fetching organizer conference summary:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch conference summary'
     return { success: false, error: errorMessage, data: [] }
   }
 }

@@ -32,29 +32,6 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
 
-  // Function to truncate HTML content to a character limit
-  function truncateHtml(html: string, maxLength: number = 200): string {
-    if (!html) return ''
-    
-    // Strip HTML tags to count only visible text
-    const tempDiv = typeof window !== 'undefined' ? document.createElement('div') : null
-    if (tempDiv) {
-      tempDiv.innerHTML = html
-      const text = tempDiv.textContent || tempDiv.innerText || ''
-      if (text.length <= maxLength) return html
-    } else {
-      // Fallback for SSR - simple regex to strip tags
-      const text = html.replace(/<[^>]*>/g, '')
-      if (text.length <= maxLength) return html
-    }
-    
-    // Truncate and add ellipsis
-    const strippedText = html.replace(/<[^>]*>/g, '')
-    if (strippedText.length <= maxLength) return html
-    
-    const truncated = strippedText.substring(0, maxLength).trim()
-    return truncated + '...'
-  }
 
   // Deduplicate conferences based on conference_uuid to prevent key collisions
   const conferences = Array.from(
@@ -404,8 +381,8 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                 <p className="font-semibold text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Description</p>
                                 <div className="text-sm text-foreground/80 leading-relaxed">
                                   <div
-                                    className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0"
-                                    dangerouslySetInnerHTML={{ __html: truncateHtml(conference.detail, 200) }}
+                                    className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0 line-clamp-3"
+                                    dangerouslySetInnerHTML={{ __html: conference.detail }}
                                   />
                                 </div>
                               </div>

@@ -14,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, Building2, Users, FileSpreadsheet, Send, FileText, FileBarChart } from "lucide-react"
 import { format } from "date-fns"
-import { advancedSearch, getEventsForReport, getConferenceNoHall, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type ConferenceNoHallResponse } from "@/app/actions/report"
+import { advancedSearch, getEventsForReport, getConferenceNoHall, getConferenceSummary, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type ConferenceNoHallResponse, type ConferenceSummaryResponse } from "@/app/actions/report"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 
-type ReportView = 'advanced-search' | 'conference-no-hall';
+type ReportView = 'advanced-search' | 'conference-no-hall' | 'conference-summary';
 
 export default function ReportsPage() {
   const [activeView, setActiveView] = useState<ReportView>('advanced-search')
@@ -86,6 +86,30 @@ export default function ReportsPage() {
       fetchConferenceNoHall(selectedHallEventUuid)
     }
   }, [activeView, selectedHallEventUuid, fetchConferenceNoHall])
+
+  // ─── Conference Summary State & Logic ──────────────────────────────────────────
+  const [conferenceSummary, setConferenceSummary] = useState<ConferenceSummaryResponse[]>([])
+  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [searchedSummary, setSearchedSummary] = useState(false)
+
+  const fetchConferenceSummary = useCallback(async () => {
+    setLoadingSummary(true)
+    setSearchedSummary(true)
+    try {
+      const res = await getConferenceSummary()
+      setConferenceSummary(res.success ? res.data : [])
+    } catch {
+      setConferenceSummary([])
+    } finally {
+      setLoadingSummary(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeView === 'conference-summary') {
+      fetchConferenceSummary()
+    }
+  }, [activeView, fetchConferenceSummary])
 
   // ─── Export Dialog Logic ─────────────────────────────────────────────────────
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
@@ -267,6 +291,13 @@ export default function ReportsPage() {
               onClick={() => setActiveView('conference-no-hall')}
             >
               <Building2 className="mr-3 h-4 w-4" /> On Conference No Hall
+            </Button>
+            <Button 
+              variant={activeView === 'conference-summary' ? 'secondary' : 'ghost'} 
+              className="w-full justify-start font-medium" 
+              onClick={() => setActiveView('conference-summary')}
+            >
+              <FileBarChart className="mr-3 h-4 w-4" /> Conference Summary
             </Button>
           </div>
 
@@ -654,6 +685,79 @@ export default function ReportsPage() {
                             <TableCell className="text-xs text-muted-foreground">
                               {r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : '-'}
                             </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ────── Conference Summary View ────── */}
+          {activeView === 'conference-summary' && (
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">Conference Summary</CardTitle>
+                    <CardDescription>
+                      Summary of attendance for each conference session.
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.open('/api/export/conference-summary', '_blank')}
+                    disabled={loadingSummary} 
+                    className="h-9 px-3 gap-2 bg-background border-muted-foreground/20 hover:bg-primary/5 shadow-sm"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Export</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingSummary ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin mb-3" />
+                    <p className="text-sm">Loading summary...</p>
+                  </div>
+                ) : conferenceSummary.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
+                    <FileBarChart className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      No conference data available.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border max-h-[600px] overflow-auto">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Conference Title</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Room</TableHead>
+                          <TableHead className="text-right">Quota</TableHead>
+                          <TableHead className="text-right">Pre-Reg</TableHead>
+                          <TableHead className="text-right">On Show</TableHead>
+                          <TableHead className="text-right">Pre-Reg Show</TableHead>
+                          <TableHead className="text-right">Walk-in</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {conferenceSummary.map((c, i) => (
+                          <TableRow key={`${c.conference_uuid}-${i}`} className="hover:bg-muted/50 transition-colors">
+                            <TableCell className="font-medium">{c.title}</TableCell>
+                            <TableCell className="whitespace-nowrap">{c.show_date}</TableCell>
+                            <TableCell className="whitespace-nowrap">{c.start_time.substring(0, 5)} - {c.end_time.substring(0, 5)}</TableCell>
+                            <TableCell>{c.room_name}</TableCell>
+                            <TableCell className="text-right">{c.quota}</TableCell>
+                            <TableCell className="text-right">{c.pre_registration}</TableCell>
+                            <TableCell className="text-right font-bold text-primary">{c.total_on_show}</TableCell>
+                            <TableCell className="text-right">{c.pre_registration_show_up}</TableCell>
+                            <TableCell className="text-right">{c.walk_in}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

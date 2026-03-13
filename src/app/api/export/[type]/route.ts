@@ -5,11 +5,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ type: string }> } // In Next.js 15+ params are promises, but this project uses Next 15 (16.1.6 ? Wait, package.json says 16.1.6?! Actually Next 15 hasn't been released natively up to 16, maybe Next 15 canary. I'll just use the standard signature: { params: { type: string } } wait, let me check Next.js version in package.json: `next: 16.1.6` wait, is it really 16.x? Next.js 15 requires awaiting params in dynamic routes.)
+  { params }: { params: Promise<{ type: string }> }
 ) {
   const cookieStore = await cookies()
   const token = cookieStore.get('access_token')?.value
   const projectUuid = cookieStore.get('project_uuid')?.value
+  const userRole = cookieStore.get('user_role')?.value || 'ADMIN'
 
   if (!token) {
     return new NextResponse('Unauthorized', { status: 401 })
@@ -21,27 +22,34 @@ export async function GET(
 
   let endpoint = ''
   let includeQuestionnaire = false
+  
+  const isOrganizer = userRole === 'ORGANIZER'
+  const baseEndpoint = isOrganizer ? '/v1/organizer/report' : '/v1/admin/project/report'
+
   switch (type) {
     case 'registrations-by-country':
-      endpoint = '/v1/admin/project/report/export-excel-registrations-by-country'
+      endpoint = `${baseEndpoint}/export-excel-registrations-by-country`
       break
     case 'questionnaires':
-      endpoint = '/v1/admin/project/report/export-excel-questionnaire'
+      endpoint = `${baseEndpoint}/export-excel-questionnaire`
       break
     case 'attendees-summary':
-      endpoint = '/v1/admin/project/report/export-excel-attendee-summary'
+      endpoint = `${baseEndpoint}/export-excel-attendee-summary`
       break
     case 'attendees-summary-by-questionnaire':
-      endpoint = '/v1/admin/project/report/export-excel-attendee-summary-by-questionnaire'
+      endpoint = `${baseEndpoint}/export-excel-attendee-summary-by-questionnaire`
       break
     case 'edm-visitors':
-      endpoint = '/v1/admin/project/report/export-excel-edm-visitor'
+      endpoint = `${baseEndpoint}/export-excel-edm-visitor`
       break
     case 'conference-no-hall':
-      endpoint = '/v1/admin/project/report/export-excel-conference-no-hall'
+      endpoint = `${baseEndpoint}/export-excel-conference-no-hall`
+      break
+    case 'conference-summary':
+      endpoint = '/v1/admin/project/report/export-excel-conference-summary'
       break
     case 'participants':
-      endpoint = '/v1/admin/project/report/export-excel-participant'
+      endpoint = `${baseEndpoint}/export-excel-participant`
       includeQuestionnaire = request.nextUrl.searchParams.get('include_questionnaire') === 'true'
       break
     default:
@@ -53,6 +61,12 @@ export async function GET(
 
   // Construct URL with event_uuid
   let url = `${API_URL}${endpoint}?event_uuid=${actualEventUuid}`
+  
+  // Organizer endpoints often need project_uuid explicitly in query
+  if (isOrganizer && projectUuid) {
+    url += `&project_uuid=${projectUuid}`
+  }
+
   if (type === 'participants') {
     url += `&include_questionnaire=${includeQuestionnaire}`
   }
@@ -72,15 +86,12 @@ export async function GET(
     })
 
     if (!response.ok) {
-      console.error('Export error, status:', response.status)
+      console.error('Export error, status:', response.status, 'URL:', url)
       return new NextResponse('Error exporting file', { status: response.status })
     }
 
     // Forward the file response back to the client
     const headers = new Headers(response.headers)
-    // Ensure content-disposition is passed through or force download
-    // if not present, but the backend is probably setting it.
-
     return new NextResponse(response.body, {
       status: response.status,
       headers
