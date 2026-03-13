@@ -21,6 +21,25 @@ export async function printParticipantBadge(projectId: string, registrationUuid:
   }
 }
 
+export async function printParticipantBadgesBulk(projectId: string, registrationCodes: string[]) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+    await api.post('/v1/admin/project/participants/print-bulk', {
+      registration_codes: registrationCodes
+    }, {
+      headers
+    })
+
+    revalidatePath('/admin/participants')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error printing bulk participant badges:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to print bulk participant badges'
+    return { success: false, error: errorMessage }
+  }
+}
+
+
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
   const cookieStore = await cookies()
@@ -282,6 +301,24 @@ export async function processScannerData(formData: FormData) {
     console.error('Scanner import error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to process scanner data'
     return { success: false, error: errorMessage }
+  }
+}
+
+export async function searchParticipantsByCodes(projectId: string, codes: string[]) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+    const response = await api.get('/v1/admin/project/participants', {
+      headers
+    })
+
+    const participants = response.data.data as Participant[]
+    const foundParticipants = participants.filter(p => codes.includes(p.registration_code))
+
+    return { success: true, data: foundParticipants }
+  } catch (error: unknown) {
+    console.error('Error searching participants:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to search participants'
+    return { error: errorMessage }
   }
 }
 

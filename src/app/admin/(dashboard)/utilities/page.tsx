@@ -3,12 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Printer, Upload, FileText, CheckCircle, Clock, Loader2, Search, List, Globe, UserCheck, Phone, Timer } from "lucide-react"
 import { useState, useEffect, useRef, Suspense } from "react"
-import { searchParticipantByCode, processScannerData, getRecentScannerImports, Participant as RealParticipant } from "@/app/actions/participant"
+import { searchParticipantsByCodes, printParticipantBadgesBulk, processScannerData, getRecentScannerImports, Participant as RealParticipant } from "@/app/actions/participant"
 import { getCountries, getNationalities, getMobilePrefixes, getTimezones, Country, Nationality, MobilePrefix, Timezone } from "@/app/actions/project"
 import { toast } from "sonner"
 import { ImportHistory } from "@/lib/mock-service"
@@ -21,8 +22,9 @@ function UtilitiesContent() {
   const projectId = searchParams.get('projectId') || ""
   
   const [printSearch, setPrintSearch] = useState("")
-  const [participant, setParticipant] = useState<RealParticipant | null>(null)
+  const [participants, setParticipants] = useState<RealParticipant[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [isSubmittingBulk, setIsSubmittingBulk] = useState(false)
   
   const [isImporting, setIsImporting] = useState(false)
   const [history, setHistory] = useState<ImportHistory[]>([])
@@ -94,23 +96,20 @@ function UtilitiesContent() {
     if (!printSearch.trim()) return
     
     setIsSearching(true)
-    setParticipant(null)
+    setParticipants([])
     
     try {
-      console.log("Searching for code:", printSearch)
-      const result = await searchParticipantByCode(printSearch)
-      console.log("Search result:", result)
+      const codes = printSearch.split(/[\n,]/).map(c => c.trim()).filter(Boolean)
+      const result = await searchParticipantsByCodes(projectId, codes)
       
-      if (result.success) {
-        if (result.data) {
-          setParticipant(result.data as RealParticipant)
-          toast.success("Participant found")
+      if (result.success && result.data) {
+        setParticipants(result.data as RealParticipant[])
+        if (result.data.length > 0) {
+          toast.success(`Found ${result.data.length} participant(s)`)
         } else {
-          setParticipant(null)
-          toast.error("Participant not found")
+          toast.error("No participants found")
         }
       } else {
-        setParticipant(null)
         toast.error(result.error || "Search failed")
       }
     } catch (error) {
@@ -118,6 +117,24 @@ function UtilitiesContent() {
       toast.error("An unexpected error occurred")
     } finally {
       setIsSearching(false)
+    }
+  }
+
+  async function handleBulkPrint() {
+    if (participants.length === 0) return
+    setIsSubmittingBulk(true)
+    try {
+      const codes = participants.map(p => p.registration_code)
+      const result = await printParticipantBadgesBulk(projectId, codes)
+      if (result.success) {
+        toast.success(`Successfully submitted ${codes.length} badge(s) to print queue`)
+      } else {
+        toast.error(result.error || "Failed to bulk print")
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsSubmittingBulk(false)
     }
   }
 
@@ -184,49 +201,59 @@ function UtilitiesContent() {
             </CardHeader>
             <CardContent className="flex-1 space-y-4">
                 <div className="space-y-2">
-                    <Label>Participant Code</Label>
-                    <div className="flex gap-2">
-                        <Input 
-                            placeholder="Enter Code (e.g., VIP-001)" 
+                    <Label>Participant Code(s)</Label>
+                    <div className="flex flex-col gap-2">
+                        <Textarea 
+                            placeholder="Enter Code(s) separated by comma or new line" 
                             value={printSearch}
                             onChange={(e) => setPrintSearch(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            rows={3}
                         />
-                        <Button type="button" onClick={handleSearch} disabled={isSearching}>
+                        <Button type="button" onClick={handleSearch} disabled={isSearching} className="w-full">
                             {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                            <span className="ml-2">Search</span>
+                            <span className="ml-2">Search & Preview</span>
                         </Button>
                     </div>
                 </div>
 
-                {participant && (
+                {participants.length > 0 && (
                     <div className="mt-4 p-4 border rounded-md bg-muted/20 animate-in fade-in slide-in-from-top-2">
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <h4 className="font-semibold text-lg">{participant.first_name} {participant.last_name}</h4>
-                                <p className="text-sm text-muted-foreground">{participant.attendee_type_code} - {participant.company_name || 'N/A'}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Code: {participant.registration_code}</p>
+                                <h4 className="font-semibold text-lg">{participants.length} Participant(s) Found</h4>
+                                <p className="text-sm text-muted-foreground">Previewing first badge</p>
                             </div>
                             <Badge variant="outline" className="bg-background">Found</Badge>
                         </div>
                         
-                        <div className="border rounded-lg bg-white shadow-inner overflow-hidden h-[340px] relative">
+                        <div className="border rounded-lg bg-white shadow-inner overflow-hidden h-[340px] relative mb-4">
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 scale-[0.52] origin-top print-area">
-                                <BadgePrint participant={participant as any} />
+                                <BadgePrint participant={participants[0] as any} />
                             </div>
                         </div>
 
-                        <Button className="w-full mt-4" onClick={handlePrint}>
-                            <Printer className="w-4 h-4 mr-2" />
-                            Print Badge
+                        {participants.length > 1 && (
+                            <div className="max-h-32 overflow-y-auto mb-4 border rounded-md divide-y custom-scrollbar">
+                                {participants.map(p => (
+                                    <div key={p.registration_uuid} className="p-2 text-sm flex justify-between items-center bg-white">
+                                        <span>{p.first_name} {p.last_name}</span>
+                                        <Badge variant="secondary" className="text-xs">{p.registration_code}</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <Button className="w-full mt-4" onClick={handleBulkPrint} disabled={isSubmittingBulk}>
+                            {isSubmittingBulk ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Printer className="w-4 h-4 mr-2" />}
+                            Submit Bulk Print
                         </Button>
                     </div>
                 )}
                 
-                {!participant && !isSearching && (
+                {participants.length === 0 && !isSearching && (
                     <div className="mt-8 flex flex-col items-center justify-center text-center text-muted-foreground h-32 border-2 border-dashed rounded-md">
                         <Printer className="h-8 w-8 mb-2 opacity-20" />
-                        <span className="text-sm">Enter a code to preview and print badge</span>
+                        <span className="text-sm">Enter codes to preview and submit print job</span>
                     </div>
                 )}
             </CardContent>

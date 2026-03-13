@@ -3,12 +3,10 @@ import { TextEncoder, TextDecoder } from 'node:util'
 
 // Polyfill TextEncoder/TextDecoder for MSW in Jest environment
 if (typeof globalThis.TextEncoder === 'undefined') {
-  // @ts-expect-error - Adding to global for MSW
   globalThis.TextEncoder = TextEncoder
 }
 if (typeof globalThis.TextDecoder === 'undefined') {
-  // @ts-expect-error - Adding to global for MSW
-  globalThis.TextDecoder = TextDecoder
+  globalThis.TextDecoder = TextDecoder as any
 }
 
 // Polyfill BroadcastChannel for MSW in Node.js environment
