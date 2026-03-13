@@ -22,6 +22,7 @@ function UtilitiesContent() {
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [zoom, setZoom] = useState(0.2)
+  const [resultSearch, setResultSearch] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false)
 
@@ -67,6 +68,12 @@ function UtilitiesContent() {
       setIsSearching(false)
     }
   }
+
+  const filteredResults = participants.filter(p => 
+    `${p.first_name} ${p.last_name}`.toLowerCase().includes(resultSearch.toLowerCase()) ||
+    p.registration_code?.toLowerCase().includes(resultSearch.toLowerCase()) ||
+    p.company_name?.toLowerCase().includes(resultSearch.toLowerCase())
+  )
 
   async function handleBulkPrint() {
     const selectedParticipants = participants.filter(p => selectedIds.has(p.registration_uuid))
@@ -128,9 +135,9 @@ function UtilitiesContent() {
                     Manually search and batch print badges for participants.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                    <div className="flex-1 space-y-2">
+            <CardContent className="space-y-4 pt-6 overflow-hidden">
+                <div className="flex flex-col md:flex-row gap-4 items-end w-full overflow-hidden">
+                    <div className="flex-1 space-y-2 min-w-0 w-full">
                         <Label className="text-xs font-semibold uppercase tracking-wider opacity-70">Participant Code(s)</Label>
                         <Textarea 
                             placeholder="Enter Code(s) separated by comma or new line" 
@@ -143,7 +150,7 @@ function UtilitiesContent() {
                         type="button" 
                         onClick={handleSearch} 
                         disabled={isSearching} 
-                        className="h-[100px] w-full md:w-48 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 border-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="h-[100px] w-full md:w-48 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 border-2 shadow-sm transition-all active:scale-[0.98]"
                     >
                         {isSearching ? <Loader2 className="h-7 w-7 animate-spin" /> : <Search className="h-7 w-7" />}
                         <div className="flex flex-col items-start ml-3 text-left">
@@ -154,15 +161,19 @@ function UtilitiesContent() {
                 </div>
 
                 {participants.length > 0 && (
-                    <div className="pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full overflow-hidden">
+                        <div className="flex flex-col lg:flex-row gap-8 w-full overflow-hidden">
                             {/* Master: Proof Sheet (Grid) */}
-                            <div className="flex-1 space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-center bg-background p-4 rounded-2xl border shadow-sm gap-4">
-                                    <div className="flex items-center gap-6">
+                            <div className="flex-1 space-y-6 min-w-0">
+                                <div className="flex flex-col sm:flex-row justify-between items-center bg-background p-4 rounded-2xl border shadow-sm gap-4 overflow-hidden">
+                                    <div className="flex flex-wrap items-center gap-6 min-w-0">
                                         <div className="flex items-center gap-2 border-r pr-4">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Found</span>
+                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Source</span>
                                             <Badge variant="secondary" className="font-mono text-primary bg-primary/5 border-primary/10">{participants.length}</Badge>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Match</span>
+                                            <Badge variant="outline" className="font-mono">{filteredResults.length}</Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Selected</span>
@@ -170,9 +181,20 @@ function UtilitiesContent() {
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                                        <div className="hidden lg:flex items-center gap-3 mr-4 bg-muted/30 px-4 py-2 rounded-xl border">
-                                            <ZoomOut className="h-4 w-4 text-muted-foreground" />
+                                    <div className="flex flex-1 items-center gap-3 w-full sm:w-auto min-w-0">
+                                        <div className="relative flex-1 min-w-[200px]">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
+                                            <input 
+                                                type="text"
+                                                placeholder="Quick name/code search..."
+                                                value={resultSearch}
+                                                onChange={(e) => setResultSearch(e.target.value)}
+                                                className="w-full bg-muted/50 border rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                            />
+                                        </div>
+
+                                        <div className="hidden lg:flex items-center gap-3 mr-4 bg-muted/30 px-4 py-1.5 rounded-xl border">
+                                            <ZoomOut className="h-3.5 w-3.5 text-muted-foreground" />
                                             <input 
                                                 type="range" 
                                                 min="0.1" 
@@ -214,7 +236,7 @@ function UtilitiesContent() {
                                         gridTemplateColumns: `repeat(auto-fill, minmax(${zoom * 500 + 40}px, 1fr))` 
                                     }}
                                 >
-                                    {participants.map(p => (
+                                    {filteredResults.map((p, idx) => (
                                         <div 
                                             key={p.registration_uuid}
                                             role="button"
@@ -231,6 +253,11 @@ function UtilitiesContent() {
                                                 }
                                             }}
                                         >
+                                            {/* Sequence Number */}
+                                            <div className="absolute -top-2 -left-2 h-6 min-w-[24px] px-1 bg-muted-foreground text-white text-[10px] font-bold rounded-md flex items-center justify-center shadow-sm z-20 border border-white/20">
+                                                {idx + 1}
+                                            </div>
+
                                             {/* Thumbnail Container */}
                                             <div className="relative overflow-hidden rounded-xl m-1.5 bg-white shadow-sm ring-1 ring-black/5 flex items-center justify-center p-2" style={{ aspectRatio: '500/700' }}>
                                                 <div 
@@ -344,7 +371,7 @@ function UtilitiesContent() {
 
                                     <div className="mt-8 space-y-4">
                                         <Button 
-                                            className="w-full h-16 text-xl font-bold shadow-2xl shadow-primary/30 group relative overflow-hidden rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]" 
+                                            className="w-full h-16 text-xl font-bold shadow-2xl shadow-primary/30 group relative overflow-hidden rounded-2xl transition-all active:scale-[0.98]" 
                                             onClick={handleBulkPrint} 
                                             disabled={isSubmittingBulk || selectedIds.size === 0}
                                         >
