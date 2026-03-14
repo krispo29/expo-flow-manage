@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { getProjectDetail, updateProject, type Project } from "@/app/actions/project"
+import { getProjectDetail, updateProject, getTimezones, getCountries, type Project, type Timezone, type Country } from "@/app/actions/project"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Globe, Settings2, CalendarDays, Image, Loader2 } from "lucide-react"
-import { CountrySelector } from "@/components/CountrySelector"
+import { Globe, Settings2, CalendarDays, Image, Loader2, Check, ChevronsUpDown } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
 interface ProjectSettingsProps {
   projectUuid: string
@@ -21,13 +23,31 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [countryCode, setCountryCode] = useState<string>("")
+  const [timezones, setTimezones] = useState<Timezone[]>([])
+  const [countries, setCountries] = useState<Country[]>([])
+  const [selectedTimezone, setSelectedTimezone] = useState<string>('')
+  const [timezoneOpen, setTimezoneOpen] = useState(false)
+  const [countryOpen, setCountryOpen] = useState(false)
 
   async function fetchProject() {
     setLoading(true)
     const result = await getProjectDetail(projectUuid)
     if (result.success && result.project) {
       setProject(result.project)
-      setCountryCode(result.project.country_code || "")
+      setCountryCode(result.project.country_code || "VN") // Default to VN if empty
+      setSelectedTimezone(result.project.timezone || "")
+      
+      const [tzResult, countryResult] = await Promise.all([
+        getTimezones(projectUuid),
+        getCountries(projectUuid)
+      ])
+
+      if (tzResult.success && tzResult.data) {
+        setTimezones(tzResult.data)
+      }
+      if (countryResult.success && countryResult.data) {
+        setCountries(countryResult.data)
+      }
     }
     setLoading(false)
   }
@@ -59,6 +79,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       country_code: formData.get('country_code') as string,
       exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
       conference_booking_url: formData.get('conference_booking_url') as string,
+      timezone: formData.get('timezone') as string,
     }
 
     const result = await updateProject(projectData)
@@ -149,17 +170,108 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
               <Input id="conference_booking_url" name="conference_booking_url" defaultValue={project.conference_booking_url} placeholder="https://..." />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="country_code" className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                Country Code
-              </Label>
-              <CountrySelector
-                value={countryCode}
-                onChange={setCountryCode}
-                placeholder="Select country code"
-              />
-              <input type="hidden" name="country_code" value={countryCode} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  Timezone
+                </Label>
+                <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={timezoneOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedTimezone
+                        ? timezones.find((tz) => tz.value === selectedTimezone)?.label
+                        : 'Select timezone...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search timezone..." />
+                      <CommandList>
+                        <CommandEmpty>No timezone found.</CommandEmpty>
+                        <CommandGroup>
+                          {timezones.map((tz) => (
+                            <CommandItem
+                              key={tz.value}
+                              value={tz.value}
+                              onSelect={(value) => {
+                                setSelectedTimezone(value)
+                                setTimezoneOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  selectedTimezone === tz.value ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {tz.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <input type="hidden" name="timezone" value={selectedTimezone} />
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  Country
+                </Label>
+                <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={countryOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {countryCode
+                        ? countries.find((c) => c.code === countryCode)?.name
+                        : 'Select country...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search country..." />
+                      <CommandList>
+                        <CommandEmpty>No country found.</CommandEmpty>
+                        <CommandGroup>
+                          {countries.map((country) => (
+                            <CommandItem
+                              key={country.code}
+                              value={country.name}
+                              onSelect={() => {
+                                setCountryCode(country.code)
+                                setCountryOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  countryCode === country.code ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {country.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <input type="hidden" name="country_code" value={countryCode} />
+              </div>
             </div>
           </div>
 
