@@ -7,7 +7,16 @@ interface AttendeeTypeData {
   count: number
 }
 
-const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe", "#f5f3ff", "#f0abfc"]
+const COLORS = [
+  "hsl(180 25% 25%)", // Primary Teal
+  "hsl(38 25% 50%)",  // Muted Gold
+  "hsl(180 15% 45%)", // Muted Teal
+  "hsl(38 20% 70%)",  // Soft Sand
+  "hsl(180 10% 30%)", // Dark Slate
+  "hsl(180 25% 35%)", // Lighter Teal
+  "hsl(180 30% 12%)", // Deep Teal
+  "hsl(38 30% 90%)"   // Champagne
+]
 
 interface Props {
   data: AttendeeTypeData[]

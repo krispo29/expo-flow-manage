@@ -148,16 +148,16 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     asChild 
                     tooltip="Dashboard" 
                     className={cn(
-                      "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                      "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                       isActive(basePath) 
-                        ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                        : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                        : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                     )}
                     isActive={isActive(basePath)}
                   >
                     <Link href={projectId ? `${basePath}?projectId=${projectId}` : basePath}>
-                      <LayoutDashboard className="size-5 transition-transform group-hover:scale-110" />
-                      <span>Dashboard</span>
+                      <LayoutDashboard className={cn("size-4 transition-transform", isActive(basePath) ? "scale-110" : "group-hover:scale-110")} />
+                      <span>Dashboard Overview</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -179,15 +179,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Exhibitors" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/exhibitors`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/exhibitors`)}
                     >
                       <Link href={projectId ? `${basePath}/exhibitors?projectId=${projectId}` : `${basePath}/exhibitors`}>
-                        <Users className="size-5 transition-transform group-hover:scale-110" />
+                        <Users className={cn("size-4 transition-transform", isActive(`${basePath}/exhibitors`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Exhibitors</span>
                       </Link>
                     </SidebarMenuButton>
@@ -201,15 +201,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Participants" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/participants`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/participants`)}
                     >
                       <Link href={projectId ? `${basePath}/participants?projectId=${projectId}` : `${basePath}/participants`}>
-                        <Contact className="size-5 transition-transform group-hover:scale-110" />
+                        <Contact className={cn("size-4 transition-transform", isActive(`${basePath}/participants`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Participants</span>
                       </Link>
                     </SidebarMenuButton>
@@ -222,15 +222,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Staff" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/staff`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/staff`)}
                     >
                       <Link href={projectId ? `${basePath}/staff?projectId=${projectId}` : `${basePath}/staff`}>
-                        <ContactRound className="size-5 transition-transform group-hover:scale-110" />
+                        <ContactRound className={cn("size-4 transition-transform", isActive(`${basePath}/staff`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Staff</span>
                       </Link>
                     </SidebarMenuButton>
@@ -243,15 +243,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Organizers" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/organizers`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/organizers`)}
                     >
                       <Link href={projectId ? `${basePath}/organizers?projectId=${projectId}` : `${basePath}/organizers`}>
-                        <Users className="size-5 transition-transform group-hover:scale-110" />
+                        <Users className={cn("size-4 transition-transform", isActive(`${basePath}/organizers`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Organizers</span>
                       </Link>
                     </SidebarMenuButton>
@@ -264,15 +264,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Conferences" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/conferences`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/conferences`)}
                     >
                       <Link href={projectId ? `${basePath}/conferences?projectId=${projectId}` : `${basePath}/conferences`}>
-                        <Presentation className="size-5 transition-transform group-hover:scale-110" />
+                        <Presentation className={cn("size-4 transition-transform", isActive(`${basePath}/conferences`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Conferences</span>
                       </Link>
                     </SidebarMenuButton>
@@ -285,15 +285,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Rooms" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/rooms`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/rooms`)}
                     >
                       <Link href={projectId ? `${basePath}/rooms?projectId=${projectId}` : `${basePath}/rooms`}>
-                        <DoorOpen className="size-5 transition-transform group-hover:scale-110" />
+                        <DoorOpen className={cn("size-4 transition-transform", isActive(`${basePath}/rooms`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Rooms</span>
                       </Link>
                     </SidebarMenuButton>
@@ -306,15 +306,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Events" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/events`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/events`)}
                     >
                       <Link href={projectId ? `${basePath}/events?projectId=${projectId}` : `${basePath}/events`}>
-                        <Calendar className="size-5 transition-transform group-hover:scale-110" />
+                        <Calendar className={cn("size-4 transition-transform", isActive(`${basePath}/events`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Events</span>
                       </Link>
                     </SidebarMenuButton>
@@ -327,15 +327,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Invitation Codes" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/invitation-codes`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/invitation-codes`)}
                     >
                       <Link href={projectId ? `${basePath}/invitation-codes?projectId=${projectId}` : `${basePath}/invitation-codes`}>
-                        <FileText className="size-5 transition-transform group-hover:scale-110" />
+                        <FileText className={cn("size-4 transition-transform", isActive(`${basePath}/invitation-codes`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Invitation Codes</span>
                       </Link>
                     </SidebarMenuButton>
@@ -348,15 +348,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Quota Requests" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/quota-requests`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/quota-requests`)}
                     >
                       <Link href={projectId ? `${basePath}/quota-requests?projectId=${projectId}` : `${basePath}/quota-requests`}>
-                        <ArrowUpCircle className="size-5 transition-transform group-hover:scale-110" />
+                        <ArrowUpCircle className={cn("size-4 transition-transform", isActive(`${basePath}/quota-requests`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Quota Requests</span>
                       </Link>
                     </SidebarMenuButton>
@@ -381,15 +381,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Reports" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/reports`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/reports`)}
                     >
                       <Link href={projectId ? `${basePath}/reports?projectId=${projectId}` : `${basePath}/reports`}>
-                        <FileText className="size-5 transition-transform group-hover:scale-110" />
+                        <FileText className={cn("size-4 transition-transform", isActive(`${basePath}/reports`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Reports</span>
                       </Link>
                     </SidebarMenuButton>
@@ -401,15 +401,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild
                       tooltip="Questionnaires Stats"
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/questionnaires-stats`)
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/questionnaires-stats`)}
                     >
                       <Link href={projectId ? `${basePath}/questionnaires-stats?projectId=${projectId}` : `${basePath}/questionnaires-stats`}>
-                        <BarChart3 className="size-5 transition-transform group-hover:scale-110" />
+                        <BarChart3 className={cn("size-4 transition-transform", isActive(`${basePath}/questionnaires-stats`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Questionnaires Stats</span>
                       </Link>
                     </SidebarMenuButton>
@@ -421,15 +421,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild
                       tooltip="Imports"
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/imports`)
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3"
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/imports`)}
                     >
                       <Link href={projectId ? `${basePath}/imports?projectId=${projectId}` : `${basePath}/imports`}>
-                        <FileUp className="size-5 transition-transform group-hover:scale-110" />
+                        <FileUp className={cn("size-4 transition-transform", isActive(`${basePath}/imports`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Imports</span>
                       </Link>
                     </SidebarMenuButton>
@@ -441,15 +441,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Utility" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/utilities`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/utilities`)}
                     >
                       <Link href={projectId ? `${basePath}/utilities?projectId=${projectId}` : `${basePath}/utilities`}>
-                        <Wrench className="size-5 transition-transform group-hover:scale-110" />
+                        <Wrench className={cn("size-4 transition-transform", isActive(`${basePath}/utilities`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Utility</span>
                       </Link>
                     </SidebarMenuButton>
@@ -461,15 +461,15 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       asChild 
                       tooltip="Settings" 
                       className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        "h-9 text-[14px] font-semibold px-4 transition-all duration-300 rounded-lg mx-2 w-[calc(100%-16px)]",
                         isActive(`${basePath}/settings`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                       isActive={isActive(`${basePath}/settings`)}
                     >
                       <Link href={projectId ? `${basePath}/settings?projectId=${projectId}` : `${basePath}/settings`}>
-                        <Settings className="size-5 transition-transform group-hover:scale-110" />
+                        <Settings className={cn("size-4 transition-transform", isActive(`${basePath}/settings`) ? "scale-110" : "group-hover:scale-110")} />
                         <span>Settings</span>
                       </Link>
                     </SidebarMenuButton>
