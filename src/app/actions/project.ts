@@ -42,49 +42,8 @@ export async function getProjects() {
     const result = response.data
     console.log('Projects API response:', result)
     
-    let projects = (result.data || []) as Project[]
+    const projects = (result.data || []) as Project[]
     
-    // TEMPORARY: Add mock projects for testing project selection page
-    if (projects.length <= 1) {
-      projects = [
-        ...projects,
-        {
-          project_uuid: 'mock-uuid-1',
-          project_name: 'Mock Project: ILDEX 2026',
-          project_code: 'ILD26',
-          project_site_url: 'https://example.com/ildex',
-          is_open_registration: true,
-          start_date: new Date('2026-03-01').toISOString(),
-          end_date: new Date('2026-03-05').toISOString(),
-          cutoff_date_exhibitor_edit: new Date('2026-02-15').toISOString(),
-          logo_url: '',
-          banner_url: '',
-          banner_2_url: '',
-          copy_right: '© 2026 Mock Corp',
-          timezone: 'Asia/Bangkok',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as Project,
-        {
-          project_uuid: 'mock-uuid-2',
-          project_name: 'Mock Project: Horti Agri 2027',
-          project_code: 'HAN27',
-          project_site_url: 'https://example.com/horti',
-          is_open_registration: false,
-          start_date: new Date('2027-05-10').toISOString(),
-          end_date: new Date('2027-05-14').toISOString(),
-          cutoff_date_exhibitor_edit: new Date('2027-04-01').toISOString(),
-          logo_url: '',
-          banner_url: '',
-          banner_2_url: '',
-          copy_right: '© 2027 Mock Corp',
-          timezone: 'Asia/Ho_Chi_Minh',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as Project,
-      ]
-    }
-
     return { success: true, projects }
   } catch (error: any) {
     console.error('Error fetching projects:', error)
