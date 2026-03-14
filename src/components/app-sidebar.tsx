@@ -194,27 +194,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   </SidebarMenuItem>
                 )}
 
-                {user?.role === 'ADMIN' && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Quota Requests" 
-                      className={cn(
-                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
-                        isActive(`${basePath}/quota-requests`) 
-                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
-                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
-                      )}
-                      isActive={isActive(`${basePath}/quota-requests`)}
-                    >
-                      <Link href={projectId ? `${basePath}/quota-requests?projectId=${projectId}` : `${basePath}/quota-requests`}>
-                        <ArrowUpCircle className="size-5 transition-transform group-hover:scale-110" />
-                        <span>Quota Requests</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-
+          
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton 
@@ -361,6 +341,28 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+
+                      {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip="Quota Requests" 
+                      className={cn(
+                        "h-9 text-[14px] font-medium px-4 transition-all duration-200",
+                        isActive(`${basePath}/quota-requests`) 
+                          ? "bg-white/10 text-white font-bold border-l-4 border-primary rounded-none ml-0 pl-3" 
+                          : "hover:bg-white/5 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                      )}
+                      isActive={isActive(`${basePath}/quota-requests`)}
+                    >
+                      <Link href={projectId ? `${basePath}/quota-requests?projectId=${projectId}` : `${basePath}/quota-requests`}>
+                        <ArrowUpCircle className="size-5 transition-transform group-hover:scale-110" />
+                        <span>Quota Requests</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

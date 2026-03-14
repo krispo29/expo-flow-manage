@@ -58,7 +58,7 @@ export async function getImportExhibitors() {
     const headers = await getAuthHeaders()
     const response = await api.get('/v1/admin/project/exhibitors', { headers })
 
-    const mapped = ((response.data?.data || []) as any[]).map((item) => ({
+    const mapped = ((response.data?.data || []) as { exhibitor_uuid: string; event_name: string; company_name: string }[]).map((item) => ({
       exhibitor_uuid: item.exhibitor_uuid,
       event_name: item.event_name,
       company_name: item.company_name,
@@ -92,6 +92,34 @@ async function postImport(endpoint: string, formData: FormData) {
       'Content-Type': 'multipart/form-data',
     },
   })
+}
+
+export async function getImportHistory(uuid: string) {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get(`/v1/admin/project/import/histories/${uuid}`, { headers })
+    return { success: true, data: response.data?.data as ImportHistory }
+  } catch (error: unknown) {
+    console.error('Error fetching import history:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch import history'
+    return { success: false, error: errorMessage }
+  }
+}
+
+export async function getImportHistoryCodes(uuid: string, attendeeTypeCode?: string) {
+  try {
+    const headers = await getAuthHeaders()
+    let url = `/v1/admin/project/import/histories/${uuid}/codes`
+    if (attendeeTypeCode) {
+      url += `?attendee_type_code=${attendeeTypeCode}`
+    }
+    const response = await api.get(url, { headers })
+    return { success: true, data: (response.data?.data || []) as { first_name: string; last_name: string; email: string; code: string }[] }
+  } catch (error: unknown) {
+    console.error('Error fetching import history codes:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch import history codes'
+    return { success: false, error: errorMessage, data: [] }
+  }
 }
 
 export async function importExhibitors(formData: FormData) {

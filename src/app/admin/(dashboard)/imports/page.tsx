@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Upload, Loader2, FileDown } from 'lucide-react'
+import { Upload, Loader2, FileDown, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getImportEvents,
   getImportExhibitors,
+  getImportHistory,
+  getImportHistoryCodes,
   getImportHistories,
   importConferencesExcel,
   importExhibitorMembers,
@@ -58,6 +60,7 @@ export default function ImportsPage() {
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
   const [eventUuids, setEventUuids] = useState<Record<string, string>>({})
   const [exhibitorUuids, setExhibitorUuids] = useState<Record<string, string>>({})
+  const [attendeeTypeCodes, setAttendeeTypeCodes] = useState<Record<string, string>>({})
   const [files, setFiles] = useState<Record<ImportKind, File | null>>({
     exhibitors: null,
     'exhibitor-members': null,
@@ -75,9 +78,17 @@ export default function ImportsPage() {
     'invite-codes': false,
   })
 
-  // Export Dialog State
-  const [exportHistoryUuid, setExportHistoryUuid] = useState<string | null>(null)
-  const [exportAttendeeType, setExportAttendeeType] = useState<string>('')
+
+  // View Codes Dialog State
+  const [viewCodesUuid, setViewCodesUuid] = useState<string | null>(null)
+  const [viewAttendeeType, setViewAttendeeType] = useState<string>('')
+  const [viewCodesData, setViewCodesData] = useState<{ first_name: string; last_name: string; email: string; code: string }[]>([])
+  const [viewLoading, setViewLoading] = useState(false)
+
+  // View Details Dialog State
+  const [viewDetailUuid, setViewDetailUuid] = useState<string | null>(null)
+  const [detailData, setDetailData] = useState<ImportHistory | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const fetchHistories = async () => {
     const res = await getImportHistories()
@@ -168,6 +179,15 @@ export default function ImportsPage() {
         return
       }
       formData.append('exhibitor_uuid', exhibitorUuid)
+    }
+
+    if (kind === 'registrations') {
+      const attendeeTypeCode = attendeeTypeCodes[kind]
+      if (!attendeeTypeCode) {
+        toast.error('Please select attendee type')
+        return
+      }
+      formData.append('attendee_type_code', attendeeTypeCode)
     }
 
     setLoading((prev) => ({ ...prev, [kind]: true }))
@@ -267,7 +287,20 @@ export default function ImportsPage() {
               <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
               <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
             </Select>
-            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('registrations', e.target.files?.[0] || null)} />
+
+            <Label>Attendee Type</Label>
+            <Select value={attendeeTypeCodes.registrations} onValueChange={(val) => setAttendeeTypeCodes((prev: Record<string, string>) => ({ ...prev, registrations: val }))}>
+              <SelectTrigger><SelectValue placeholder="Select attendee type" /></SelectTrigger>
+              <SelectContent>
+                {attendeeTypes.map((t) => (
+                  <SelectItem key={t.type_code} value={t.type_code}>
+                    {t.type_name} ({t.type_code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setFile('registrations', e.target.files?.[0] || null)} />
             <div className="flex gap-2">
               <Button className="flex-1" onClick={() => void runImport('registrations')} disabled={loading.registrations}>
                 {loading.registrations ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
@@ -362,19 +395,59 @@ export default function ImportsPage() {
                     <TableCell className="text-emerald-600 font-medium">{h.success_count}</TableCell>
                     <TableCell className="text-rose-600 font-medium">{h.failed_count}</TableCell>
                     <TableCell className="text-right">
-                      {h.import_type === 'registrations' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => {
-                            setExportHistoryUuid(h.import_uuid)
-                            setExportAttendeeType('')
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          title="View Details"
+                          onClick={async () => {
+                            setViewDetailUuid(h.import_uuid)
+                            setDetailLoading(true)
+                            const res = await getImportHistory(h.import_uuid)
+                            if (res.success) {
+                              setDetailData(res.data!)
+                            } else {
+                              toast.error(res.error || 'Failed to fetch details')
+                            }
+                            setDetailLoading(false)
                           }}
                         >
-                          <FileDown className="mr-2 h-4 w-4" />
-                          Download Codes
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      )}
+
+                        {h.import_type === 'registrations' && (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={async () => {
+                                setViewCodesUuid(h.import_uuid)
+                                setViewAttendeeType('')
+                                setViewLoading(true)
+                                const codesRes = await getImportHistoryCodes(h.import_uuid)
+                                if (codesRes.success) {
+                                  setViewCodesData(codesRes.data)
+                                } else {
+                                  toast.error(codesRes.error || 'Failed to fetch codes')
+                                }
+                                setViewLoading(false)
+                              }}
+                            >
+                              Codes
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                window.open(`/api/export/import-history-codes?uuid=${h.import_uuid}`, '_blank')
+                              }}
+                            >
+                              <FileDown className="mr-2 h-4 w-4" />
+                              Export
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -390,41 +463,152 @@ export default function ImportsPage() {
         </div>
       </div>
 
-      <Dialog open={!!exportHistoryUuid} onOpenChange={(open) => !open && setExportHistoryUuid(null)}>
+
+      <Dialog open={!!viewDetailUuid} onOpenChange={(open) => !open && setViewDetailUuid(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Download Codes</DialogTitle>
-            <DialogDescription>Select attendee type to include in the exported codes file.</DialogDescription>
+            <DialogTitle>Import Details</DialogTitle>
+            <DialogDescription>Full summary of the import operation.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {detailLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : detailData ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase">Type</Label>
+                    <p className="font-medium capitalize">{detailData.import_type}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase">Date</Label>
+                    <p className="font-medium">{format(new Date(detailData.created_at), 'dd MMM yyyy HH:mm')}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase">Total Rows</Label>
+                    <p className="font-medium text-lg">{detailData.total_rows}</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase text-emerald-600">Success</Label>
+                      <p className="font-medium text-lg text-emerald-600">{detailData.success_count}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase text-rose-600">Failed</Label>
+                      <p className="font-medium text-lg text-rose-600">{detailData.failed_count}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <Label className="text-xs text-muted-foreground uppercase">Original File</Label>
+                  <p className="font-medium break-all">{detailData.original_file_name}</p>
+                  <Button variant="link" className="px-0 h-auto text-primary" asChild>
+                    <a href={detailData.original_file_url} target="_blank" rel="noreferrer">Download original file</a>
+                  </Button>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase">Created By</Label>
+                  <p className="font-medium">{detailData.created_by}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">Failed to load details.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDetailUuid(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewCodesUuid} onOpenChange={(open) => !open && setViewCodesUuid(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Imported Codes</DialogTitle>
+            <DialogDescription>List of codes generated for this import.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Attendee Type <span className="text-red-500">*</span></Label>
-              <Select value={exportAttendeeType} onValueChange={setExportAttendeeType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {attendeeTypes.map((t) => (
-                    <SelectItem key={t.type_code} value={t.type_code}>
-                      {t.type_name} ({t.type_code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-2">
+                <Label>Filter by Attendee Type</Label>
+                <Select value={viewAttendeeType} onValueChange={async (val) => {
+                  setViewAttendeeType(val)
+                  setViewLoading(true)
+                  const res = await getImportHistoryCodes(viewCodesUuid!, val)
+                  if (res.success) {
+                    setViewCodesData(res.data)
+                  }
+                  setViewLoading(false)
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=" ">All Types</SelectItem>
+                    {attendeeTypes.map((t) => (
+                      <SelectItem key={t.type_code} value={t.type_code}>
+                        {t.type_name} ({t.type_code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="rounded-md border max-h-[400px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>First Name</TableHead>
+                    <TableHead>Last Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Code</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {viewLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                      </TableCell>
+                    </TableRow>
+                  ) : viewCodesData.length > 0 ? (
+                    viewCodesData.map((d) => (
+                      <TableRow key={d.code}>
+                        <TableCell>{d.first_name}</TableCell>
+                        <TableCell>{d.last_name}</TableCell>
+                        <TableCell>{d.email}</TableCell>
+                        <TableCell className="font-mono text-xs">{d.code}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                        No codes found for this selection.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setExportHistoryUuid(null)}>Cancel</Button>
-            <Button 
-              disabled={!exportAttendeeType} 
-              onClick={() => {
-                if (!exportHistoryUuid || !exportAttendeeType) return
-                window.open(`/api/export/import-history-codes?uuid=${exportHistoryUuid}&attendee_type_code=${exportAttendeeType}`, '_blank')
-                setExportHistoryUuid(null)
-              }}
-            >
-              <FileDown className="mr-2 h-4 w-4" /> Download
-            </Button>
+            <Button variant="outline" onClick={() => setViewCodesUuid(null)}>Close</Button>
+            {viewCodesUuid && (
+              <Button 
+                onClick={() => {
+                  let url = `/api/export/import-history-codes?uuid=${viewCodesUuid}`
+                  if (viewAttendeeType && viewAttendeeType !== ' ') {
+                    url += `&attendee_type_code=${viewAttendeeType}`
+                  }
+                  window.open(url, '_blank')
+                }}
+              >
+                <FileDown className="mr-2 h-4 w-4" /> Export
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
