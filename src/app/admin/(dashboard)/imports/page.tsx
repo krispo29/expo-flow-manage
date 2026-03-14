@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Upload, Loader2, FileDown, Eye } from 'lucide-react'
+import { Upload, Loader2, FileDown, Eye, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getImportEvents,
@@ -81,7 +81,8 @@ export default function ImportsPage() {
 
   // View Codes Dialog State
   const [viewCodesUuid, setViewCodesUuid] = useState<string | null>(null)
-  const [viewAttendeeType, setViewAttendeeType] = useState<string>('')
+  const [viewSearch, setViewSearch] = useState('')
+  const [viewPage, setViewPage] = useState(1)
   const [viewCodesData, setViewCodesData] = useState<{ first_name: string; last_name: string; email: string; code: string }[]>([])
   const [viewLoading, setViewLoading] = useState(false)
 
@@ -89,6 +90,27 @@ export default function ImportsPage() {
   const [viewDetailUuid, setViewDetailUuid] = useState<string | null>(null)
   const [detailData, setDetailData] = useState<ImportHistory | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  
+  const filteredCodes = useMemo(() => {
+    return viewCodesData.filter(d => 
+      d.first_name.toLowerCase().includes(viewSearch.toLowerCase()) ||
+      d.last_name.toLowerCase().includes(viewSearch.toLowerCase()) ||
+      d.email.toLowerCase().includes(viewSearch.toLowerCase()) ||
+      d.code.toLowerCase().includes(viewSearch.toLowerCase())
+    )
+  }, [viewCodesData, viewSearch])
+
+  const viewLimit = 50
+  const totalPages = Math.ceil(filteredCodes.length / viewLimit)
+  const paginatedCodes = useMemo(() => {
+    const start = (viewPage - 1) * viewLimit
+    return filteredCodes.slice(start, start + viewLimit)
+  }, [filteredCodes, viewPage])
+
+  // Reset page when search changes
+  useEffect(() => {
+    setViewPage(1)
+  }, [viewSearch])
 
   const fetchHistories = async () => {
     const res = await getImportHistories()
@@ -222,7 +244,6 @@ export default function ImportsPage() {
         toast.error(result.error || 'Import failed')
       }
     } catch (error) {
-      console.error(error)
       toast.error('Import failed')
     } finally {
       setLoading((prev) => ({ ...prev, [kind]: false }))
@@ -422,7 +443,7 @@ export default function ImportsPage() {
                               size="sm" 
                               onClick={async () => {
                                 setViewCodesUuid(h.import_uuid)
-                                setViewAttendeeType('')
+                                setViewSearch('')
                                 setViewLoading(true)
                                 const codesRes = await getImportHistoryCodes(h.import_uuid)
                                 if (codesRes.success) {
@@ -524,92 +545,146 @@ export default function ImportsPage() {
       </Dialog>
 
       <Dialog open={!!viewCodesUuid} onOpenChange={(open) => !open && setViewCodesUuid(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Imported Codes</DialogTitle>
-            <DialogDescription>List of codes generated for this import.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-1 space-y-2">
-                <Label>Filter by Attendee Type</Label>
-                <Select value={viewAttendeeType} onValueChange={async (val) => {
-                  setViewAttendeeType(val)
-                  setViewLoading(true)
-                  const res = await getImportHistoryCodes(viewCodesUuid!, val)
-                  if (res.success) {
-                    setViewCodesData(res.data)
-                  }
-                  setViewLoading(false)
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=" ">All Types</SelectItem>
-                    {attendeeTypes.map((t) => (
-                      <SelectItem key={t.type_code} value={t.type_code}>
-                        {t.type_name} ({t.type_code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <DialogContent className="sm:max-w-5xl p-0 overflow-hidden gap-0">
+          <DialogHeader className="p-6 pb-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl font-bold tracking-tight">Imported Codes</DialogTitle>
+                <DialogDescription className="text-muted-foreground mt-1">
+                  Showing {filteredCodes.length} codes generated for this session.
+                </DialogDescription>
               </div>
             </div>
+          </DialogHeader>
+          
+          <div className="px-6 py-4 border-b bg-muted/30 flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search by name, email, or code..." 
+                className="pl-9 bg-background shadow-sm border-muted-foreground/20 focus-visible:ring-primary/30 transition-all"
+                value={viewSearch} 
+                onChange={(e) => setViewSearch(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <span>Showing</span>
+              <span className="text-foreground font-semibold">
+                {Math.min(filteredCodes.length, (viewPage - 1) * viewLimit + 1)} - {Math.min(filteredCodes.length, viewPage * viewLimit)}
+              </span>
+              <span>of</span>
+              <span className="text-foreground font-semibold">{filteredCodes.length}</span>
+            </div>
+          </div>
 
-            <div className="rounded-md border max-h-[400px] overflow-auto">
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="overflow-auto max-h-[50vh] min-h-[400px]">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>First Name</TableHead>
-                    <TableHead>Last Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Code</TableHead>
+                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur z-10 border-b">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[200px] font-semibold">First Name</TableHead>
+                    <TableHead className="w-[200px] font-semibold">Last Name</TableHead>
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="w-[180px] font-semibold">Code</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {viewLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                      <TableCell colSpan={4} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <p className="text-sm text-muted-foreground animate-pulse">Loading codes...</p>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ) : viewCodesData.length > 0 ? (
-                    viewCodesData.map((d) => (
-                      <TableRow key={d.code}>
-                        <TableCell>{d.first_name}</TableCell>
-                        <TableCell>{d.last_name}</TableCell>
-                        <TableCell>{d.email}</TableCell>
-                        <TableCell className="font-mono text-xs">{d.code}</TableCell>
+                  ) : paginatedCodes.length > 0 ? (
+                    paginatedCodes.map((d) => (
+                      <TableRow key={d.code} className="group hover:bg-muted/50 transition-colors">
+                        <TableCell className="font-medium">{d.first_name}</TableCell>
+                        <TableCell className="font-medium">{d.last_name}</TableCell>
+                        <TableCell className="text-muted-foreground">{d.email}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded bg-secondary text-secondary-foreground font-mono text-xs tabular-nums group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                            {d.code}
+                          </span>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        No codes found for this selection.
+                      <TableCell colSpan={4} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                          <div className="p-3 rounded-full bg-muted">
+                            <Search className="h-6 w-6 opacity-20" />
+                          </div>
+                          <p className="font-medium text-foreground">No codes found</p>
+                          <p className="text-sm">Try adjusting your search criteria</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
+            
+            {/* Pagination UI */}
+            <div className="p-4 border-t flex items-center justify-between bg-muted/20">
+              <div className="flex items-center gap-1.5">
+                <Button 
+                  variant="outline" size="icon" className="h-8 w-8" 
+                  onClick={() => setViewPage(1)} disabled={viewPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" size="icon" className="h-8 w-8" 
+                  onClick={() => setViewPage(p => Math.max(1, p - 1))} disabled={viewPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex items-center gap-1 px-2 mx-1">
+                  <span className="text-sm font-medium">Page</span>
+                  <span className="text-sm font-bold bg-primary/10 text-primary px-2 py-0.5 rounded min-w-[24px] text-center">
+                    {viewPage}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">of {totalPages || 1}</span>
+                </div>
+
+                <Button 
+                  variant="outline" size="icon" className="h-8 w-8" 
+                  onClick={() => setViewPage(p => Math.min(totalPages, p + 1))} disabled={viewPage === totalPages || totalPages === 0}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" size="icon" className="h-8 w-8" 
+                  onClick={() => setViewPage(totalPages)} disabled={viewPage === totalPages || totalPages === 0}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={() => setViewCodesUuid(null)}>
+                  Close
+                </Button>
+                {viewCodesUuid && (
+                  <Button 
+                    size="sm"
+                    className="shadow-lg shadow-primary/20"
+                    onClick={() => {
+                      window.open(`/api/export/import-history-codes?uuid=${viewCodesUuid}`, '_blank')
+                    }}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" /> Export All
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewCodesUuid(null)}>Close</Button>
-            {viewCodesUuid && (
-              <Button 
-                onClick={() => {
-                  let url = `/api/export/import-history-codes?uuid=${viewCodesUuid}`
-                  if (viewAttendeeType && viewAttendeeType !== ' ') {
-                    url += `&attendee_type_code=${viewAttendeeType}`
-                  }
-                  window.open(url, '_blank')
-                }}
-              >
-                <FileDown className="mr-2 h-4 w-4" /> Export
-              </Button>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

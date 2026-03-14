@@ -40,7 +40,6 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
       // Check if user has only one project, if so redirect to it
       if (projects && projects.length === 1) {
         const singleProjectId = projects[0].id
-        console.log('ProjectGuard: Auto-redirecting to single project', singleProjectId)
         router.replace(`${pathname}?projectId=${singleProjectId}`)
         return
       }
@@ -50,7 +49,7 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
     } else if (projectId !== lastProjectIdRef.current) {
       // Only set cookie if projectId has changed
       lastProjectIdRef.current = projectId
-      setProjectCookie(projectId).catch(err => {
+      setProjectCookie(projectId).catch((err) => {
         console.error('Failed to set project cookie:', err)
       })
     }
