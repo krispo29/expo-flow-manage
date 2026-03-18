@@ -33,7 +33,7 @@ export default async function ConferencesPage({
           </p>
         </div>
         <div className="flex gap-2">
-          <ConferenceExcelOperations conferences={conferences || []} projectId={projectId} />
+          <ConferenceExcelOperations conferences={conferences || []} />
           <Button asChild>
             <Link href={`/organizer/conferences/new?projectId=${projectId}`}>
               <Plus className="mr-2 h-4 w-4" />

@@ -16,54 +16,63 @@ export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
   const organizerName = 'VNU Asia Pacific'
 
   return (
-    <div className="print-badge-container font-montserrat bg-white shadow-xl overflow-hidden w-[500px] text-left">
-      <div className="h-2 bg-gradient-to-r from-[#1a5c4c] to-[#2d8b6f]"></div>
+    <div className="print-badge-container font-sans glass-elevated overflow-hidden w-[500px] text-left mx-auto my-8 border-none relative group transition-all duration-500 hover:scale-[1.01]">
+      {/* Visual Accent for Web Preview */}
+      <div className="h-2 bg-aurora-gradient print:bg-primary print:h-2"></div>
       
-      <div className="p-[20px_24px] flex justify-end items-start h-[100px]">
-        <Image src={logoUrl} alt="Event Logo" width={150} height={50} className="h-[50px] w-auto object-contain" unoptimized />
+      <div className="p-8 flex justify-between items-start bg-white/5 print:bg-white">
+        <div className="flex flex-col gap-1">
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40 print:text-primary">Official Badge</div>
+          <div className="text-sm font-black tracking-tighter text-foreground print:text-black">ExpoFlow v2.0</div>
+        </div>
+        <Image src={logoUrl} alt="Event Logo" width={140} height={40} className="h-10 w-auto object-contain grayscale-0 transition-all group-hover:scale-105" unoptimized />
       </div>
 
-      <div className="p-[12px_24px] flex items-center gap-3 border-b border-[#eee]">
-        <span className="text-[13px] font-semibold text-[#1a5c4c] tracking-[1px]">{eventDate}</span>
-        <span className="w-2 h-2 bg-[#1a5c4c] rounded-full"></span>
-        <span className="text-[11px] text-[#1a5c4c] tracking-[1px] uppercase font-medium">{venue}</span>
+      <div className="px-8 py-4 flex items-center gap-4 border-y border-white/5 bg-white/5 print:bg-white print:border-black/10">
+        <div className="flex flex-col">
+          <span className="text-[12px] font-black text-primary tracking-widest uppercase">{eventDate}</span>
+          <span className="text-[9px] text-muted-foreground font-bold tracking-[0.1em] uppercase leading-tight mt-1">{venue}</span>
+        </div>
       </div>
 
-      <div className="p-[30px_24px] text-center">
-        <div className="text-[26px] font-bold text-[#1a1a1a] mb-2 uppercase tracking-[1px] leading-tight">
+      <div className="p-10 text-center bg-white/10 print:bg-white">
+        <div className="text-4xl font-black text-foreground mb-3 uppercase tracking-tight font-display print:text-black leading-none">
           {participant.first_name} {participant.last_name}
         </div>
-        <div className="text-[14px] text-[#1a5c4c] font-semibold mb-1 uppercase tracking-[1px]">
+        <div className="text-lg text-primary font-bold mb-1 uppercase tracking-wider print:text-primary/80">
           {participant.company_name || 'N/A'}
         </div>
-        <div className="text-[12px] text-[#d4a853] font-medium tracking-[1px] uppercase">
+        <div className="text-xs text-muted-foreground font-black tracking-[0.2em] uppercase opacity-60 print:text-black/40">
           {(participant as ParticipantDetail).residence_country?.toUpperCase() || 'THAILAND'}
         </div>
       </div>
 
-      <div className="p-5 text-center">
-        <div className="w-[140px] h-[140px] mx-auto mb-4 bg-white p-2 border border-[#ddd]">
-          <QRCodeSVG value={participant.registration_code || participant.registration_uuid} size={124} h-full w-full />
+      <div className="p-8 text-center relative bg-white/5 print:bg-white">
+        <div className="relative inline-block p-4 bg-white rounded-2xl shadow-2xl shadow-primary/10 border border-white/10 group-hover:scale-105 transition-transform print:shadow-none print:border-black/10 print:p-0">
+          <QRCodeSVG value={participant.registration_code || participant.registration_uuid} size={140} h-full w-full />
         </div>
-        <div className="text-[10px] text-[#888] tracking-[2px] mb-1 font-medium">REGISTRATION CODE</div>
-        <div className="text-[22px] font-bold text-[#1a5c4c] tracking-[2px]">
-          {participant.registration_code}
+        <div className="mt-6">
+           <div className="text-[9px] text-muted-foreground tracking-[0.3em] font-black uppercase mb-1 print:text-black/30">Registration Protocol</div>
+           <div className="text-3xl font-black text-primary tracking-[0.1em] font-display print:text-black">
+             {participant.registration_code}
+           </div>
         </div>
       </div>
 
-      <div className="bg-[#1a5c4c] p-[16px_24px] flex justify-between items-center text-white">
-        <div className="text-[18px] font-bold tracking-[3px] uppercase">
-          {participant.attendee_type_code || 'VISITOR'}
+      <div className="bg-aurora-gradient p-8 flex justify-between items-center text-white print:bg-primary print:text-white">
+        <div className="flex flex-col gap-1">
+          <div className="text-[10px] font-black tracking-[0.2em] uppercase text-white/60 print:text-white/80">Access Level</div>
+          <div className="text-2xl font-black tracking-[0.05em] uppercase leading-none font-display">
+            {participant.attendee_type_code || 'VISITOR'}
+          </div>
         </div>
-        <div className="text-right">
-          <div className="text-[8px] text-white/70 tracking-[1px] font-medium uppercase">Organized by</div>
-          <div className="text-[11px] font-semibold">{organizerName}</div>
+        <div className="text-right flex flex-col items-end">
+          <div className="text-[9px] text-white/60 tracking-[0.2em] font-black uppercase mb-1 print:text-white/80">Host Organization</div>
+          <div className="text-sm font-black tracking-tight">{organizerName}</div>
         </div>
       </div>
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
-        
         @media print {
           @page {
             size: auto;
@@ -73,8 +82,8 @@ export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
             margin: 0;
             padding: 0;
             background: white !important;
-            print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
           body > *:not(.print-area) {
             display: none !important;
@@ -91,6 +100,22 @@ export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
             box-shadow: none !important;
             margin: auto !important;
             border: none !important;
+            border-radius: 0 !important;
+            background: white !important;
+          }
+          .print-badge-container * {
+            background-color: transparent !important;
+            color: black !important;
+            border-color: black !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+          }
+          .print-badge-container .bg-aurora-gradient {
+            background-color: black !important;
+            color: white !important;
+          }
+          .print-badge-container .text-primary {
+            color: black !important;
           }
         }
       `}</style>

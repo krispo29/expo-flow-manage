@@ -150,12 +150,12 @@ function UtilitiesContent() {
                         type="button" 
                         onClick={handleSearch} 
                         disabled={isSearching} 
-                        className="h-[100px] w-full md:w-48 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 border-2 shadow-sm transition-all active:scale-[0.98]"
+                        className="h-[100px] w-full md:w-48 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 border-2 shadow-sm transition-all active:scale-[0.98] px-4"
                     >
-                        {isSearching ? <Loader2 className="h-7 w-7 animate-spin" /> : <Search className="h-7 w-7" />}
-                        <div className="flex flex-col items-start ml-3 text-left">
-                            <span className="font-bold text-lg leading-none">Search</span>
-                            <span className="text-xs opacity-70 mt-1">Generate Proof Sheet</span>
+                        {isSearching ? <Loader2 className="h-7 w-7 animate-spin" /> : <Search className="h-7 w-7 shrink-0" />}
+                        <div className="flex flex-col items-start ml-3 text-left min-w-0">
+                            <span className="font-bold text-base leading-none tracking-tight">SEARCH</span>
+                            <span className="text-[10px] opacity-70 mt-1.5 uppercase tracking-tighter leading-tight">Generate Proof Sheet</span>
                         </div>
                     </Button>
                 </div>
@@ -411,9 +411,9 @@ function UtilitiesContent() {
                             Paste registration codes into the console above to populate your proof sheet.
                         </p>
                         <div className="mt-8 flex gap-3 opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">
-                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">CODE_123</div>
-                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">CODE_456</div>
-                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">CODE_789</div>
+                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">EX123</div>
+                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">VI456</div>
+                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">VG789</div>
                         </div>
                     </div>
                 )}

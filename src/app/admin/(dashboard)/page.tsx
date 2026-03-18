@@ -4,11 +4,12 @@ import {
   Calendar,
   ArrowUpRight,
   AlertCircle,
-  Mail,
   Building2,
   Activity,
   MapPin,
   Clock,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react"
 import {
   Card,
@@ -22,6 +23,7 @@ import { getDashboard } from "@/app/actions/dashboard"
 import type { DashboardConference } from "@/app/actions/dashboard"
 import { formatDistanceToNow } from "date-fns"
 import { AttendeeTypeChart } from "@/components/dashboard/attendee-type-chart"
+import { cn } from "@/lib/utils"
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -35,7 +37,6 @@ export default async function Page(props: Props) {
     return null
   }
 
-  // Single API call for all dashboard data
   const result = await getDashboard(projectId)
   const failed = !result.success || !result.data
 
@@ -43,7 +44,6 @@ export default async function Page(props: Props) {
   const recentParticipants = result.data?.recent_participants || []
   const conferences = result.data?.conferences || []
 
-  // Deduplicate conferences by conference_uuid (API may return duplicates per show_date)
   const uniqueConferences: DashboardConference[] = []
   const seenUuids = new Set<string>()
   for (const c of conferences) {
@@ -53,109 +53,134 @@ export default async function Page(props: Props) {
     }
   }
 
-  // Map attendee_types for chart
   const attendeeTypeData = (summary?.attendee_types || []).map(t => ({
     name: t.type_name,
     count: t.count,
   }))
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
-        <p className="text-muted-foreground">Welcome back. Here is what is happening with your project.</p>
+    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="size-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60">Live Analytics</span>
+          </div>
+          <h2 className="text-4xl font-extrabold tracking-tight font-display">Dashboard Overview</h2>
+          <p className="text-muted-foreground mt-1 text-sm font-medium">Redefining event management with real-time insights.</p>
+        </div>
+        <div className="flex items-center gap-2">
+           <Badge variant="outline" className="glass py-1.5 px-3 border-primary/20 text-primary font-bold">
+             <TrendingUp className="size-3 mr-1.5" />
+             Project ID: {projectId.slice(0, 8)}
+           </Badge>
+        </div>
       </div>
 
       {/* ======================================================= */}
       {/* ROW 1 – Key Metric Cards                               */}
       {/* ======================================================= */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Exhibitors */}
-        <Card className="relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Exhibitors</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden group/card border-none">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-none bg-transparent">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Total Exhibitors</CardTitle>
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover/card:scale-110">
+              <Building2 className="size-4" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             {failed ? (
-              <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4" /><span className="text-sm font-medium">Unavailable</span></div>
+              <div className="text-muted-foreground flex items-center gap-2"><AlertCircle className="size-4" /><span className="text-sm font-medium">Unavailable</span></div>
             ) : (
-              <div className="text-2xl font-bold">{summary?.total_exhibitors ?? 0}</div>
+              <div className="text-3xl font-extrabold tracking-tighter">{summary?.total_exhibitors ?? 0}</div>
             )}
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Building2 className="h-12 w-12" /></div>
+          <Building2 className="absolute -right-4 -bottom-4 size-24 opacity-[0.03] text-primary rotate-12 transition-transform group-hover/card:scale-110 group-hover/card:rotate-0" />
         </Card>
 
         {/* Total Participants */}
-        <Card className="relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Participants</CardTitle>
-            <Contact className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden group/card border-none">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-none bg-transparent">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Total Participants</CardTitle>
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover/card:scale-110">
+              <Contact className="size-4" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             {failed ? (
-              <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4" /><span className="text-sm font-medium">Unavailable</span></div>
+              <div className="text-muted-foreground flex items-center gap-2"><AlertCircle className="size-4" /><span className="text-sm font-medium">Unavailable</span></div>
             ) : (
-              <div className="text-2xl font-bold">{(summary?.total_participants ?? 0).toLocaleString()}</div>
+              <div className="text-3xl font-extrabold tracking-tighter">{(summary?.total_participants ?? 0).toLocaleString()}</div>
             )}
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Contact className="h-12 w-12" /></div>
+          <Contact className="absolute -right-4 -bottom-4 size-24 opacity-[0.03] text-primary rotate-12 transition-transform group-hover/card:scale-110 group-hover/card:rotate-0" />
         </Card>
 
         {/* Conferences */}
-        <Card className="relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conferences</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden group/card border-none">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-none bg-transparent">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Conferences</CardTitle>
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover/card:scale-110">
+              <Calendar className="size-4" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             {failed ? (
-              <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4" /><span className="text-sm font-medium">Unavailable</span></div>
+              <div className="text-muted-foreground flex items-center gap-2"><AlertCircle className="size-4" /><span className="text-sm font-medium">Unavailable</span></div>
             ) : (
-              <div className="text-2xl font-bold">{summary?.total_conferences ?? 0}</div>
+              <div className="text-3xl font-extrabold tracking-tighter">{summary?.total_conferences ?? 0}</div>
             )}
+            <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-primary/60 uppercase">
+              <Sparkles className="size-3" /> Scheduled sessions
+            </div>
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Calendar className="h-12 w-12" /></div>
+          <Calendar className="absolute -right-4 -bottom-4 size-24 opacity-[0.03] text-primary rotate-12 transition-transform group-hover/card:scale-110 group-hover/card:rotate-0" />
         </Card>
 
         {/* Event Rooms */}
-        <Card className="relative overflow-hidden bg-primary/5 border-primary/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Event Rooms</CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
+        <Card className="relative overflow-hidden group/card border-none bg-aurora-gradient text-white">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-none bg-transparent">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-white/60">Event Rooms</CardTitle>
+            <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center text-white transition-transform group-hover/card:scale-110">
+              <Activity className="size-4" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             {failed ? (
-              <div className="text-muted-foreground flex items-center gap-2 mt-1"><AlertCircle className="h-4 w-4 text-primary" /><span className="text-sm font-medium">Unavailable</span></div>
+              <div className="text-white/60 flex items-center gap-2"><AlertCircle className="size-4" /><span className="text-sm font-medium">Unavailable</span></div>
             ) : (
               <>
-                <div className="text-2xl font-bold text-primary">{summary?.total_rooms ?? 0}</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Available spaces
-                </p>
+                <div className="text-3xl font-extrabold tracking-tighter text-white">{summary?.total_rooms ?? 0}</div>
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-white uppercase">
+                  <span className="size-1.5 rounded-full bg-white animate-pulse" /> Active monitoring
+                </div>
               </>
             )}
           </CardContent>
-          <div className="absolute top-0 right-0 p-4 opacity-10 text-primary pointer-events-none"><Activity className="h-12 w-12" /></div>
+          <Activity className="absolute -right-4 -bottom-4 size-24 opacity-20 text-white rotate-12 transition-transform group-hover/card:scale-110 group-hover/card:rotate-0" />
         </Card>
       </div>
 
       {/* ======================================================= */}
       {/* ROW 2 – Attendee Type Chart + Upcoming Conferences      */}
       {/* ======================================================= */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
 
         {/* Attendee Type Chart */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-primary" /> Attendee Types</CardTitle>
+        <Card className="lg:col-span-3 border-none">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+               <div className="size-6 rounded bg-primary/10 flex items-center justify-center"><Users className="size-3.5 text-primary" /></div>
+               Attendee Types
+            </CardTitle>
             <CardDescription>Breakdown of all participant categories</CardDescription>
           </CardHeader>
           <CardContent>
             {attendeeTypeData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
-                <Users className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">No attendee data</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/10 rounded-2xl bg-white/5">
+                <Users className="size-10 text-muted-foreground/20 mb-3" />
+                <p className="text-sm text-muted-foreground font-medium">No attendee data available</p>
               </div>
             ) : (
               <AttendeeTypeChart data={attendeeTypeData} />
@@ -164,38 +189,44 @@ export default async function Page(props: Props) {
         </Card>
 
         {/* Upcoming Conferences */}
-        <Card className="lg:col-span-4">
-          <CardHeader className="pb-2">
+        <Card className="lg:col-span-4 border-none">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base"><Calendar className="h-4 w-4 text-primary" /> Conferences</CardTitle>
-                <CardDescription>Conference schedule overview</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="size-6 rounded bg-primary/10 flex items-center justify-center"><Calendar className="size-3.5 text-primary" /></div>
+                  Conferences
+                </CardTitle>
+                <CardDescription>Scheduled session overview</CardDescription>
               </div>
               {uniqueConferences.length > 3 && (
-                <a href={`/admin/conferences?projectId=${projectId}`} className="text-xs text-primary font-medium flex items-center gap-0.5 hover:underline flex-shrink-0">
-                  View All <ArrowUpRight className="h-3 w-3" />
+                <a href={`/admin/conferences?projectId=${projectId}`} className="group flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-all">
+                  Full Schedule <ArrowUpRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </a>
               )}
             </div>
           </CardHeader>
           <CardContent>
             {uniqueConferences.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
-                <Calendar className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">No conferences yet</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/10 rounded-2xl bg-white/5">
+                <Calendar className="size-10 text-muted-foreground/20 mb-3" />
+                <p className="text-sm text-muted-foreground font-medium">No sessions scheduled</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {uniqueConferences.slice(0, 5).map((conf, i) => (
-                  <div key={conf.conference_uuid || i} className="rounded-lg border bg-muted/30 p-3">
-                    <p className="font-semibold text-sm line-clamp-1">{conf.title || 'Untitled Session'}</p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5">
-                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{conf.location || 'TBD'}</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{conf.start_time?.slice(0, 5)} – {conf.end_time?.slice(0, 5)}</span>
-                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{conf.show_date}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <Badge variant="outline" className="text-xs">{conf.reserved_count} reserved</Badge>
+              <div className="grid gap-3">
+                {uniqueConferences.slice(0, 4).map((conf, i) => (
+                  <div key={conf.conference_uuid || i} className="group/item glass border-white/5 bg-white/5 p-4 rounded-xl transition-all hover:bg-white/10 hover:border-white/10">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm leading-tight line-clamp-1">{conf.title || 'Untitled Session'}</p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mt-2">
+                          <span className="flex items-center gap-1.5"><MapPin className="size-3 text-primary/40" />{conf.location || 'TBD'}</span>
+                          <span className="flex items-center gap-1.5"><Clock className="size-3 text-primary/40" />{conf.start_time?.slice(0, 5)} – {conf.end_time?.slice(0, 5)}</span>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-bold px-2.5 py-0.5 shrink-0">
+                        {conf.reserved_count} RSVP
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -208,51 +239,58 @@ export default async function Page(props: Props) {
       {/* ======================================================= */}
       {/* ROW 3 – Recent Registrations                            */}
       {/* ======================================================= */}
-      <Card>
-        <CardHeader>
+      <Card className="border-none">
+        <CardHeader className="pb-6">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-base"><Contact className="h-4 w-4 text-primary" /> Recent Registrations</CardTitle>
-              <CardDescription>Latest participants joining the event</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="size-6 rounded bg-primary/10 flex items-center justify-center"><Contact className="size-3.5 text-primary" /></div>
+                Recent Registrations
+              </CardTitle>
+              <CardDescription>Latest participants joining the ecosystem</CardDescription>
             </div>
             {(summary?.total_participants ?? 0) > 5 && (
-              <a href={`/admin/participants?projectId=${projectId}`} className="text-xs text-primary font-medium flex items-center gap-0.5 hover:underline flex-shrink-0">
-                View All <ArrowUpRight className="h-3 w-3" />
+              <a href={`/admin/participants?projectId=${projectId}`} className="group flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-all">
+                Directory <ArrowUpRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </a>
             )}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {failed ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
-                <AlertCircle className="h-6 w-6 text-destructive mb-2" />
-                <p className="text-sm text-muted-foreground">Failed to load registrations</p>
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/10 rounded-2xl bg-white/5">
+                <AlertCircle className="size-10 text-destructive/40 mb-3" />
+                <p className="text-sm text-muted-foreground font-medium">Failed to synchronize registration data</p>
               </div>
             ) : recentParticipants.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl bg-muted/5">
-                <Contact className="h-6 w-6 text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">No registrations yet</p>
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/10 rounded-2xl bg-white/5">
+                <Contact className="size-10 text-muted-foreground/20 mb-3" />
+                <p className="text-sm text-muted-foreground font-medium">Awaiting first participant...</p>
               </div>
             ) : (
-              recentParticipants.map((p, i) => (
-                <div key={p.registration_uuid || i} className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-primary">
-                      {(p.first_name?.[0] || '?').toUpperCase()}
-                    </span>
+              recentParticipants.slice(0, 6).map((p, i) => (
+                <div key={p.registration_uuid || i} className="flex items-center gap-4 glass bg-white/5 border-white/5 p-4 rounded-2xl group/user transition-all hover:bg-white/10 hover:border-white/10">
+                  <div className="size-12 rounded-xl bg-aurora-gradient p-[1px] shadow-lg shadow-primary/10">
+                    <div className="size-full rounded-[11px] bg-background flex items-center justify-center overflow-hidden">
+                      <span className="text-sm font-black text-primary group-hover/user:scale-110 transition-transform">
+                        {(p.first_name?.[0] || '?').toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-none truncate">
+                    <p className="text-sm font-bold truncate tracking-tight">
                       {p.first_name} {p.last_name}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{p.company_name || 'Independent'}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge variant="outline" className="text-xs capitalize">{p.attendee_type_code || 'General'}</Badge>
-                    <span className="text-xs text-muted-foreground hidden sm:block">
-                      {p.registered_at ? formatDistanceToNow(new Date(p.registered_at), { addSuffix: true }) : 'Recently'}
-                    </span>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 truncate mt-0.5">{p.company_name || 'Independent'}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/20 bg-primary/5 text-primary py-0 px-1.5 h-4 tracking-tighter">
+                        {p.attendee_type_code || 'Gen'}
+                      </Badge>
+                      <span className="text-[10px] font-medium text-muted-foreground/40 italic">
+                        {p.registered_at ? formatDistanceToNow(new Date(p.registered_at), { addSuffix: true }) : 'Now'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))

@@ -5,19 +5,19 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-full border border-transparent px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1.5 transition-all duration-300 backdrop-blur-md shadow-sm",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        default: "bg-primary/10 text-primary border-primary/20 shadow-primary/5",
         secondary:
-          "bg-secondary text-secondary-foreground border-secondary-foreground/10 [a&]:hover:bg-secondary/90",
+          "bg-white/10 text-foreground border-white/20 shadow-white/5",
         destructive:
-          "bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-destructive/10 text-destructive border-destructive/20 shadow-destructive/5",
         outline:
-          "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 [a&]:hover:underline",
+          "border-white/10 bg-transparent text-muted-foreground/60 hover:bg-white/5 hover:text-foreground",
+        ghost: "bg-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground",
+        link: "text-primary underline-offset-4 hover:underline bg-transparent",
       },
     },
     defaultVariants: {
