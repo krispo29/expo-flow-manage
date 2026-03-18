@@ -279,46 +279,46 @@ export default function ReportsPage() {
             <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Views</h3>
             <Button 
               variant={activeView === 'advanced-search' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start font-medium" 
+              className="w-full justify-start text-[11px] font-bold tracking-tight px-3" 
               onClick={() => setActiveView('advanced-search')}
             >
-              <Search className="mr-3 h-4 w-4" /> Advanced Search
+              <Search className="mr-2 h-4 w-4 shrink-0" /> Advanced Search
             </Button>
             <Button 
               variant={activeView === 'conference-no-hall' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start font-medium" 
+              className="w-full justify-start text-[11px] font-bold tracking-tight px-3" 
               onClick={() => setActiveView('conference-no-hall')}
             >
-              <Building2 className="mr-3 h-4 w-4" /> On Conference No Hall
+              <Building2 className="mr-2 h-4 w-4 shrink-0" /> On Conference No Hall
             </Button>
             <Button 
               variant={activeView === 'conference-summary' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start font-medium" 
+              className="w-full justify-start text-[11px] font-bold tracking-tight px-3" 
               onClick={() => setActiveView('conference-summary')}
             >
-              <FileBarChart className="mr-3 h-4 w-4" /> Conference Summary
+              <FileBarChart className="mr-2 h-4 w-4 shrink-0" /> Conference Summary
             </Button>
           </div>
 
           <div className="space-y-2">
             <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Exports Options</h3>
-            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('registrations-by-country')}>
-              <FileSpreadsheet className="mr-3 h-4 w-4" /> Registrations by Country <Download className="ml-auto h-3 w-3 opacity-50"/>
+            <Button variant="ghost" className="w-full justify-start text-[11px] font-bold tracking-tight px-3 text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('registrations-by-country')}>
+              <FileSpreadsheet className="mr-2 h-4 w-4 shrink-0" /> Registrations by Country <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
-            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('questionnaires')}>
-              <FileBarChart className="mr-3 h-4 w-4" /> Questionnaires <Download className="ml-auto h-3 w-3 opacity-50"/>
+            <Button variant="ghost" className="w-full justify-start text-[11px] font-bold tracking-tight px-3 text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('questionnaires')}>
+              <FileBarChart className="mr-2 h-4 w-4 shrink-0" /> Questionnaires <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
-            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary')}>
-              <Users className="mr-3 h-4 w-4" /> Attendees Summary <Download className="ml-auto h-3 w-3 opacity-50"/>
+            <Button variant="ghost" className="w-full justify-start text-[11px] font-bold tracking-tight px-3 text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary')}>
+              <Users className="mr-2 h-4 w-4 shrink-0" /> Attendees Summary <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
-            <Button variant="ghost" title="Attendees Summary By Questionnaire" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary-by-questionnaire')}>
-              <FileBarChart className="mr-3 h-4 w-4" /> Attendees Summary By Quest... <Download className="ml-auto h-3 w-3 opacity-50"/>
+            <Button variant="ghost" title="Attendees Summary By Questionnaire" className="w-full justify-start text-[11px] font-bold tracking-tight px-3 text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('attendees-summary-by-questionnaire')}>
+              <FileBarChart className="mr-2 h-4 w-4 shrink-0" /> Attendees Summary By Quest... <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
-            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('edm-visitors')}>
-              <Send className="mr-3 h-4 w-4" /> EDM Visitors <Download className="ml-auto h-3 w-3 opacity-50"/>
+            <Button variant="ghost" className="w-full justify-start text-[11px] font-bold tracking-tight px-3 text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('edm-visitors')}>
+              <Send className="mr-2 h-4 w-4 shrink-0" /> EDM Visitors <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
-            <Button variant="ghost" className="w-full justify-start font-normal text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('participants')}>
-              <FileText className="mr-3 h-4 w-4" /> Participants (Full) <Download className="ml-auto h-3 w-3 opacity-50"/>
+            <Button variant="ghost" className="w-full justify-start text-[11px] font-bold tracking-tight px-3 text-muted-foreground hover:text-foreground" onClick={() => openExportDialog('participants')}>
+              <FileText className="mr-2 h-4 w-4 shrink-0" /> Participants (Full) <Download className="ml-auto h-3 w-3 opacity-50"/>
             </Button>
           </div>
         </div>

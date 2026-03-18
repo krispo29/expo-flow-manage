@@ -17,9 +17,9 @@ function Input({ className, type, onChange, ...props }: React.ComponentProps<"in
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        "file:text-foreground placeholder:text-muted-foreground/40 selection:bg-primary/20 selection:text-primary bg-white/5 border-white/10 h-11 w-full min-w-0 rounded-xl border px-4 py-2 text-sm shadow-sm transition-all duration-300 outline-none backdrop-blur-sm file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-bold disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40",
+        "focus:bg-white/10 focus:border-primary/30 focus:ring-[4px] focus:ring-primary/10",
+        "aria-invalid:ring-destructive/10 aria-invalid:border-destructive/40",
         className
       )}
       onChange={handleChange}

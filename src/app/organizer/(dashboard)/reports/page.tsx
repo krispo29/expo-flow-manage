@@ -188,17 +188,17 @@ export default function ReportsPage() {
             <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Views</h3>
             <Button 
               variant={activeView === 'advanced-search' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start font-medium" 
+              className="w-full justify-start text-[11px] font-bold tracking-tight px-3" 
               onClick={() => setActiveView('advanced-search')}
             >
-              <Search className="mr-3 h-4 w-4" /> Advanced Search
+              <Search className="mr-2 h-4 w-4" /> Advanced Search
             </Button>
             <Button 
               variant={activeView === 'conference-summary' ? 'secondary' : 'ghost'} 
-              className="w-full justify-start font-medium" 
+              className="w-full justify-start text-[11px] font-bold tracking-tight px-3" 
               onClick={() => setActiveView('conference-summary')}
             >
-              <FileBarChart className="mr-3 h-4 w-4" /> Conference Summary
+              <FileBarChart className="mr-2 h-4 w-4" /> Conference Summary
             </Button>
           </div>
         </div>
@@ -491,11 +491,11 @@ export default function ReportsPage() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <div className="relative flex-1 sm:w-60">
+                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
                       <Input
                         placeholder="Search title or room..."
-                        className="pl-9 h-9"
+                        className="pl-8 h-8 text-xs bg-background shadow-none border-muted-foreground/20 focus-visible:ring-1"
                         value={conferenceKeyword}
                         onChange={(e) => setConferenceKeyword(e.target.value)}
                       />
@@ -529,16 +529,16 @@ export default function ReportsPage() {
                   <div className="rounded-md border max-h-[600px] overflow-auto">
                     <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                        <TableRow>
-                          <TableHead className="min-w-[200px]">Conference Title</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Room</TableHead>
-                          <TableHead className="text-right">Quota</TableHead>
-                          <TableHead className="text-right">Pre-Reg</TableHead>
-                          <TableHead className="text-right">On Show</TableHead>
-                          <TableHead className="text-right">Pre-Reg Show</TableHead>
-                          <TableHead className="text-right">Walk-in</TableHead>
+                        <TableRow className="bg-muted/30">
+                          <TableHead className="min-w-[200px] text-[10px] font-bold uppercase tracking-wider h-10">Conference Title</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10">Date</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10">Time</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10">Room</TableHead>
+                          <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider h-10">Quota</TableHead>
+                          <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider h-10">Pre-Reg</TableHead>
+                          <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider h-10">On Show</TableHead>
+                          <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider h-10">Pre-Reg Show</TableHead>
+                          <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider h-10">Walk-in</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
