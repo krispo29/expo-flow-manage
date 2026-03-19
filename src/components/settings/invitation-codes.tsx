@@ -9,8 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react"
+import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Building2, User, Link as LinkIcon, ShieldCheck, Power, Ticket } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 interface InvitationCodeSettingsProps {
   projectUuid: string
@@ -111,193 +113,275 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center p-20 glass rounded-3xl">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground mt-4 animate-pulse font-bold tracking-widest uppercase">Syncing tokens...</p>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Invitation Codes</CardTitle>
-            <CardDescription>Manage invitation codes for special access.</CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search company or code..."
-                className="pl-9 h-9"
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
+        <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-display">Invitation Codes</CardTitle>
+              <CardDescription className="font-medium">Manage invitation codes for special access.</CardDescription>
             </div>
-            <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Code
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {filteredInvitations.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            {searchQuery ? "No matching results found." : "No invitation codes found. Click \"Add Code\" to create one."}
-          </div>
-        ) : (
-          <div className="border rounded-md">
-            <div className="grid grid-cols-8 gap-4 p-3 font-medium text-sm bg-muted/50 border-b">
-              <div>Company</div>
-              <div>Code</div>
-              <div>Invite Link</div>
-              <div>Source</div>
-              <div>Creator</div>
-              <div>Used</div>
-              <div>Status</div>
-              <div className="text-right">Actions</div>
-            </div>
-            {paginatedInvitations.map((invite, index) => (
-              <div key={`${invite.invite_uuid}-${index}`} className="grid grid-cols-8 gap-4 p-3 text-sm items-center border-b last:border-0 hover:bg-muted/10 transition-colors">
-                <div className="font-medium">{invite.company_name}</div>
-                <div>
-                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{invite.invite_code}</code>
-                </div>
-                <div className="truncate text-xs text-muted-foreground flex items-center gap-1" title={invite.invite_link}>
-                  <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{invite.invite_link}</span>
-                </div>
-                <div className="text-muted-foreground truncate" title={invite.source}>
-                  {invite.source || '-'}
-                </div>
-                <div className="text-muted-foreground truncate" title={invite.creator_name}>
-                  {invite.creator_name || '-'}
-                </div>
-                <div className="text-muted-foreground">
-                  {invite.used_count ?? 0}
-                </div>
-                <div>
-                  <Badge variant={invite.is_active ? "default" : "secondary"} className="text-xs">
-                    {invite.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-                <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyLink(invite.invite_link)}
-                    title="Copy Link"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setEditingInvite(invite)}
-                    title="Edit"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative w-full sm:w-80 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                <Input
+                  placeholder="Search company or code..."
+                  className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                />
               </div>
-            ))}
-          </div>
-        )}
-
-        {filteredInvitations.length > itemsPerPage && (
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
-              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredInvitations.length)}</span> of <span className="font-medium">{filteredInvitations.length}</span> results
+              <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20">
+                <Plus className="h-5 w-5 mr-2" />
+                Add Code
+              </Button>
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => goToPage(1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex items-center gap-1 mx-2">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = i + 1
-                  if (totalPages > 5) {
-                    if (currentPage <= 3) pageNum = i + 1
-                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
-                    else pageNum = currentPage - 2 + i
-                  }
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          
+          {/* Mobile View: Cards */}
+          <div className="md:hidden divide-y divide-white/5">
+            {filteredInvitations.length === 0 ? (
+              <div className="text-center p-12 text-muted-foreground italic font-medium">
+                {searchQuery ? "No matching results found." : "No invitation codes found. Click \"Add Code\" to create one."}
+              </div>
+            ) : (
+              paginatedInvitations.map((invite, index) => (
+                <div key={`${invite.invite_uuid}-${index}`} className="p-6 space-y-4 hover:bg-white/5 transition-colors group">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1.5">
+                      <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
+                        {invite.company_name}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-mono tracking-tighter">
+                          {invite.invite_code}
+                        </code>
+                        <Badge variant="secondary" className="bg-white/5 border-white/5 text-[9px] font-bold py-0">USED: {invite.used_count ?? 0}</Badge>
+                      </div>
+                    </div>
+                    <Badge className={cn("rounded-full px-3 text-[10px] font-bold", invite.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
+                      {invite.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
 
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="icon"
-                      className="h-8 w-8 text-xs"
-                      onClick={() => goToPage(pageNum)}
-                    >
-                      {pageNum}
+                  <div className="grid grid-cols-1 gap-2.5 text-xs">
+                    <div className="flex items-center gap-2 text-muted-foreground/80 font-medium italic">
+                      <LinkIcon className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                      <span className="truncate">{invite.invite_link}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground/80 font-medium">
+                      <User className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                      <span className="truncate">Creator: {invite.creator_name || '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 px-4" onClick={() => copyLink(invite.invite_link)}>
+                      <Copy className="h-3.5 w-3.5 mr-2" />
+                      Copy
                     </Button>
-                  )
-                })}
-              </div>
-
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => goToPage(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
+                    <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 px-4" onClick={() => setEditingInvite(invite)}>
+                      <Edit className="h-3.5 w-3.5 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        )}
-      </CardContent>
+
+          {/* Desktop View: Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-white/5">
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest pl-6">Company</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Invite Link</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Metadata</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Used</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
+                  <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInvitations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-24 italic text-muted-foreground font-medium">
+                      {searchQuery ? "No matching results found." : "No invitation codes found. Click \"Add Code\" to create one."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedInvitations.map((invite, index) => (
+                    <TableRow key={`${invite.invite_uuid}-${index}`} className="border-white/5 hover:bg-white/5 transition-colors group">
+                      <TableCell className="pl-6">
+                        <div className="font-bold text-sm text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-primary/40" />
+                          {invite.company_name}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono uppercase tracking-tighter">
+                          {invite.invite_code}
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-[11px] font-medium text-foreground/60 italic max-w-[200px] truncate" title={invite.invite_link}>
+                          <ExternalLink className="h-3 w-3 opacity-40 shrink-0" />
+                          <span className="truncate">{invite.invite_link}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold opacity-60">SOURCE: {invite.source || '-'}</span>
+                          <span className="text-[9px] font-medium opacity-30 uppercase tracking-widest">BY: {invite.creator_name || '-'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-[10px] font-mono font-bold opacity-40">{invite.used_count ?? 0}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={cn("rounded-full px-2 py-0 text-[9px] font-bold border", invite.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
+                          {invite.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-1.5">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 rounded-full hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" 
+                            onClick={() => copyLink(invite.invite_link)}
+                            title="Copy Link"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 rounded-full hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" 
+                            onClick={() => setEditingInvite(invite)}
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {filteredInvitations.length > itemsPerPage && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/5 bg-white/5">
+              <div className="text-sm text-muted-foreground italic font-medium">
+                Showing <span className="text-foreground">{startIndex + 1}</span> to <span className="text-foreground">{Math.min(startIndex + itemsPerPage, filteredInvitations.length)}</span> of <span className="text-foreground font-bold">{filteredInvitations.length}</span> results
+              </div>
+              
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex items-center gap-1 mx-2">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = i + 1
+                    if (totalPages > 5) {
+                      if (currentPage <= 3) pageNum = i + 1
+                      else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                      else pageNum = currentPage - 2 + i
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="icon"
+                        className={cn("h-9 w-9 rounded-full text-xs font-bold", currentPage === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
+                        onClick={() => goToPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Invitation Code</DialogTitle>
-            <DialogDescription>Create a new invitation code for a company.</DialogDescription>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Plus className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Add Invitation Code</DialogTitle>
+                <DialogDescription className="font-medium italic">Create a new invitation code for a company.</DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Company Name</Label>
-              <Input value={newInvite.company_name} onChange={(e) => setNewInvite({ ...newInvite, company_name: e.target.value })} placeholder="e.g. THE DEFT" />
+          <div className="p-8 grid gap-6">
+            <div className="space-y-2.5">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
+              <Input value={newInvite.company_name} onChange={(e) => setNewInvite({ ...newInvite, company_name: e.target.value })} placeholder="e.g. THE DEFT" className="h-12 bg-white/5 border-white/10 rounded-xl" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Create Code
             </Button>
           </DialogFooter>
@@ -306,36 +390,46 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
 
       {/* Edit Dialog */}
       <Dialog open={!!editingInvite} onOpenChange={(open) => !open && setEditingInvite(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Invitation Code</DialogTitle>
-            <DialogDescription>Update the invitation code details.</DialogDescription>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Edit className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Edit Invitation Code</DialogTitle>
+                <DialogDescription className="font-medium italic">Update the invitation code details.</DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           {editingInvite && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label>Company Name</Label>
-                <Input value={editingInvite.company_name} onChange={(e) => setEditingInvite({ ...editingInvite, company_name: e.target.value })} />
+            <div className="p-8 grid gap-6">
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
+                <Input value={editingInvite.company_name} onChange={(e) => setEditingInvite({ ...editingInvite, company_name: e.target.value })} className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="grid gap-2">
-                <Label>Invite Code</Label>
-                <Input value={editingInvite.invite_code} onChange={(e) => setEditingInvite({ ...editingInvite, invite_code: e.target.value })} />
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Invite Code</Label>
+                <div className="relative">
+                  <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
+                  <Input value={editingInvite.invite_code} onChange={(e) => setEditingInvite({ ...editingInvite, invite_code: e.target.value })} className="h-12 pl-11 bg-white/5 border-white/10 rounded-xl font-mono uppercase" />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between p-4 glass rounded-2xl border-white/5">
+                <Label className="text-xs font-bold uppercase tracking-tight">Active Status</Label>
                 <Switch checked={editingInvite.is_active} onCheckedChange={(v) => setEditingInvite({ ...editingInvite, is_active: v })} />
-                <Label>Active</Label>
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingInvite(null)}>Cancel</Button>
-            <Button onClick={handleUpdate} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setEditingInvite(null)}>Cancel</Button>
+            <Button onClick={handleUpdate} disabled={saving} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Power className="mr-2 h-4 w-4" />}
               Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   )
 }

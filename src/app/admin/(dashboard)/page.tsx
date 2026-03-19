@@ -59,14 +59,14 @@ export default async function Page(props: Props) {
   }))
 
   return (
-    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="size-2 rounded-full bg-primary animate-pulse" />
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60">Live Analytics</span>
           </div>
-          <h2 className="text-4xl font-extrabold tracking-tight font-display">Dashboard Overview</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight font-display">Dashboard Overview</h2>
           <p className="text-muted-foreground mt-1 text-sm font-medium">Redefining event management with real-time insights.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export default async function Page(props: Props) {
       {/* ======================================================= */}
       {/* ROW 1 – Key Metric Cards                               */}
       {/* ======================================================= */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Exhibitors */}
         <Card className="relative overflow-hidden group/card border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-none bg-transparent">
@@ -165,7 +165,7 @@ export default async function Page(props: Props) {
       {/* ======================================================= */}
       {/* ROW 2 – Attendee Type Chart + Upcoming Conferences      */}
       {/* ======================================================= */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-3 sm:gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-7">
 
         {/* Attendee Type Chart */}
         <Card className="lg:col-span-3 border-none">
@@ -257,7 +257,7 @@ export default async function Page(props: Props) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {failed ? (
               <div className="col-span-full flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/10 rounded-2xl bg-white/5">
                 <AlertCircle className="size-10 text-destructive/40 mb-3" />

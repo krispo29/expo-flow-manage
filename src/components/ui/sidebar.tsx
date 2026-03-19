@@ -100,8 +100,8 @@ function SidebarProvider({
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    globalThis.addEventListener("keydown", handleKeyDown)
+    return () => globalThis.removeEventListener("keydown", handleKeyDown)
   }, [toggleSidebar])
 
   const state = open ? "expanded" : "collapsed"
@@ -331,7 +331,7 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-header"
       data-sidebar="header"
-      className={cn("flex flex-col gap-4 p-4", className)}
+      className={cn("flex flex-col gap-4 p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:items-center", className)}
       {...props}
     />
   )
@@ -342,7 +342,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-footer"
       data-sidebar="footer"
-      className={cn("flex flex-col gap-4 p-4", className)}
+      className={cn("flex flex-col gap-4 p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:items-center", className)}
       {...props}
     />
   )
@@ -368,7 +368,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-4 overflow-auto scrollbar-hide group-data-[collapsible=icon]:overflow-hidden py-2",
+        "flex min-h-0 flex-1 flex-col gap-4 overflow-auto scrollbar-hide group-data-[collapsible=icon]:overflow-y-auto py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center",
         className
       )}
       {...props}
@@ -467,7 +467,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-left text-sm font-medium outline-hidden ring-sidebar-ring transition-all duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:shadow-lg data-[active=true]:shadow-sidebar-primary/30 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:transition-transform group-hover/menu-item:[&>svg]:scale-110",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-left text-sm font-medium outline-hidden ring-sidebar-ring transition-all duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:shadow-lg data-[active=true]:shadow-sidebar-primary/30 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto [&>span:last-child]:group-data-[collapsible=icon]:hidden [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:transition-transform group-hover/menu-item:[&>svg]:scale-110",
   {
     variants: {
       variant: {
@@ -532,7 +532,7 @@ function SidebarMenuButton({
         side="right"
         align="center"
         hidden={state !== "collapsed" || isMobile}
-        className="glass-elevated border-none px-3 py-1.5 text-xs font-semibold"
+        className="glass-elevated border-none px-3 py-1.5 text-xs font-semibold text-black"
         {...tooltip}
       />
     </Tooltip>
@@ -593,8 +593,10 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
+  const [width, setWidth] = React.useState("50%")
+  
+  React.useEffect(() => {
+    setWidth(`${Math.floor(Math.random() * 40) + 50}%`)
   }, [])
 
   return (

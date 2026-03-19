@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useMemo, useState, Suspense } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Upload, Loader2, FileDown, Eye, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { Upload, Loader2, FileDown, Eye, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Info, Users, User, Building2, Ticket, ShieldCheck, Mail, FileText, CalendarDays, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getImportEvents,
@@ -35,6 +35,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
+import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
 
 type ImportKind =
   | 'exhibitors'
@@ -53,7 +56,7 @@ const TEMPLATE_LINKS = {
   staff: 'http://static.expoflow.co/template/Staff_Template.xlsx',
 }
 
-export default function ImportsPage() {
+function ImportsContent() {
   const [events, setEvents] = useState<ImportEvent[]>([])
   const [exhibitors, setExhibitors] = useState<ImportExhibitor[]>([])
   const [histories, setHistories] = useState<ImportHistory[]>([])
@@ -171,6 +174,24 @@ export default function ImportsPage() {
     [exhibitors],
   )
 
+  const eventOptions = useMemo(
+    () =>
+      events.map((item) => ({
+        value: item.event_uuid,
+        label: item.event_name,
+      })),
+    [events],
+  )
+
+  const attendeeTypeOptions = useMemo(
+    () =>
+      attendeeTypes.map((item) => ({
+        value: item.type_code,
+        label: `${item.type_name} (${item.type_code})`,
+      })),
+    [attendeeTypes],
+  )
+
   const setFile = (kind: ImportKind, file: File | null) => {
     setFiles((prev) => ({ ...prev, [kind]: file }))
   }
@@ -251,362 +272,535 @@ export default function ImportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Imports</h1>
-        <p className="text-muted-foreground">Bulk import data by template for admin project.</p>
+        <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Imports</h1>
+        <p className="text-muted-foreground mt-1 font-sans">Bulk import data by template for admin project.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Exhibitors</CardTitle>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Import Exhibitors */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Exhibitors</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Label>Event</Label>
-            <Select value={eventUuids.exhibitors} onValueChange={(val) => setEventUuids(prev => ({ ...prev, exhibitors: val }))}>
-              <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
-              <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
-            </Select>
-            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('exhibitors', e.target.files?.[0] || null)} />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => void runImport('exhibitors')} disabled={loading.exhibitors}>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Selection</Label>
+              <Combobox
+                options={eventOptions}
+                value={eventUuids.exhibitors}
+                onValueChange={(val) => setEventUuids(prev => ({ ...prev, exhibitors: val }))}
+                placeholder="Select event"
+                emptyMessage="No events found"
+                triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
+              <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('exhibitors', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-primary/10 file:text-primary file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('exhibitors')} disabled={loading.exhibitors}>
                 {loading.exhibitors ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
-              <Button asChild variant="outline"><a href={TEMPLATE_LINKS.exhibitors} target="_blank" rel="noreferrer"><FileDown className="mr-2 h-4 w-4" />Template</a></Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.exhibitors} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Exhibitor Members</CardTitle>
+        {/* Import Exhibitor Members */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                <Users className="h-5 w-5 text-emerald-500" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Exhibitor Members</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Label>Exhibitor</Label>
-            <Select value={exhibitorUuids['exhibitor-members']} onValueChange={(val) => setExhibitorUuids(prev => ({ ...prev, 'exhibitor-members': val }))}>
-              <SelectTrigger><SelectValue placeholder="Select exhibitor" /></SelectTrigger>
-              <SelectContent>{exhibitorOptions.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}</SelectContent>
-            </Select>
-            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('exhibitor-members', e.target.files?.[0] || null)} />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => void runImport('exhibitor-members')} disabled={loading['exhibitor-members']}>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Exhibitor Selection</Label>
+              <Combobox
+                options={exhibitorOptions}
+                value={exhibitorUuids['exhibitor-members']}
+                onValueChange={(val) => setExhibitorUuids(prev => ({ ...prev, 'exhibitor-members': val }))}
+                placeholder="Select exhibitor"
+                emptyMessage="No exhibitors found"
+                triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
+              <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('exhibitor-members', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-emerald-500/10 file:text-emerald-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('exhibitor-members')} disabled={loading['exhibitor-members']}>
                 {loading['exhibitor-members'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
-              <Button asChild variant="outline"><a href={TEMPLATE_LINKS.exhibitorMembers} target="_blank" rel="noreferrer"><FileDown className="mr-2 h-4 w-4" />Template</a></Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.exhibitorMembers} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Registrations</CardTitle>
+        {/* Import Registrations */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                <User className="h-5 w-5 text-blue-500" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Registrations</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Label>Event</Label>
-            <Select value={eventUuids.registrations} onValueChange={(val) => setEventUuids(prev => ({ ...prev, registrations: val }))}>
-              <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
-              <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
-            </Select>
-
-            <Label>Attendee Type</Label>
-            <Select value={attendeeTypeCodes.registrations} onValueChange={(val) => setAttendeeTypeCodes((prev: Record<string, string>) => ({ ...prev, registrations: val }))}>
-              <SelectTrigger><SelectValue placeholder="Select attendee type" /></SelectTrigger>
-              <SelectContent>
-                {attendeeTypes.map((t) => (
-                  <SelectItem key={t.type_code} value={t.type_code}>
-                    {t.type_name} ({t.type_code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setFile('registrations', e.target.files?.[0] || null)} />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => void runImport('registrations')} disabled={loading.registrations}>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event</Label>
+                <Combobox
+                  options={eventOptions}
+                  value={eventUuids.registrations}
+                  onValueChange={(val) => setEventUuids(prev => ({ ...prev, registrations: val }))}
+                  placeholder="Select"
+                  emptyMessage="No events found"
+                  triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Type</Label>
+                <Combobox
+                  options={attendeeTypeOptions}
+                  value={attendeeTypeCodes.registrations}
+                  onValueChange={(val) => setAttendeeTypeCodes((prev: Record<string, string>) => ({ ...prev, registrations: val }))}
+                  placeholder="Select"
+                  emptyMessage="No attendee types found"
+                  triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .csv)</Label>
+              <Input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setFile('registrations', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-blue-500/10 file:text-blue-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('registrations')} disabled={loading.registrations}>
                 {loading.registrations ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
-              <Button asChild variant="outline"><a href={TEMPLATE_LINKS.registrations} target="_blank" rel="noreferrer"><FileDown className="mr-2 h-4 w-4" />Template</a></Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.registrations} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Staff</CardTitle>
+        {/* Import Staff */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                <ShieldCheck className="h-5 w-5 text-purple-500" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Staff</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('staff', e.target.files?.[0] || null)} />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => void runImport('staff')} disabled={loading.staff}>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
+              <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('staff', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-purple-500/10 file:text-purple-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('staff')} disabled={loading.staff}>
                 {loading.staff ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
-              <Button asChild variant="outline"><a href={TEMPLATE_LINKS.staff} target="_blank" rel="noreferrer"><FileDown className="mr-2 h-4 w-4" />Template</a></Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.staff} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Conferences</CardTitle>
+        {/* Import Conferences */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                <CalendarDays className="h-5 w-5 text-amber-500" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Conferences</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Label>Event</Label>
-            <Select value={eventUuids.conferences} onValueChange={(val) => setEventUuids(prev => ({ ...prev, conferences: val }))}>
-              <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
-              <SelectContent>{events.map((e) => <SelectItem key={e.event_uuid} value={e.event_uuid}>{e.event_name}</SelectItem>)}</SelectContent>
-            </Select>
-            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('conferences', e.target.files?.[0] || null)} />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => void runImport('conferences')} disabled={loading.conferences}>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Selection</Label>
+              <Combobox
+                options={eventOptions}
+                value={eventUuids.conferences}
+                onValueChange={(val) => setEventUuids(prev => ({ ...prev, conferences: val }))}
+                placeholder="Select event"
+                emptyMessage="No events found"
+                triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
+              <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('conferences', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-amber-500/10 file:text-amber-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('conferences')} disabled={loading.conferences}>
                 {loading.conferences ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
-              <Button asChild variant="outline"><a href={TEMPLATE_LINKS.conferences} target="_blank" rel="noreferrer"><FileDown className="mr-2 h-4 w-4" />Template</a></Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.conferences} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Invite Codes</CardTitle>
+        {/* Import Invite Codes */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                <Ticket className="h-5 w-5 text-rose-500" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Invite Codes</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('invite-codes', e.target.files?.[0] || null)} />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => void runImport('invite-codes')} disabled={loading['invite-codes']}>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
+              <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('invite-codes', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-rose-500/10 file:text-rose-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('invite-codes')} disabled={loading['invite-codes']}>
                 {loading['invite-codes'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
-              <Button asChild variant="outline"><a href={TEMPLATE_LINKS.inviteCodes} target="_blank" rel="noreferrer"><FileDown className="mr-2 h-4 w-4" />Template</a></Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.inviteCodes} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold tracking-tight">Import History</h2>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>File Name</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Total Rows</TableHead>
-                <TableHead>Success</TableHead>
-                <TableHead>Failed</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {histories.length > 0 ? (
-                histories.map((h) => (
-                  <TableRow key={h.import_uuid}>
-                    <TableCell className="font-medium capitalize text-xs">
-                      {h.import_type}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={h.original_file_name}>
-                      <a href={h.original_file_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                        {h.original_file_name}
-                      </a>
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {format(new Date(h.created_at), 'dd MMM yyyy HH:mm')}
-                    </TableCell>
-                    <TableCell>{h.total_rows}</TableCell>
-                    <TableCell className="text-emerald-600 font-medium">{h.success_count}</TableCell>
-                    <TableCell className="text-rose-600 font-medium">{h.failed_count}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          title="View Details"
-                          onClick={async () => {
-                            setViewDetailUuid(h.import_uuid)
-                            setDetailLoading(true)
-                            const res = await getImportHistory(h.import_uuid)
-                            if (res.success) {
-                              setDetailData(res.data!)
-                            } else {
-                              toast.error(res.error || 'Failed to fetch details')
-                            }
-                            setDetailLoading(false)
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+      <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
+        <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+              <History className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-display">Import History</CardTitle>
+              <CardDescription className="font-medium italic">Tracking system-wide data ingestion events.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-white/5">
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest pl-6">Type</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Temporal Node</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">File Identity</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Success</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Failed</TableHead>
+                  <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {histories.length > 0 ? (
+                  histories.map((h) => (
+                    <TableRow key={h.import_uuid} className="border-white/5 hover:bg-white/5 transition-colors group">
+                      <TableCell className="pl-6">
+                        <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{h.import_type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold opacity-60 uppercase">{format(new Date(h.created_at), 'MMM d, yyyy')}</span>
+                          <span className="text-[9px] font-mono font-medium opacity-30 tracking-widest">{format(new Date(h.created_at), 'HH:mm:ss')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[240px] truncate" title={h.original_file_name}>
+                          <a href={h.original_file_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-primary/80 hover:text-primary transition-colors">
+                            {h.original_file_name}
+                          </a>
+                          <div className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-tighter mt-0.5">ROWS: {h.total_rows}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-display font-black text-emerald-500">{h.success_count}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className={cn("text-sm font-display font-black", h.failed_count > 0 ? 'text-red-500' : 'text-muted-foreground/20')}>{h.failed_count}</span>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary transition-all"
+                            title="View Details"
+                            onClick={async () => {
+                              setViewDetailUuid(h.import_uuid)
+                              setDetailLoading(true)
+                              const res = await getImportHistory(h.import_uuid)
+                              if (res.success) {
+                                setDetailData(res.data!)
+                              } else {
+                                toast.error(res.error || 'Failed to fetch details')
+                              }
+                              setDetailLoading(false)
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
 
-                        {h.import_type === 'registrations' && (
-                          <>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={async () => {
-                                setViewCodesUuid(h.import_uuid)
-                                setViewSearch('')
-                                setViewLoading(true)
-                                const codesRes = await getImportHistoryCodes(h.import_uuid)
-                                if (codesRes.success) {
-                                  setViewCodesData(codesRes.data)
-                                } else {
-                                  toast.error(codesRes.error || 'Failed to fetch codes')
-                                }
-                                setViewLoading(false)
-                              }}
-                            >
-                              Codes
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => {
-                                window.open(`/api/export/import-history-codes?uuid=${h.import_uuid}`, '_blank')
-                              }}
-                            >
-                              <FileDown className="mr-2 h-4 w-4" />
-                              Export
-                            </Button>
-                          </>
-                        )}
+                          {h.import_type === 'registrations' && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-9 px-4 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold text-[10px] uppercase tracking-widest"
+                                onClick={async () => {
+                                  setViewCodesUuid(h.import_uuid)
+                                  setViewSearch('')
+                                  setViewLoading(true)
+                                  const codesRes = await getImportHistoryCodes(h.import_uuid)
+                                  if (codesRes.success) {
+                                    setViewCodesData(codesRes.data)
+                                  } else {
+                                    toast.error(codesRes.error || 'Failed to fetch codes')
+                                  }
+                                  setViewLoading(false)
+                                }}
+                              >
+                                Codes
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold transition-all"
+                                onClick={() => {
+                                  window.open(`/api/export/import-history-codes?uuid=${h.import_uuid}`, '_blank')
+                                }}
+                                title="Export Codes"
+                              >
+                                <FileDown className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                        <div className="group-hover:hidden flex justify-end">
+                           <Badge variant="outline" className="text-[8px] font-black tracking-widest opacity-20 border-white/10">ANALYSIS</Badge>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-48 text-center py-24 glass m-6 rounded-3xl border-dashed">
+                      <div className="flex flex-col items-center gap-2">
+                        <History className="h-10 w-10 text-primary/20" />
+                        <p className="font-display font-bold text-muted-foreground">No ingestion history captured.</p>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No import history found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
 
       <Dialog open={!!viewDetailUuid} onOpenChange={(open) => !open && setViewDetailUuid(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Details</DialogTitle>
-            <DialogDescription>Full summary of the import operation.</DialogDescription>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Info className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Import Intelligence</DialogTitle>
+                <DialogDescription className="font-medium italic">Deep analysis of the ingestion pipeline.</DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="py-4">
+          <div className="p-8">
             {detailLoading ? (
-              <div className="flex items-center justify-center h-24">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="flex flex-col items-center justify-center h-48 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="text-xs font-bold tracking-widest uppercase opacity-40">Decrypting metadata...</span>
               </div>
             ) : detailData ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase">Type</Label>
-                    <p className="font-medium capitalize">{detailData.import_type}</p>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/40">Protocol Type</Label>
+                    <p className="font-bold text-sm capitalize">{detailData.import_type}</p>
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase">Date</Label>
-                    <p className="font-medium">{format(new Date(detailData.created_at), 'dd MMM yyyy HH:mm')}</p>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/40">Temporal Node</Label>
+                    <p className="font-bold text-sm">{format(new Date(detailData.created_at), 'dd MMM yyyy HH:mm')}</p>
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase">Total Rows</Label>
-                    <p className="font-medium text-lg">{detailData.total_rows}</p>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/40">Payload Volume</Label>
+                    <p className="font-display font-black text-2xl text-primary">{detailData.total_rows}</p>
                   </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <Label className="text-xs text-muted-foreground uppercase text-emerald-600">Success</Label>
-                      <p className="font-medium text-lg text-emerald-600">{detailData.success_count}</p>
+                  <div className="flex gap-6">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/60">Success</Label>
+                      <p className="font-display font-black text-2xl text-emerald-500">{detailData.success_count}</p>
                     </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground uppercase text-rose-600">Failed</Label>
-                      <p className="font-medium text-lg text-rose-600">{detailData.failed_count}</p>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-rose-500/60">Failed</Label>
+                      <p className={cn("font-display font-black text-2xl", detailData.failed_count > 0 ? "text-rose-500" : "text-muted-foreground/20")}>{detailData.failed_count}</p>
                     </div>
                   </div>
                 </div>
-                <div className="pt-2 border-t">
-                  <Label className="text-xs text-muted-foreground uppercase">Original File</Label>
-                  <p className="font-medium break-all">{detailData.original_file_name}</p>
-                  <Button variant="link" className="px-0 h-auto text-primary" asChild>
-                    <a href={detailData.original_file_url} target="_blank" rel="noreferrer">Download original file</a>
-                  </Button>
+                <Separator className="bg-white/5" />
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/40">Artifact ID</Label>
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/5 group transition-all hover:bg-white/10">
+                    <p className="text-xs font-mono font-bold break-all leading-relaxed">{detailData.original_file_name}</p>
+                    <Button variant="link" className="px-0 h-auto text-primary text-[10px] font-bold uppercase tracking-widest mt-2 group-hover:pl-1 transition-all" asChild>
+                      <a href={detailData.original_file_url} target="_blank" rel="noreferrer">
+                        Access Source File <ChevronRight className="inline h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase">Created By</Label>
-                  <p className="font-medium">{detailData.created_by}</p>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/40">Operator</Label>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary/60" />
+                    <p className="text-sm font-bold opacity-80">{detailData.created_by}</p>
+                  </div>
                 </div>
               </div>
             ) : (
-              <p className="text-center py-4 text-muted-foreground">Failed to load details.</p>
+              <div className="text-center py-12">
+                <AlertCircle className="h-10 w-10 text-red-500/20 mx-auto mb-3" />
+                <p className="text-sm font-bold opacity-40">Pipeline failure: Metadata unreachable.</p>
+              </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewDetailUuid(null)}>Close</Button>
+          <DialogFooter className="p-6 bg-white/5 border-t border-white/10">
+            <Button variant="ghost" className="rounded-2xl h-11 w-full font-bold text-xs uppercase tracking-widest" onClick={() => setViewDetailUuid(null)}>Close Pipeline</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!viewCodesUuid} onOpenChange={(open) => !open && setViewCodesUuid(null)}>
-        <DialogContent className="sm:max-w-5xl p-0 overflow-hidden gap-0">
-          <DialogHeader className="p-6 pb-0">
-            <div className="flex items-center justify-between">
+        <DialogContent className="glass sm:max-w-5xl border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden flex flex-col h-[85vh]">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Ticket className="h-6 w-6 text-primary" />
+              </div>
               <div>
-                <DialogTitle className="text-2xl font-bold tracking-tight">Imported Codes</DialogTitle>
-                <DialogDescription className="text-muted-foreground mt-1">
-                  Showing {filteredCodes.length} codes generated for this session.
+                <DialogTitle className="text-2xl font-display font-bold">Imported Intelligence</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Showing <span className="text-foreground font-bold">{filteredCodes.length} nodes</span> synthesized in this operation.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
           
-          <div className="px-6 py-4 border-b bg-muted/30 flex items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="px-8 py-4 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+            <div className="relative flex-1 w-full sm:max-w-md group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
               <Input 
-                placeholder="Search by name, email, or code..." 
-                className="pl-9 bg-background shadow-sm border-muted-foreground/20 focus-visible:ring-primary/30 transition-all"
+                placeholder="Search Matrix: Name, Email, Code..." 
+                className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-sm"
                 value={viewSearch} 
                 onChange={(e) => setViewSearch(e.target.value)}
               />
             </div>
             
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <span>Showing</span>
-              <span className="text-foreground font-semibold">
-                {Math.min(filteredCodes.length, (viewPage - 1) * viewLimit + 1)} - {Math.min(filteredCodes.length, viewPage * viewLimit)}
-              </span>
-              <span>of</span>
-              <span className="text-foreground font-semibold">{filteredCodes.length}</span>
+            <div className="flex items-center gap-3">
+              <div className="px-4 py-2 glass rounded-xl border-white/10 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <span className="text-foreground">
+                  {Math.min(filteredCodes.length, (viewPage - 1) * viewLimit + 1)}-{Math.min(filteredCodes.length, viewPage * viewLimit)}
+                </span> / {filteredCodes.length}
+              </div>
+              {viewCodesUuid && (
+                <Button 
+                  size="sm"
+                  className="btn-aurora rounded-xl h-10 px-5 font-bold text-xs shadow-lg shadow-primary/20"
+                  onClick={() => {
+                    window.open(`/api/export/import-history-codes?uuid=${viewCodesUuid}`, '_blank')
+                  }}
+                >
+                  <FileDown className="mr-2 h-4 w-4" /> Export All
+                </Button>
+              )}
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="overflow-auto max-h-[50vh] min-h-[400px]">
+          <div className="flex-1 overflow-hidden flex flex-col bg-white/5">
+            <div className="overflow-auto flex-1 scrollbar-hide">
               <Table>
-                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur z-10 border-b">
+                <TableHeader className="sticky top-0 bg-background/50 backdrop-blur-md z-10 border-b border-white/10">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[200px] font-semibold">First Name</TableHead>
-                    <TableHead className="w-[200px] font-semibold">Last Name</TableHead>
-                    <TableHead className="font-semibold">Email</TableHead>
-                    <TableHead className="w-[180px] font-semibold">Code</TableHead>
+                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">Participant Identity</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Communication Channel</TableHead>
+                    <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest pr-8">Synthesized Code</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {viewLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-64 text-center">
-                        <div className="flex flex-col items-center justify-center gap-3">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm text-muted-foreground animate-pulse">Loading codes...</p>
+                      <TableCell colSpan={3} className="h-64 text-center py-24">
+                        <div className="flex flex-col items-center justify-center gap-4">
+                          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                          <p className="text-xs font-bold tracking-widest uppercase opacity-40 animate-pulse">Scanning records...</p>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : paginatedCodes.length > 0 ? (
                     paginatedCodes.map((d) => (
-                      <TableRow key={d.code} className="group hover:bg-muted/50 transition-colors">
-                        <TableCell className="font-medium">{d.first_name}</TableCell>
-                        <TableCell className="font-medium">{d.last_name}</TableCell>
-                        <TableCell className="text-muted-foreground">{d.email}</TableCell>
-                        <TableCell>
-                          <span className="px-2 py-1 rounded bg-secondary text-secondary-foreground font-mono text-xs tabular-nums group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <TableRow key={d.code} className="group border-white/5 hover:bg-white/5 transition-colors">
+                        <TableCell className="pl-8 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">
+                              {d.first_name[0]}{d.last_name[0]}
+                            </div>
+                            <span className="font-bold text-sm group-hover:text-primary transition-colors">{d.first_name} {d.last_name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm font-medium italic">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3 opacity-40" />
+                            {d.email}
+                          </div>
+                        </TableCell>
+                        <TableCell className="pr-8">
+                          <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-black tracking-widest border border-primary/20 group-hover:shadow-glow-sm transition-all tabular-nums uppercase">
                             {d.code}
                           </span>
                         </TableCell>
@@ -614,13 +808,10 @@ export default function ImportsPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-64 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                          <div className="p-3 rounded-full bg-muted">
-                            <Search className="h-6 w-6 opacity-20" />
-                          </div>
-                          <p className="font-medium text-foreground">No codes found</p>
-                          <p className="text-sm">Try adjusting your search criteria</p>
+                      <TableCell colSpan={3} className="h-64 text-center py-24">
+                        <div className="flex flex-col items-center justify-center gap-4 glass m-8 rounded-3xl border-dashed">
+                          <Search className="h-10 w-10 text-primary/20" />
+                          <p className="font-display font-bold opacity-40">No records found in current matrix.</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -630,63 +821,62 @@ export default function ImportsPage() {
             </div>
             
             {/* Pagination UI */}
-            <div className="p-4 border-t flex items-center justify-between bg-muted/20">
+            <div className="p-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between bg-white/5 gap-4 shrink-0">
               <div className="flex items-center gap-1.5">
                 <Button 
-                  variant="outline" size="icon" className="h-8 w-8" 
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
                   onClick={() => setViewPage(1)} disabled={viewPage === 1}
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
                 <Button 
-                  variant="outline" size="icon" className="h-8 w-8" 
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
                   onClick={() => setViewPage(p => Math.max(1, p - 1))} disabled={viewPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
-                <div className="flex items-center gap-1 px-2 mx-1">
-                  <span className="text-sm font-medium">Page</span>
-                  <span className="text-sm font-bold bg-primary/10 text-primary px-2 py-0.5 rounded min-w-[24px] text-center">
+                <div className="flex items-center gap-2 mx-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">Page</span>
+                  <span className="text-sm font-black text-foreground">
                     {viewPage}
                   </span>
-                  <span className="text-sm font-medium text-muted-foreground">of {totalPages || 1}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">of {totalPages || 1}</span>
                 </div>
 
                 <Button 
-                  variant="outline" size="icon" className="h-8 w-8" 
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
                   onClick={() => setViewPage(p => Math.min(totalPages, p + 1))} disabled={viewPage === totalPages || totalPages === 0}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 <Button 
-                  variant="outline" size="icon" className="h-8 w-8" 
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
                   onClick={() => setViewPage(totalPages)} disabled={viewPage === totalPages || totalPages === 0}
                 >
                   <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={() => setViewCodesUuid(null)}>
-                  Close
-                </Button>
-                {viewCodesUuid && (
-                  <Button 
-                    size="sm"
-                    className="shadow-lg shadow-primary/20"
-                    onClick={() => {
-                      window.open(`/api/export/import-history-codes?uuid=${viewCodesUuid}`, '_blank')
-                    }}
-                  >
-                    <FileDown className="mr-2 h-4 w-4" /> Export All
-                  </Button>
-                )}
-              </div>
+              <Button variant="ghost" className="rounded-xl h-10 px-8 font-bold text-xs uppercase tracking-widest" onClick={() => setViewCodesUuid(null)}>
+                Close Matrix
+              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function ImportsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    }>
+      <ImportsContent />
+    </Suspense>
   )
 }

@@ -55,16 +55,16 @@ export default async function Page(props: Props) {
   }))
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard Overview</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Dashboard Overview</h2>
         <p className="text-muted-foreground font-medium">Welcome back. Here is what is happening with your project.</p>
       </div>
 
       {/* ======================================================= */}
       {/* ROW 1 – Key Metric Cards                               */}
       {/* ======================================================= */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Exhibitors */}
         <Card className="relative overflow-hidden border-t-4 border-t-blue-500 shadow-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-transparent border-none px-6 pt-6">
@@ -146,7 +146,7 @@ export default async function Page(props: Props) {
       {/* ======================================================= */}
       {/* ROW 2 – Attendee Type Chart + Upcoming Conferences      */}
       {/* ======================================================= */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-7">
 
         {/* Attendee Type Chart */}
         <Card className="lg:col-span-3 shadow-sm border-none ring-1 ring-border/50 overflow-hidden">
@@ -256,7 +256,7 @@ export default async function Page(props: Props) {
                 <p className="text-sm font-medium text-muted-foreground">No registrations yet</p>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {recentParticipants.map((p, i) => (
                   <div key={p.registration_uuid || i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-accent/50 transition-colors border border-transparent hover:border-border/40">
                     <div className="h-11 w-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center flex-shrink-0 shadow-sm">

@@ -92,7 +92,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                 <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-lg shadow-primary/20 transition-transform duration-500 group-hover:scale-110">
                   <Sparkles className="size-5" />
                 </div>
-                <div className="grid flex-1 text-left leading-tight ml-3">
+                <div className="grid flex-1 text-left leading-tight ml-3 group-data-[collapsible=icon]:hidden">
                   <span className="truncate font-bold text-[15px] tracking-tight text-sidebar-foreground">Organizer</span>
                   <span className="truncate text-[10px] text-sidebar-foreground/40 font-bold uppercase tracking-[0.15em] mt-1">Management Hub</span>
                 </div>
@@ -108,13 +108,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-lg shadow-primary/20 transition-transform duration-500 group-hover:scale-110">
                       <Frame className="size-5" />
                     </div>
-                    <div className="grid flex-1 text-left leading-tight ml-3">
+                    <div className="grid flex-1 text-left leading-tight ml-3 group-data-[collapsible=icon]:hidden">
                       <span className="truncate text-[9px] text-sidebar-foreground/40 font-bold uppercase tracking-[0.15em] mb-1">Active Project</span>
                       <span className="truncate font-bold text-[15px] tracking-tight text-sidebar-foreground">
                         {activeProject?.name || "Select Project"}
                       </span>
                     </div>
-                    <ChevronsUpDown className="ml-auto size-4 opacity-30" />
+                    <ChevronsUpDown className="ml-auto size-4 opacity-30 group-data-[collapsible=icon]:hidden" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 glass-elevated border-none p-2" align="start">
@@ -138,7 +138,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
         </SidebarMenu>
       </SidebarHeader>
       
-      <SidebarContent className="scrollbar-hide px-2">
+      <SidebarContent className="scrollbar-hide px-2 group-data-[collapsible=icon]:px-0">
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -387,9 +387,9 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
       </SidebarContent>
 
       <SidebarFooter className="p-4 gap-4">
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:justify-center">
            <ModeToggle />
-           <span className="text-[10px] font-bold text-sidebar-foreground/20 uppercase tracking-widest">v2.1.0</span>
+           <span className="text-[10px] font-bold text-sidebar-foreground/20 uppercase tracking-widest group-data-[collapsible=icon]:hidden">v2.1.0</span>
         </div>
         <NavUser user={userData} />
       </SidebarFooter>

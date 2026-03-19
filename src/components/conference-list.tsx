@@ -1,17 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Conference, getConferenceLogs, ConferenceLog, toggleConferenceActive } from '@/app/actions/conference'
-import { getOrganizerConferenceLogs, toggleOrganizerConferenceActive } from '@/app/actions/organizer-conference'
+import { Conference, getConferenceLogs, ConferenceLog, toggleConferenceActive, getRooms as getAdminRooms, Room } from '@/app/actions/conference'
+import { getOrganizerConferenceLogs, toggleOrganizerConferenceActive, getOrganizerRooms } from '@/app/actions/organizer-conference'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power, Info, Quote } from 'lucide-react'
+import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power, Info } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 
 interface ConferenceListProps {
   conferences: Conference[]
@@ -32,7 +33,6 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
 
-
   // Deduplicate conferences based on conference_uuid to prevent key collisions
   const conferences = Array.from(
     new Map(initialConferences.map(c => [c.conference_uuid, c])).values()
@@ -43,6 +43,8 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   const [endDate, setEndDate] = useState('')
   const [previewConference, setPreviewConference] = useState<Conference | null>(null)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [loadingRooms, setLoadingRooms] = useState(false)
   
   // Logs state
   const [logsConference, setLogsConference] = useState<Conference | null>(null)
@@ -100,7 +102,6 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     setCurrentPage(1)
   }
 
-
   function clearFilters() {
     setSearchQuery('')
     setStartDate('')
@@ -150,90 +151,101 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     }
   }
 
+  useEffect(() => {
+    async function fetchRooms() {
+      setLoadingRooms(true)
+      try {
+        const result = isOrganizer ? await getOrganizerRooms() : await getAdminRooms()
+        if (result.success && result.data) {
+          setRooms(result.data)
+        }
+      } catch (error) {
+        console.error('Error fetching rooms:', error)
+      } finally {
+        setLoadingRooms(false)
+      }
+    }
+    fetchRooms()
+  }, [isOrganizer, projectId])
+
   if (conferences.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        No Conferences found. Click &quot;Add Conference&quot; to create a new one.
+      <div className="flex flex-col items-center justify-center p-20 glass rounded-3xl">
+        <div className="bg-primary/10 p-4 rounded-full mb-4">
+          <CalendarDays className="h-10 w-10 text-primary/60" />
+        </div>
+        <h2 className="text-2xl font-display font-bold">No Conferences Found</h2>
+        <p className="text-muted-foreground mt-2 text-center max-w-md">Get started by creating your first session or schedule for the event.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/30 p-5 rounded-xl border border-border/50 space-y-4 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="search" className="text-sm font-semibold flex items-center gap-2">
-              <Search className="size-4 text-primary" />
-              Search Conference
-            </Label>
-            <Input 
-              id="search"
-              placeholder="Topic, Room, Details..." 
-              className="h-10 bg-background border-border/50 focus-visible:ring-primary"
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-            />
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <Card className="glass shadow-xl shadow-primary/5 border-white/10">
+        <CardContent className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="md:col-span-2 space-y-2 group">
+              <Label htmlFor="search" className="text-sm font-bold flex items-center gap-2 group-focus-within:text-primary transition-colors">
+                <Search className="size-4" />
+                Search Conference
+              </Label>
+              <Input 
+                id="search"
+                placeholder="Topic, Room, Details..." 
+                className="h-11 bg-white/5 border-white/10 rounded-xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="startDate" className="text-sm font-bold">Start Date</Label>
+              <Input 
+                id="startDate"
+                type="date"
+                className="h-11 bg-white/5 border-white/10 rounded-xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                value={startDate}
+                onChange={(e) => handleDateChange('start', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endDate" className="text-sm font-bold">End Date</Label>
+              <Input 
+                id="endDate"
+                type="date"
+                className="h-11 bg-white/5 border-white/10 rounded-xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                value={endDate}
+                onChange={(e) => handleDateChange('end', e.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="startDate" className="text-sm font-semibold">Start Date</Label>
-            <Input 
-              id="startDate"
-              type="date"
-              className="h-10 bg-background border-border/50 focus-visible:ring-primary"
-              value={startDate}
-              onChange={(e) => handleDateChange('start', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="endDate" className="text-sm font-semibold">End Date</Label>
-            <Input 
-              id="endDate"
-              type="date"
-              className="h-10 bg-background border-border/50 focus-visible:ring-primary"
-              value={endDate}
-              onChange={(e) => handleDateChange('end', e.target.value)}
-            />
-          </div>
-        </div>
-        
-        {(searchQuery || startDate || endDate) && (
-          <div className="flex justify-end pt-1">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={clearFilters} 
-              className="h-9 px-4 text-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-            >
-              <X className="size-4 mr-2" />
-              Clear All Filters
-            </Button>
-          </div>
-        )}
-      </div>
+          
+          {(searchQuery || startDate || endDate) && (
+            <div className="flex justify-end pt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearFilters} 
+                className="rounded-full px-6 h-10 border-white/10 bg-white/5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+              >
+                <X className="size-4 mr-2" />
+                Clear All Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing <span className="font-medium">{filteredConferences.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredConferences.length)}</span> of <span className="font-medium">{filteredConferences.length}</span> results
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+        <div className="text-sm text-muted-foreground italic font-medium">
+          Showing <span className="text-foreground">{filteredConferences.length > 0 ? startIndex + 1 : 0}</span> to <span className="text-foreground">{Math.min(startIndex + itemsPerPage, filteredConferences.length)}</span> of <span className="text-foreground font-bold">{filteredConferences.length}</span> results
         </div>
         {filteredConferences.length > itemsPerPage && (
-          <div className="flex items-center gap-1 text-sm">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => goToPage(1)}
-              disabled={currentPage === 1}
-            >
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(1)} disabled={currentPage === 1}>
               <ChevronsLeft className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-1 mx-1">
@@ -249,7 +261,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                       key={pageNum}
                       variant={currentPage === pageNum ? "default" : "outline"}
                       size="icon"
-                      className="h-8 w-8 text-xs font-medium"
+                      className={cn("h-9 w-9 rounded-full text-xs font-bold", currentPage === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
                       onClick={() => goToPage(pageNum)}
                     >
                       {pageNum}
@@ -259,22 +271,10 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                 return null
               })}
             </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => goToPage(totalPages)}
-              disabled={currentPage === totalPages}
-            >
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(totalPages)} disabled={currentPage === totalPages}>
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
@@ -282,106 +282,112 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
       </div>
 
       {filteredConferences.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          No results found for your search.
+        <div className="text-center py-20 glass rounded-3xl">
+          <p className="text-muted-foreground font-medium italic">No results matching your search terms.</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-12">
         {sortedDates.map((dateKey) => (
-          <div key={dateKey} className="space-y-4">
-            <h2 className="text-xl font-semibold sticky top-0 bg-background py-2 z-10 border-b">
-              {format(new Date(dateKey), 'EEEE, MMMM do, yyyy')}
-            </h2>
-            <div className="grid gap-4">
+          <div key={dateKey} className="space-y-6">
+            <div className="sticky top-0 z-10 py-3 backdrop-blur-md bg-background/50 border-b border-white/10">
+              <h2 className="text-2xl font-display font-bold bg-gradient-to-r from-primary/80 to-primary/40 bg-clip-text text-transparent">
+                {format(new Date(dateKey), 'EEEE, MMMM do, yyyy')}
+              </h2>
+            </div>
+            
+            <div className="grid gap-6">
               {groupedConferences[dateKey].map((conference) => {
                 return (
-                  <Card key={conference.conference_uuid} className="overflow-hidden hover:shadow-md transition-shadow group">
+                  <Card key={conference.conference_uuid} className="glass overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 group/card">
                     <CardContent className="p-0">
-                      <div className="flex flex-col md:flex-row">
-                        <div className="flex-1 p-4 flex flex-col justify-between">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-start gap-4">
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-lg">{conference.title}</h3>
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
+                      <div className="flex flex-col lg:flex-row min-w-0">
+                        <div className="flex-1 p-6 flex flex-col justify-between min-w-0">
+                          <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 min-w-0">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-display font-bold text-xl leading-tight group-hover/card:text-primary transition-colors break-all">{conference.title}</h3>
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-2 font-medium">
+                                  <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                                    <Clock className="h-3.5 w-3.5 text-primary/60" />
                                     {conference.start_time?.substring(0, 5)} - {conference.end_time?.substring(0, 5)}
                                   </span>
-                                  <span className="flex items-center gap-1">
-                                    <Users className="h-3 w-3" />
-                                    {conference.remaining_seats}/{conference.quota} seats
+                                  <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                                    <Users className="h-3.5 w-3.5 text-primary/60" />
+                                    {conference.remaining_seats} <span className="opacity-40">/</span> {conference.quota} seats
                                   </span>
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2 justify-end">
-                                <Badge variant={conference.conference_type === 'public' ? 'secondary' : 'outline'} className="capitalize">
+                                <Badge variant="secondary" className="rounded-full px-3 py-0.5 capitalize border-white/5 font-bold text-[10px]">
                                   {conference.conference_type}
                                 </Badge>
-                                <Badge variant={conference.status === 'available' ? 'default' : 'destructive'} className="capitalize">
+                                <Badge 
+                                  variant={conference.status === 'available' ? 'default' : 'destructive'} 
+                                  className={cn("rounded-full px-3 py-0.5 capitalize font-bold text-[10px]", conference.status === 'available' ? 'bg-green-500/10 text-green-500 border-green-500/20' : '')}
+                                >
                                   {conference.status}
                                 </Badge>
-                                {conference.can_book && <Badge variant="outline">Can Book</Badge>}
                                 <Badge
-                                  variant="outline"
-                                  className={conference.is_active
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800'
-                                    : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800'
-                                  }
+                                  className={cn(
+                                    "rounded-full px-3 py-0.5 font-bold text-[10px] border",
+                                    conference.is_active
+                                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                      : 'bg-red-500/10 text-red-500 border-red-500/20'
+                                  )}
                                 >
-                                  <span className={`inline-block size-1.5 rounded-full mr-1.5 ${conference.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+                                  <span className={cn("inline-block size-1.5 rounded-full mr-1.5", conference.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} />
                                   {conference.is_active ? 'Active' : 'Inactive'}
                                 </Badge>
                               </div>
                             </div>
 
-                            <div className="pt-3 space-y-3">
+                            <div className="pt-2 space-y-4">
                               {conference.speakers && conference.speakers.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                   {conference.speakers.map((s, idx) => (
-                                    <div key={idx} className="flex gap-3">
+                                    <div key={idx} className="flex gap-4 items-center bg-white/5 p-3 rounded-2xl border border-white/5">
                                       {s.speaker_image && (
                                         <div 
-                                          className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border/50 bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                                          className="h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-primary/20 bg-muted cursor-pointer hover:scale-110 transition-transform"
                                           onClick={() => setZoomedImage(s.speaker_image!)}
                                         >
                                           <img src={s.speaker_image} alt={s.speaker_name} className="h-full w-full object-cover" />
                                         </div>
                                       )}
-                                      <div>
-                                        <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-0.5">Speaker {conference.speakers!.length > 1 ? idx + 1 : ''}</p>
-                                        <p className="text-foreground/90 line-clamp-1">{s.speaker_name}</p>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-[10px] text-primary/60 uppercase tracking-widest">Speaker {conference.speakers!.length > 1 ? idx + 1 : ''}</p>
+                                        <p className="text-foreground font-bold text-sm line-clamp-1 break-all">{s.speaker_name}</p>
                                         {s.speaker_info && (
-                                          <p className="text-foreground/70 text-xs mt-0.5 line-clamp-2">{s.speaker_info}</p>
+                                          <p className="text-muted-foreground text-[11px] font-medium line-clamp-1 break-all">{s.speaker_info}</p>
                                         )}
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   {conference.speaker_name && (
-                                    <div className="text-sm">
-                                      <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker</p>
-                                      <p className="text-foreground/90 line-clamp-1">{conference.speaker_name}</p>
+                                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                                      <p className="font-bold text-[10px] text-primary/60 uppercase tracking-widest">Speaker</p>
+                                      <p className="text-foreground font-bold text-sm line-clamp-1">{conference.speaker_name}</p>
                                     </div>
                                   )}
                                   {conference.speaker_info && (
-                                    <div className="text-sm">
-                                      <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider mb-1">Speaker Information</p>
-                                      <p className="text-foreground/90 line-clamp-2">{conference.speaker_info}</p>
+                                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                                      <p className="font-bold text-[10px] text-primary/60 uppercase tracking-widest">Speaker Information</p>
+                                      <p className="text-foreground font-medium text-xs line-clamp-2 break-all">{conference.speaker_info}</p>
                                     </div>
                                   )}
-                                </>
+                                </div>
                               )}
                             </div>
 
                             {conference.detail && (
-                              <div className="mt-4 pt-3 border-t border-dashed">
-                                <p className="font-semibold text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Description</p>
-                                <div className="text-sm text-foreground/80 leading-relaxed">
+                              <div className="mt-4 pt-4 border-t border-dashed border-white/10">
+                                <p className="font-bold text-[10px] text-primary/40 uppercase tracking-widest mb-2">Description</p>
+                                <div className="text-sm text-muted-foreground/80 leading-relaxed italic break-all">
                                   <div
-                                    className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0 line-clamp-3"
+                                    className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0 line-clamp-2 break-all"
                                     dangerouslySetInnerHTML={{ __html: conference.detail }}
                                   />
                                 </div>
@@ -389,49 +395,52 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                             )}
                           </div>
 
-                          <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+                          <div className="flex flex-wrap justify-end gap-2 mt-6 pt-4 border-t border-white/5">
                             <Button 
-                              variant="outline" 
+                              variant="ghost" 
                               size="sm" 
                               onClick={() => handleViewLogs(conference)}
-                              className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300"
+                              className="rounded-full px-4 h-9 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10"
                             >
-                              <History className="h-4 w-4 mr-2" />
+                              <History className="h-3.5 w-3.5 mr-2" />
                               Logs
                             </Button>
                             <Button 
-                              variant="outline" 
+                              variant="ghost" 
                               size="sm" 
                               onClick={() => setPreviewConference(conference)}
+                              className="rounded-full px-4 h-9 bg-white/5 border border-white/10 hover:bg-primary/5 hover:text-primary"
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
+                              <Eye className="h-3.5 w-3.5 mr-2" />
+                              Details
                             </Button>
                             
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleActive(conference.conference_uuid, !conference.is_active)}
-                                disabled={togglingConferenceUuid === conference.conference_uuid}
-                                className={conference.is_active
-                                  ? 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all duration-200'
-                                  : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-all duration-200'
-                                }
-                              >
-                                {togglingConferenceUuid === conference.conference_uuid ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Power className={`h-4 w-4 mr-2 ${conference.is_active ? 'text-red-500' : 'text-emerald-500'}`} />
-                                )}
-                                {conference.is_active ? 'Deactivate' : 'Activate'}
-                              </Button>
-
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${conference.conference_uuid}?projectId=${conference.project_uuid || projectId}`}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit
-                              </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleActive(conference.conference_uuid, !conference.is_active)}
+                              disabled={togglingConferenceUuid === conference.conference_uuid}
+                              className={cn(
+                                "rounded-full px-4 h-9 transition-all duration-300",
+                                conference.is_active
+                                  ? 'bg-red-500/5 text-red-500 hover:bg-red-500/10'
+                                  : 'bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/10'
+                              )}
+                            >
+                              {togglingConferenceUuid === conference.conference_uuid ? (
+                                <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                              ) : (
+                                <Power className={cn("h-3.5 w-3.5 mr-2", conference.is_active ? 'text-red-500' : 'text-emerald-500')} />
+                              )}
+                              {conference.is_active ? 'Deactivate' : 'Activate'}
                             </Button>
+
+                            <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${conference.conference_uuid}?projectId=${conference.project_uuid || projectId}`}>
+                              <Button variant="ghost" size="sm" className="rounded-full px-4 h-9 bg-primary/5 text-primary hover:bg-primary/10">
+                                <Pencil className="h-3.5 w-3.5 mr-2" />
+                                Edit
+                              </Button>
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -447,145 +456,163 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
 
       {/* Preview Modal */}
       <Dialog open={!!previewConference} onOpenChange={() => setPreviewConference(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+        <DialogContent className="glass max-w-4xl max-h-[90vh] overflow-y-auto sm:max-w-4xl border-white/10 rounded-3xl shadow-2xl">
           {previewConference && (
             <>
               <DialogHeader>
-                <div className="flex justify-between items-start pr-8">
-                  <div>
-                    <DialogTitle className="text-2xl font-bold">{previewConference.title}</DialogTitle>
-                    <DialogDescription className="mt-1 flex flex-wrap gap-3">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pr-8 min-w-0">
+                  <div className="min-w-0">
+                    <DialogTitle className="text-3xl font-display font-bold leading-tight break-all">{previewConference.title}</DialogTitle>
+                    <div className="mt-2 flex flex-wrap gap-4 text-sm font-medium text-muted-foreground">
+                      <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full">
+                        <CalendarDays className="h-4 w-4 text-primary/60" />
+                        {format(new Date(previewConference.show_date), 'MMMM do, yyyy')}
+                      </span>
+                      <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full">
+                        <Clock className="h-4 w-4 text-primary/60" />
                         {previewConference.start_time?.substring(0, 5)} - {previewConference.end_time?.substring(0, 5)}
                       </span>
-                    </DialogDescription>
+                    </div>
                   </div>
                 </div>
               </DialogHeader>
 
-              <div className="space-y-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
+              <div className="space-y-8 py-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Status & Type</p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant={previewConference.conference_type === 'public' ? 'secondary' : 'outline'} className="capitalize">
+                        <Badge variant="secondary" className="rounded-full px-4 py-1 capitalize font-bold text-[10px]">
                           {previewConference.conference_type}
                         </Badge>
-                        <Badge variant={previewConference.status === 'available' ? 'default' : 'destructive'} className="capitalize">
+                        <Badge 
+                          variant={previewConference.status === 'available' ? 'default' : 'destructive'} 
+                          className={cn("rounded-full px-4 py-1 capitalize font-bold text-[10px]", previewConference.status === 'available' ? 'bg-green-500/10 text-green-500' : '')}
+                        >
                           {previewConference.status}
                         </Badge>
-                        {previewConference.can_book && <Badge variant="outline">Can Book</Badge>}
+                        {previewConference.can_book && <Badge variant="outline" className="rounded-full px-4 py-1 font-bold text-[10px]">Can Book</Badge>}
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Capacity</p>
-                      <p className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-primary" />
-                        {previewConference.remaining_seats}/{previewConference.quota} seats available
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Reserved: {previewConference.reserved_count}
-                      </p>
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Capacity Metrics</p>
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="flex items-center gap-2 text-sm font-bold">
+                            <Users className="h-4 w-4 text-primary/60" />
+                            Remaining Seats
+                          </p>
+                          <p className="text-xl font-display font-bold text-primary">{previewConference.remaining_seats} <span className="text-sm font-sans text-muted-foreground opacity-40">/ {previewConference.quota}</span></p>
+                        </div>
+                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-primary h-full transition-all duration-500" 
+                            style={{ width: `${Math.min(100, (1 - previewConference.remaining_seats / (previewConference.quota || 1)) * 100)}%` }} 
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium text-right">
+                          {previewConference.reserved_count} reservations confirmed
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Schedule</p>
-                      <p className="flex items-center gap-2 text-sm">
-                        {format(new Date(previewConference.show_date), 'EEEE, MMMM do, yyyy')}
-                      </p>
-                      <p className="flex items-center gap-2 font-medium">
-                        {previewConference.start_time?.substring(0, 5)} - {previewConference.end_time?.substring(0, 5)}
-                      </p>
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Location Info</p>
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                          {loadingRooms ? <Loader2 className="h-6 w-6 animate-spin" /> : <Info className="h-6 w-6" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold leading-tight break-all">
+                            {loadingRooms ? 'Loading room details...' : (rooms.find(r => r.room_uuid === previewConference.location)?.room_name || 'Session Room/Venue')}
+                          </p>
+                          <p className="text-muted-foreground text-sm font-medium mt-1 break-all">
+                            {loadingRooms ? 'Please wait' : (rooms.find(r => r.room_uuid === previewConference.location)?.location_detail || 'Check event floor plan for directions.')}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {previewConference.detail && (
-                  <>
-                    <Separator />
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                          <Info className="size-4" />
-                        </div>
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Session Description</p>
-                      </div>
-                      <div className="bg-slate-50/50 rounded-xl border border-slate-200 p-5 shadow-sm">
-                        <div 
-                          className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0"
-                          dangerouslySetInnerHTML={{ __html: previewConference.detail }}
-                        />
-                      </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Separator className="flex-1 bg-white/10" />
+                      <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest shrink-0">Session Details</p>
+                      <Separator className="flex-1 bg-white/10" />
                     </div>
-                  </>
+                    <div className="bg-white/5 rounded-3xl border border-white/5 p-6 shadow-inner break-all">
+                      <div 
+                        className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0 font-medium leading-relaxed break-all"
+                        dangerouslySetInnerHTML={{ __html: previewConference.detail }}
+                      />
+                    </div>
+                  </div>
                 )}
 
-                <Separator />
-
-                {previewConference.speakers && previewConference.speakers.length > 0 ? (
-                  <div className="space-y-4">
-                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speakers</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Separator className="flex-1 bg-white/10" />
+                    <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest shrink-0">Speaker Roster</p>
+                    <Separator className="flex-1 bg-white/10" />
+                  </div>
+                  {previewConference.speakers && previewConference.speakers.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2">
                       {previewConference.speakers.map((s, idx) => (
-                        <div key={idx} className="bg-muted/30 p-4 rounded-lg border border-border/50 flex gap-4">
+                        <div key={idx} className="bg-white/5 p-5 rounded-3xl border border-white/5 flex gap-4 transition-all hover:bg-white/10 group">
                           {s.speaker_image && (
                             <div 
-                              className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-border bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                              className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-primary/20 bg-muted cursor-pointer hover:scale-105 transition-all"
                               onClick={() => setZoomedImage(s.speaker_image!)}
                             >
                               <img src={s.speaker_image} alt={s.speaker_name} className="h-full w-full object-cover" />
                             </div>
                           )}
-                          <div>
-                            <p className="text-foreground font-semibold">{s.speaker_name}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground font-bold text-lg group-hover:text-primary transition-colors break-all">{s.speaker_name}</p>
                             {s.speaker_info && (
-                              <p className="text-foreground/80 text-sm mt-1 whitespace-pre-wrap leading-relaxed">
-                                {s.speaker_info}
+                              <p className="text-muted-foreground text-xs mt-1.5 whitespace-pre-wrap leading-relaxed line-clamp-3 font-medium italic break-all">
+                                &ldquo;{s.speaker_info}&rdquo;
                               </p>
                             )}
                           </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker</p>
-                      <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
-                        <p className="text-foreground font-medium">
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest mb-1">Lead Speaker</p>
+                        <p className="text-foreground font-bold italic break-all">
                           {previewConference.speaker_name || 'No speaker assigned'}
                         </p>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Speaker Information</p>
-                      <div className="bg-muted/30 p-4 rounded-lg border border-border/50">
-                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5 min-w-0">
+                        <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest mb-1">Biography</p>
+                        <p className="text-muted-foreground text-xs font-medium italic line-clamp-3 leading-relaxed break-all">
                           {previewConference.speaker_info || 'No speaker information provided.'}
                         </p>
                       </div>
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t">
-                <Button variant="outline" onClick={() => setPreviewConference(null)}>
+              <div className="flex flex-wrap justify-end gap-3 pt-6 border-t border-white/10">
+                <Button variant="outline" className="rounded-full px-8 h-11 border-white/10 bg-white/5" onClick={() => setPreviewConference(null)}>
                   Close
                 </Button>
-                <Button asChild>
-                  <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${previewConference.conference_uuid}?projectId=${previewConference.project_uuid || projectId}`}>
+                <Link href={`/${isOrganizer ? 'organizer' : 'admin'}/conferences/${previewConference.conference_uuid}?projectId=${previewConference.project_uuid || projectId}`}>
+                  <Button className="btn-aurora rounded-full px-8 h-11 font-bold">
                     <Pencil className="h-4 w-4 mr-2" />
-                    Edit Conference
-                  </Link>
-                </Button>
+                    Edit Session
+                  </Button>
+                </Link>
               </div>
             </>
           )}
@@ -594,92 +621,94 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
 
       {/* Logs Modal */}
       <Dialog open={!!logsConference} onOpenChange={(open) => !open && setLogsConference(null)}>
-        <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-          <DialogHeader className="p-6 pb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-full">
-                <History className="h-5 w-5 text-amber-600" />
+        <DialogContent className="glass sm:max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-white/10 rounded-3xl shadow-2xl">
+          <DialogHeader className="p-8 pb-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+                <History className="h-6 w-6 text-amber-500" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold">Conference Logs</DialogTitle>
-                <DialogDescription className="text-sm font-medium text-slate-500 line-clamp-1">
-                  {logsConference?.title}
+                <DialogTitle className="text-2xl font-display font-bold">Session Activity Logs</DialogTitle>
+                <DialogDescription className="text-sm font-medium text-muted-foreground line-clamp-1 mt-0.5 italic">
+                  Tracking events for: {logsConference?.title}
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <Separator className="mx-6 w-auto" />
+          <Separator className="mx-8 w-auto bg-white/10" />
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+          <div className="flex-1 overflow-y-auto px-8 py-8 scrollbar-hide">
             {loadingLogs ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground animate-pulse font-medium">Fetching history...</p>
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground animate-pulse font-bold tracking-widest uppercase">Fetching history...</p>
               </div>
             ) : logs.length === 0 ? (
-              <div className="text-center py-16 space-y-3">
-                <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-slate-100 mb-2">
-                  <History className="h-8 w-8 text-slate-300" />
+              <div className="text-center py-20 space-y-4 glass rounded-3xl mx-4">
+                <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-white/10 mb-2">
+                  <History className="h-8 w-8 text-primary/20" />
                 </div>
-                <p className="text-slate-500 font-medium">No activity logs found for this conference.</p>
-                <p className="text-xs text-slate-400">Activity will appear here when participants register or cancel.</p>
+                <p className="text-muted-foreground font-bold">No activity logs found for this session.</p>
+                <p className="text-xs text-muted-foreground/60 italic px-10">Activity will be automatically recorded here when participants register, check-in, or cancel.</p>
               </div>
             ) : (
-              <div className="relative pl-6 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+              <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-white/5">
                 {logs.map((log, index) => (
-                  <div key={log.log_id || index} className="relative">
+                  <div key={log.log_id || index} className="relative group/log">
                     {/* Timeline Node */}
-                    <div className={`absolute -left-[31px] top-1 h-5 w-5 rounded-full border-4 border-white shadow-sm z-10 ${
-                      log.action === 'RESERVE' ? 'bg-emerald-500' : 'bg-rose-500'
-                    }`} />
+                    <div className={cn(
+                      "absolute -left-[35px] top-1.5 h-6 w-6 rounded-full border-4 border-background shadow-lg z-10 transition-all group-hover/log:scale-125",
+                      log.action === 'RESERVE' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/20'
+                    )} />
                     
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {/* Meta Info */}
-                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <CalendarDays className="h-3 w-3" />
-                          {format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-primary/40">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {format(new Date(log.created_at), 'MMM d, yyyy • HH:mm:ss')}
                         </div>
-                        <div className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        <Badge className={cn(
+                          "px-3 py-0.5 rounded-full text-[9px] font-black tracking-tighter border-0",
                           log.action === 'RESERVE' 
-                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
-                            : 'bg-rose-100 text-rose-700 border border-rose-200'
-                        }`}>
+                            ? 'bg-emerald-500/10 text-emerald-500' 
+                            : 'bg-rose-500/10 text-rose-500'
+                        )}>
                           {log.action}
-                        </div>
+                        </Badge>
                       </div>
 
                       {/* Content Card */}
-                      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3 hover:border-slate-300 transition-colors">
+                      <div className="bg-white/5 rounded-2xl border border-white/5 p-5 space-y-4 hover:bg-white/10 transition-all shadow-lg hover:shadow-primary/5">
                         <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="bg-slate-100 p-1.5 rounded-lg">
-                              <User className="h-4 w-4 text-slate-600" />
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 p-2 rounded-xl border border-primary/20">
+                              <User className="h-4 w-4 text-primary" />
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-slate-900 leading-none mb-1">
+                              <p className="text-sm font-bold text-foreground">
                                 {log.attendee_name || 'Unknown Attendee'}
                               </p>
-                              <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                                <ShieldCheck className="h-3 w-3" />
-                                Performed by: <span className="font-semibold text-slate-700">{log.performed_by}</span>
+                              <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1.5 mt-0.5">
+                                <ShieldCheck className="h-3 w-3 text-primary/40" />
+                                Action by: <span className="font-bold text-primary/80 uppercase">{log.performed_by}</span>
                               </p>
                             </div>
                           </div>
                         </div>
 
                         {log.details && (
-                          <div className="bg-slate-50/80 rounded-lg p-2.5 border border-dashed border-slate-200 flex items-start gap-2">
-                            <ArrowRight className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
-                            <p className="text-xs text-slate-600 italic leading-relaxed">
+                          <div className="bg-background/40 rounded-xl p-3 border border-white/5 flex items-start gap-3">
+                            <ArrowRight className="h-3 w-3 mt-1 text-primary/40 shrink-0" />
+                            <p className="text-xs text-muted-foreground/80 italic font-medium leading-relaxed">
                               {log.details}
                             </p>
                           </div>
                         )}
                         
-                        <div className="text-[10px] text-slate-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
-                          ID: {log.registration_uuid}
+                        <div className="text-[9px] text-muted-foreground/30 font-mono text-right tracking-tighter uppercase">
+                          REC_ID: {log.registration_uuid}
                         </div>
                       </div>
                     </div>
@@ -689,9 +718,9 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
             )}
           </div>
 
-          <div className="p-4 bg-slate-50 border-t flex justify-end">
-            <Button variant="ghost" className="h-9 px-6 font-semibold text-slate-600" onClick={() => setLogsConference(null)}>
-              Close
+          <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end">
+            <Button variant="outline" className="rounded-full h-10 px-8 font-bold text-xs uppercase tracking-widest bg-white/5 border-white/10" onClick={() => setLogsConference(null)}>
+              Close History
             </Button>
           </div>
         </DialogContent>
@@ -699,22 +728,21 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
 
       {/* Image Zoom Modal */}
       <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
-        <DialogContent className="max-w-3xl flex justify-center items-center bg-transparent border-none shadow-none p-0 overflow-hidden" showCloseButton={false}>
-          {/* Accessibility requirements: DialogContent needs Title/Description. Rendering visually hidden ones. */}
+        <DialogContent className="max-w-3xl flex justify-center items-center bg-transparent border-none shadow-none p-0 overflow-hidden backdrop-blur-3xl" showCloseButton={false}>
           <div className="sr-only">
             <DialogTitle>Speaker Image Preview</DialogTitle>
             <DialogDescription>Full size preview of the speaker image.</DialogDescription>
           </div>
           {zoomedImage && (
-            <div className="relative w-auto h-auto max-w-full max-h-[90vh]">
-              <img src={zoomedImage} alt="Zoomed in" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+            <div className="relative w-auto h-auto max-w-full max-h-[90vh] animate-in zoom-in-95 duration-300">
+              <img src={zoomedImage} alt="Zoomed in" className="max-w-full max-h-[90vh] object-contain rounded-3xl shadow-2xl border-4 border-white/10" />
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="icon" 
-                className="absolute top-2 right-2 rounded-full bg-background/80 hover:bg-background"
+                className="absolute top-4 right-4 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 h-10 w-10 text-white"
                 onClick={() => setZoomedImage(null)}
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
           )}
@@ -723,19 +751,3 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
