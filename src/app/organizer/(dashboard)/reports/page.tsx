@@ -172,13 +172,13 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports & Analytics</h1>
         <p className="text-muted-foreground">
           View and export conference analysis data.
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 items-start">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start">
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* Left Sidebar Menu                                                   */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -449,7 +449,7 @@ export default function ReportsPage() {
                       </div>
 
                       {/* Pagination */}
-                      <div className="flex items-center justify-between mt-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-3">
                         <p className="text-sm text-muted-foreground">
                           Page {page} of {totalPages} · {total.toLocaleString()} total
                         </p>
