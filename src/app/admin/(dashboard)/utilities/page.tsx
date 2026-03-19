@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Printer, Loader2, Search, UserCheck, ZoomIn, ZoomOut, CheckSquare, Square, Trash2, Cpu, Sparkles, Ticket } from "lucide-react"
+import { Printer, Loader2, Search, UserCheck, ZoomIn, ZoomOut, Trash2, Cpu, Ticket } from "lucide-react"
 import { useState, Suspense } from "react"
 import { searchParticipantsByCodes, printParticipantBadgesBulk, Participant as RealParticipant } from "@/app/actions/participant"
 import { toast } from "sonner"
@@ -100,6 +100,7 @@ function UtilitiesContent() {
             country: participantFull.residence_country || 'THAILAND',
             registrationCode: p.registration_code,
             category: p.attendee_type_code || 'VISITOR',
+            position: p.job_position || '',
           }
         })
         
@@ -280,10 +281,10 @@ function UtilitiesContent() {
                                                         role="checkbox"
                                                         aria-checked={selectedIds.has(p.registration_uuid)}
                                                         className={cn(
-                                                            "absolute top-3 right-3 h-8 w-8 rounded-xl border-2 flex items-center justify-center transition-all duration-500 shadow-xl",
+                                                            "absolute top-3 right-3 h-8 w-8 rounded-xl border-2 flex items-center justify-center transition-all duration-300 shadow-xl z-30",
                                                             selectedIds.has(p.registration_uuid) 
-                                                                ? 'bg-primary border-primary scale-110 shadow-glow-sm' 
-                                                                : 'bg-white/90 border-black/10 hover:border-primary/50'
+                                                                ? 'bg-primary border-primary scale-110 shadow-[0_0_15px_-3px_var(--color-primary)]' 
+                                                                : 'bg-background/80 border-primary/20 backdrop-blur-md hover:border-primary/50'
                                                         )}
                                                         onClick={(e) => {
                                                             e.stopPropagation();

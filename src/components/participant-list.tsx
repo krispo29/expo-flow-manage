@@ -95,6 +95,7 @@ export function ParticipantList({
             country: (p as ParticipantDetail).residence_country || 'THAILAND',
             registrationCode: p.registration_code || '',
             category: p.attendee_type_code || 'VISITOR',
+            position: (p as ParticipantDetail).job_position || '',
           })
         } catch (e) {
           console.error("Local print failed", e)
@@ -739,7 +740,7 @@ export function ParticipantList({
                        setShowOnlyReserved(checked as boolean)
                        setConfCurrentPage(1)
                      }}
-                     className="size-3.5 border-white/20"
+                     className="size-3.5"
                    />
                    <span className="text-[10px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-tight">Reserved Only</span>
                 </label>

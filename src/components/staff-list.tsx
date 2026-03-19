@@ -111,6 +111,7 @@ export function StaffList({
                country: 'THAILAND',
                registrationCode: data.staff_code || '',
                category: data.staff_type_code || 'STAFF',
+               position: data.staff_type_code || 'STAFF',
             })
           } catch (e) {
             console.error("Local print failed", e)

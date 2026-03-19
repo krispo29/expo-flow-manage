@@ -262,7 +262,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                         <Checkbox 
                           checked={selectedCodes.includes(log.registration_code)}
                           onCheckedChange={() => toggleOne(log.registration_code)}
-                          className="mt-1 border-white/20"
+                          className="mt-1"
                         />
                       )}
                       <div className="space-y-1">
@@ -314,7 +314,6 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                       <Checkbox 
                         checked={logs.length > 0 && selectedCodes.length === logs.length}
                         onCheckedChange={toggleAll}
-                        className="border-white/20"
                       />
                     </TableHead>
                   )}
@@ -354,7 +353,6 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                           <Checkbox 
                             checked={selectedCodes.includes(log.registration_code)}
                             onCheckedChange={() => toggleOne(log.registration_code)}
-                            className="border-white/20"
                           />
                         </TableCell>
                       )}

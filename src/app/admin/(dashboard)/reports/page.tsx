@@ -482,7 +482,6 @@ export default function ReportsPage() {
                                   <Checkbox
                                     checked={selectedTypeCodes.includes(t.type_code)}
                                     onCheckedChange={() => toggleTypeCode(t.type_code)}
-                                    className="border-white/20"
                                   />
                                   <span className="text-sm font-medium flex-1">{t.type_name}</span>
                                   <Badge variant="outline" className="text-[9px] font-bold border-white/10 opacity-60 uppercase">{t.type_code}</Badge>
@@ -502,7 +501,6 @@ export default function ReportsPage() {
                             id="include_questionnaire"
                             checked={includeQuestionnaire}
                             onCheckedChange={(checked) => setIncludeQuestionnaire(!!checked)}
-                            className="border-white/20"
                           />
                         </div>
                         <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-tight">Questionnaires</span>
@@ -513,7 +511,6 @@ export default function ReportsPage() {
                             id="is_include_staff"
                             checked={includeStaff}
                             onCheckedChange={(checked) => setIncludeStaff(!!checked)}
-                            className="border-white/20"
                           />
                         </div>
                         <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-tight">Include Staff</span>
