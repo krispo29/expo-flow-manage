@@ -29,15 +29,16 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Undo2, 
-  Loader2, 
-  Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
+import {
+  CheckCircle2,
+  CheckCircle,
+  XCircle,
+  Undo2,
+  Loader2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
   ChevronsRight,
   Clock,
   AlertCircle,
