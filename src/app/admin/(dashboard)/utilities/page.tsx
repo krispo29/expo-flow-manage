@@ -193,9 +193,7 @@ function UtilitiesContent() {
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
                                                 <input 
                                                     type="text"
-                                                    placeholder="Matrix search  )
-}
-"
+                                                    placeholder="Search"
                                                     value={resultSearch}
                                                     onChange={(e) => setResultSearch(e.target.value)}
                                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:bg-white/10 transition-all font-medium"
