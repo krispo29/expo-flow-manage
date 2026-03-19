@@ -1,3 +1,5 @@
+'use client'
+
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import {
   Table,
@@ -28,7 +30,7 @@ import {
   toggleOrganizerStatus,
   type Organizer,
 } from '@/app/actions/organizer'
-import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff } from 'lucide-react'
+import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, User, ShieldCheck, Calendar, Clock, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
@@ -37,7 +39,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from "@/components/ui/card"
+import { cn } from '@/lib/utils'
 
 interface OrganizerListProps {
   projectUuid: string
@@ -157,7 +161,6 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
   async function handleToggleStatus(org: Organizer) {
     const result = await toggleOrganizerStatus(projectUuid, org.organizer_uuid)
-    setSaving(false)
     if (result.success) {
       toast.success(`Organizer ${org.is_active ? 'deactivated' : 'activated'}`)
       fetchOrganizers()
@@ -191,16 +194,19 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   }
 
   return (
-    <div className="space-y-4">
-      <Card className="overflow-hidden border-none shadow-md">
-        <CardHeader className="bg-muted/30 pb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <CardTitle className="text-xl font-bold">All Organizers</CardTitle>
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
+        <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-display">All Organizers</CardTitle>
+              <CardDescription className="font-medium">Manage user accounts and permissions for this project.</CardDescription>
+            </div>
+            <div className="relative w-full max-sm:max-w-none max-w-sm group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Search username or name..."
-                className="pl-9 bg-background border-border/50 focus-visible:ring-primary"
+                className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
@@ -209,110 +215,167 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center p-20">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground mt-4 animate-pulse">Loading organizers...</p>
             </div>
           ) : organizers.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              No organizers found. Add one to get started.
+            <div className="text-center p-20 glass m-6 rounded-3xl border-dashed">
+              <User className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+              <p className="text-lg font-display font-bold">No organizers found</p>
+              <p className="text-sm text-muted-foreground italic mt-2">Add your first organizer to start managing the project.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead className="font-semibold text-foreground">Username</TableHead>
-                  <TableHead className="font-semibold text-foreground">Password Note</TableHead>
-                  <TableHead className="font-semibold text-foreground">Full Name</TableHead>
-                  <TableHead className="font-semibold text-foreground">Project</TableHead>
-                  <TableHead className="font-semibold text-foreground">Status</TableHead>
-                  <TableHead className="font-semibold text-foreground">Last Login</TableHead>
-                  <TableHead className="font-semibold text-foreground">Created</TableHead>
-                  <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrganizers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                      {searchQuery ? "No results matching your search terms." : "No organizers found."}
-                    </TableCell>
-                  </TableRow>
+            <>
+              {/* Mobile View: Cards */}
+              <div className="md:hidden divide-y divide-white/5">
+                {paginatedOrganizers.length === 0 ? (
+                  <div className="text-center p-12 text-muted-foreground italic">No results matching your search.</div>
                 ) : (
                   paginatedOrganizers.map((org) => (
-                    <TableRow key={org.organizer_uuid}>
-                      <TableCell className="font-medium">{org.username}</TableCell>
-                      <TableCell className="font-mono text-xs">{org.password_note || '-'}</TableCell>
-                      <TableCell>{org.full_name}</TableCell>
-                      <TableCell>{org.project_name}</TableCell>
-                      <TableCell>
-                        <Badge variant={org.is_active ? "default" : "secondary"}>
+                    <div key={org.organizer_uuid} className="p-6 space-y-4 hover:bg-white/5 transition-colors group">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1.5">
+                          <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">{org.full_name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground font-mono">{org.username}</p>
+                            <span className="text-muted-foreground/20 text-[10px]">|</span>
+                            <code className="text-[10px] font-bold text-primary font-mono">{org.password_note || '-'}</code>
+                          </div>
+                        </div>
+                        <Badge className={cn("rounded-full px-3 text-[10px] font-bold", org.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
                           {org.is_active ? 'Active' : 'Inactive'}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {org.last_login ? format(new Date(org.last_login), 'MMM d, yyyy HH:mm') : '—'}
-                      </TableCell>
-                      <TableCell>{format(new Date(org.created_at), 'MMM d, yyyy')}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Edit"
-                            onClick={() => setEditingOrg({ ...org })}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Reset Password"
-                            onClick={() => { setResetOrg(org); setNewPassword(org.password_note || ''); setShowPassword(false); }}
-                          >
-                            <KeyRound className="h-4 w-4 text-blue-500" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={org.is_active ? 'Deactivate' : 'Activate'}
-                            onClick={() => handleToggleStatus(org)}
-                          >
-                            <Power className={`h-4 w-4 ${org.is_active ? 'text-green-500' : 'text-muted-foreground'}`} />
-                          </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2.5 text-xs">
+                        <div className="flex items-center gap-3 text-muted-foreground/80 font-medium">
+                          <Calendar className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                          <span>Created: {format(new Date(org.created_at), 'MMM d, yyyy')}</span>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                        <div className="flex items-center gap-3 text-muted-foreground/80 font-medium italic">
+                          <Clock className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                          <span>Last Login: {org.last_login ? format(new Date(org.last_login), 'MMM d, HH:mm') : 'Never'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 pt-2">
+                        <Button variant="outline" size="sm" className="h-9 rounded-full bg-white/5 border-white/10 hover:bg-white/10 flex-1" onClick={() => setEditingOrg({ ...org })}>
+                          <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-9 rounded-full bg-white/5 border-white/10 hover:bg-blue-500/10 hover:text-blue-500 flex-1" onClick={() => { setResetOrg(org); setNewPassword(org.password_note || ''); setShowPassword(false); }}>
+                          <KeyRound className="h-3.5 w-3.5 mr-2" /> Reset
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className={cn("h-9 w-9 rounded-full bg-white/5 border-white/10", org.is_active ? 'hover:bg-red-500/10 hover:text-red-500' : 'hover:bg-emerald-500/10 hover:text-emerald-500')} 
+                          onClick={() => handleToggleStatus(org)}
+                        >
+                          <Power className={cn("h-4 w-4", org.is_active ? 'text-emerald-500' : 'text-muted-foreground')} />
+                        </Button>
+                      </div>
+                    </div>
                   ))
                 )}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop View: Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-white/5">
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest pl-6">Username</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest">Password Note</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest">Full Name</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest">Temporal Intelligence</TableHead>
+                      <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrganizers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
+                          No organizers found matching your matrix.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedOrganizers.map((org) => (
+                        <TableRow key={org.organizer_uuid} className="border-white/5 hover:bg-white/5 transition-colors group">
+                          <TableCell className="pl-6">
+                            <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{org.username}</span>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono uppercase tracking-tighter">{org.password_note || '-'}</code>
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm font-bold text-foreground/80">{org.full_name}</p>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={cn("rounded-full px-2 py-0 text-[9px] font-bold border", org.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
+                              {org.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] font-bold opacity-60">LOGIN: {org.last_login ? format(new Date(org.last_login), 'MMM d, HH:mm') : 'NEVER'}</span>
+                              <span className="text-[9px] font-medium opacity-30 uppercase tracking-widest">INIT: {format(new Date(org.created_at), 'yyyy-MM-dd')}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            <div className="flex justify-end gap-1.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300"
+                                title="Edit"
+                                onClick={() => setEditingOrg({ ...org })}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-500 group-hover:scale-110 transition-all duration-300"
+                                title="Reset Password"
+                                onClick={() => { setResetOrg(org); setNewPassword(org.password_note || ''); setShowPassword(false); }}
+                              >
+                                <KeyRound className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-9 w-9 rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-all duration-300", org.is_active ? 'hover:bg-red-500/10 hover:text-red-500' : 'hover:bg-emerald-500/10 hover:text-emerald-500')}
+                                title={org.is_active ? 'Deactivate' : 'Activate'}
+                                onClick={() => handleToggleStatus(org)}
+                              >
+                                <Power className={cn("h-4 w-4", org.is_active ? 'text-emerald-500' : 'text-muted-foreground')} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
 
-          <div className="flex items-center justify-between p-4 border-t bg-muted/10">
-            <div className="text-xs text-muted-foreground italic">
-              Showing <span className="font-medium">{filteredOrganizers.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredOrganizers.length)}</span> of <span className="font-medium">{filteredOrganizers.length}</span> results
+          <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/5 bg-white/5">
+            <div className="text-sm text-muted-foreground italic font-medium">
+              Showing <span className="text-foreground">{filteredOrganizers.length > 0 ? startIndex + 1 : 0}</span> to <span className="text-foreground">{Math.min(startIndex + itemsPerPage, filteredOrganizers.length)}</span> of <span className="text-foreground font-bold">{filteredOrganizers.length}</span> records
             </div>
             {filteredOrganizers.length > itemsPerPage && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => goToPage(1)}
-                  disabled={currentPage === 1}
-                >
+              <div className="flex items-center gap-1.5">
+                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(1)} disabled={currentPage === 1}>
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
+                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="flex items-center gap-1 mx-2">
+                <div className="flex items-center gap-1 mx-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum = currentPage
                     if (currentPage <= 3) pageNum = i + 1
@@ -325,7 +388,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                           key={pageNum}
                           variant={currentPage === pageNum ? "default" : "outline"}
                           size="icon"
-                          className="h-8 w-8 text-xs font-semibold"
+                          className={cn("h-9 w-9 rounded-full text-xs font-bold", currentPage === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
                           onClick={() => goToPage(pageNum)}
                         >
                           {pageNum}
@@ -335,22 +398,10 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                     return null
                   })}
                 </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
+                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => goToPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
+                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" onClick={() => goToPage(totalPages)} disabled={currentPage === totalPages}>
                   <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -361,38 +412,47 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Organizer</DialogTitle>
-            <DialogDescription>
-              Create a new organizer account for this project.
-            </DialogDescription>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Plus className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Add New Organizer</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Initialize a new administrative account for this project.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="create-username">Username</Label>
+          <div className="p-8 space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="create-username" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Username</Label>
               <Input
                 id="create-username"
                 value={newOrg.username}
                 onChange={(e) => setNewOrg({ ...newOrg, username: e.target.value })}
                 required
+                className="h-12 bg-white/5 border-white/10 rounded-xl"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-fullname">Full Name</Label>
+            <div className="space-y-3">
+              <Label htmlFor="create-fullname" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Full Name</Label>
               <Input
                 id="create-fullname"
                 value={newOrg.full_name}
                 onChange={(e) => setNewOrg({ ...newOrg, full_name: e.target.value })}
                 required
+                className="h-12 bg-white/5 border-white/10 rounded-xl"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create
+          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20" onClick={handleCreate} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Create account
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -400,25 +460,33 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingOrg} onOpenChange={(open) => !open && setEditingOrg(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Organizer</DialogTitle>
-            <DialogDescription>
-              Update organizer details. Username: <strong>{editingOrg?.username}</strong>
-            </DialogDescription>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Pencil className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Edit Organizer</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Update administrative profile for <span className="text-foreground font-bold">{editingOrg?.username}</span>.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           {editingOrg && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-fullname">Full Name</Label>
+            <div className="p-8 space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="edit-fullname" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Full Name</Label>
                 <Input
                   id="edit-fullname"
                   value={editingOrg.full_name}
                   onChange={(e) => setEditingOrg({ ...editingOrg, full_name: e.target.value })}
+                  className="h-12 bg-white/5 border-white/10 rounded-xl"
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <Label>Active</Label>
+              <div className="flex items-center justify-between p-4 glass rounded-2xl border-white/5">
+                <Label className="text-xs font-bold uppercase tracking-tight">Account Status (Active)</Label>
                 <Switch
                   checked={editingOrg.is_active}
                   onCheckedChange={(checked) => setEditingOrg({ ...editingOrg, is_active: checked })}
@@ -426,11 +494,11 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingOrg(null)}>Cancel</Button>
-            <Button onClick={handleUpdate} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save
+          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setEditingOrg(null)}>Cancel</Button>
+            <Button className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20" onClick={handleUpdate} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Save changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -438,16 +506,23 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
 
       {/* Reset Password Dialog */}
       <Dialog open={!!resetOrg} onOpenChange={(open) => !open && setResetOrg(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
-            <DialogDescription>
-              Set a new password for <strong>{resetOrg?.username}</strong>.
-            </DialogDescription>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                <KeyRound className="h-6 w-6 text-blue-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Reset Password</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Establish a new secure password for <span className="text-foreground font-bold">{resetOrg?.username}</span>.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+          <div className="p-8 space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="new-password" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">New Password</Label>
               <div className="relative">
                 <Input
                   id="new-password"
@@ -455,14 +530,14 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="pr-10"
+                  className="pr-12 h-12 bg-white/5 border-white/10 rounded-xl"
                   required
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-1 top-1 h-10 w-10 hover:bg-white/5 rounded-lg"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -472,12 +547,12 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                   )}
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground italic">Minimum 6 characters</p>
+              <p className="text-[10px] text-muted-foreground italic font-medium">Minimum 6 characters required for security.</p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResetOrg(null)}>Cancel</Button>
-            <Button onClick={handleResetPassword} disabled={saving || newPassword.length < 6}>
+          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setResetOrg(null)}>Cancel</Button>
+            <Button className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20" onClick={handleResetPassword} disabled={saving || newPassword.length < 6}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Reset Password
             </Button>
