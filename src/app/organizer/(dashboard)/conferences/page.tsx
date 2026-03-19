@@ -15,7 +15,7 @@ export default async function ConferencesPage({
   searchParams: Promise<{ projectId?: string }>;
 }>) {
   const resolvedSearchParams = await searchParams;
-  const projectId = resolvedSearchParams.projectId || "horti-agri";
+  const projectId = resolvedSearchParams.projectId || "67597e81-db17-4ff0-8479-56f737d9482a";
   const userRole = await getUserRole();
 
   // Use organizer endpoint if role is ORGANIZER
@@ -24,22 +24,22 @@ export default async function ConferencesPage({
     : await getConferences(projectId);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Conferences</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Conferences</h1>
+          <p className="text-muted-foreground mt-1">
             Manage sessions and conference schedule.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <ConferenceExcelOperations conferences={conferences || []} />
-          <Button asChild>
-            <Link href={`/organizer/conferences/new?projectId=${projectId}`}>
-              <Plus className="mr-2 h-4 w-4" />
+          <Link href={`/organizer/conferences/new?projectId=${projectId}`}>
+            <Button className="btn-aurora rounded-full px-6 font-semibold">
+              <Plus className="mr-2 h-5 w-5" />
               Add Conference
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
       </div>
 

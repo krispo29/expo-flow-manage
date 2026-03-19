@@ -51,7 +51,12 @@ export function ConferenceExcelOperations({ conferences: initialConferences }: R
 
 
   return (
-    <Button variant="outline" onClick={handleExport} title="Export to Excel">
+    <Button 
+      variant="outline" 
+      onClick={handleExport} 
+      title="Export to Excel"
+      className="rounded-full px-6 border-white/10 bg-white/5 hover:bg-white/10"
+    >
       <Download className="h-4 w-4 mr-2" />
       Export Excel
     </Button>

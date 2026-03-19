@@ -41,7 +41,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
         <AppSidebar projects={sidebarProjects} />
         <SidebarInset className="bg-muted/30">
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/60">
-            <div className="flex items-center gap-2 px-4 md:px-6 w-full">
+            <div className="flex items-center gap-2 px-4 md:px-6 w-full max-w-7xl mx-auto">
               <div className="flex items-center gap-2 flex-1">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mx-2 h-4 opacity-50" />
@@ -49,7 +49,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
               </div>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-3 sm:gap-4 p-3 sm:p-4 md:p-6">
+          <div className="flex flex-1 flex-col gap-3 sm:gap-4 p-3 sm:p-4 md:p-6 max-w-7xl mx-auto w-full">
             {children}
           </div>
         </SidebarInset>
