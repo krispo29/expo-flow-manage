@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Printer, Loader2, Search, UserCheck, ZoomIn, ZoomOut, CheckSquare, Square, Trash2 } from "lucide-react"
+import { Printer, Loader2, Search, UserCheck, ZoomIn, ZoomOut, CheckSquare, Square, Trash2, Cpu, Sparkles, Ticket } from "lucide-react"
 import { useState, Suspense } from "react"
 import { searchParticipantsByCodes, printParticipantBadgesBulk, Participant as RealParticipant } from "@/app/actions/participant"
 import { toast } from "sonner"
 import { BadgePrint } from "@/components/badge-print"
 import { useSearchParams } from "next/navigation"
 import { printBadges } from "@/utils/print-badge"
+import { cn } from "@/lib/utils"
+import { Separator } from "@/components/ui/separator"
 
 function UtilitiesContent() {
   const searchParams = useSearchParams()
@@ -114,185 +116,178 @@ function UtilitiesContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Utilities</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Utilities</h1>
+          <p className="text-muted-foreground mt-1 font-sans">
             System tools and operational utilities.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6">
-        <Card className="h-full flex flex-col shadow-lg border-primary/5">
-            <CardHeader className="bg-muted/50 pb-6 border-b">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                    <Printer className="h-6 w-6 text-primary" />
-                    Batch Preview Workstation
-                </CardTitle>
-                <CardDescription>
-                    Manually search and batch print badges for participants.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6 overflow-hidden">
-                <div className="flex flex-col md:flex-row gap-4 items-end w-full overflow-hidden">
-                    <div className="flex-1 space-y-2 min-w-0 w-full">
-                        <Label className="text-xs font-semibold uppercase tracking-wider opacity-70">Participant Code(s)</Label>
-                        <Textarea 
-                            placeholder="Enter Code(s) separated by comma or new line" 
-                            value={printSearch}
-                            onChange={(e) => setPrintSearch(e.target.value)}
-                            className="min-h-[100px] font-mono text-sm shadow-inner transition-all focus:ring-2 focus:ring-primary/20"
-                        />
+      <div className="grid gap-8">
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden flex flex-col">
+            <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                        <Printer className="h-6 w-6 text-primary" />
                     </div>
-                    <Button 
-                        type="button" 
-                        onClick={handleSearch} 
-                        disabled={isSearching} 
-                        className="h-[100px] w-full md:w-48 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 border-2 shadow-sm transition-all active:scale-[0.98] px-4"
-                    >
-                        {isSearching ? <Loader2 className="h-7 w-7 animate-spin" /> : <Search className="h-7 w-7 shrink-0" />}
-                        <div className="flex flex-col items-start ml-3 text-left min-w-0">
-                            <span className="font-bold text-base leading-none tracking-tight">SEARCH</span>
-                            <span className="text-[10px] opacity-70 mt-1.5 uppercase tracking-tighter leading-tight">Generate Proof Sheet</span>
-                        </div>
-                    </Button>
+                    <div>
+                        <CardTitle className="text-2xl font-display">Batch Preview Workstation</CardTitle>
+                        <CardDescription className="font-medium italic">
+                            Manually search and batch print badges for participants.
+                        </CardDescription>
+                    </div>
                 </div>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="p-8 space-y-8">
+                    <div className="flex flex-col md:flex-row gap-6 items-end">
+                        <div className="flex-1 space-y-2.5 w-full">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Participant Code(s)</Label>
+                            <Textarea 
+                                placeholder="Enter Code(s) separated by comma or new line" 
+                                value={printSearch}
+                                onChange={(e) => setPrintSearch(e.target.value)}
+                                className="min-h-[120px] font-mono text-sm bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all focus-visible:ring-primary/30"
+                            />
+                        </div>
+                        <Button 
+                            type="button" 
+                            onClick={handleSearch} 
+                            disabled={isSearching} 
+                            className="btn-aurora h-[120px] w-full md:w-56 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] px-6"
+                        >
+                            {isSearching ? <Loader2 className="h-8 w-8 animate-spin" /> : <Search className="h-8 w-8 shrink-0" />}
+                            <div className="flex flex-col items-start ml-4 text-left">
+                                <span className="font-black text-xl leading-none tracking-tight">SEARCH</span>
+                                <span className="text-[10px] font-bold opacity-70 mt-2 uppercase tracking-widest leading-tight">Generate Proof Sheet</span>
+                            </div>
+                        </Button>
+                    </div>
 
-                {participants.length > 0 && (
-                    <div className="pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full overflow-hidden">
-                        <div className="flex flex-col lg:flex-row gap-8 w-full overflow-hidden">
-                            {/* Master: Proof Sheet (Grid) */}
-                            <div className="flex-1 space-y-6 min-w-0">
-                                <div className="flex flex-col sm:flex-row justify-between items-center bg-background p-4 rounded-2xl border shadow-sm gap-4 overflow-hidden">
-                                    <div className="flex flex-wrap items-center gap-6 min-w-0">
-                                        <div className="flex items-center gap-2 border-r pr-4">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Source</span>
-                                            <Badge variant="secondary" className="font-mono text-primary bg-primary/5 border-primary/10">{participants.length}</Badge>
+                    {participants.length > 0 && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8">
+                            <div className="flex flex-col lg:flex-row gap-8 items-start">
+                                {/* Master: Proof Sheet (Grid) */}
+                                <div className="flex-1 space-y-6 w-full overflow-hidden">
+                                    <div className="flex flex-col sm:flex-row justify-between items-center glass p-4 rounded-3xl border-white/10 gap-4">
+                                        <div className="flex flex-wrap items-center gap-4 min-w-0">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Source</span>
+                                                <Badge variant="secondary" className="font-mono font-black text-primary bg-primary/10 border-0">{participants.length}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Match</span>
+                                                <Badge variant="outline" className="font-mono font-black border-white/10">{filteredResults.length}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Selected</span>
+                                                <Badge variant="default" className="bg-primary font-mono font-black shadow-glow-sm border-0">{selectedIds.size}</Badge>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Match</span>
-                                            <Badge variant="outline" className="font-mono">{filteredResults.length}</Badge>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Selected</span>
-                                            <Badge variant="default" className="bg-primary font-mono shadow-sm">{selectedIds.size}</Badge>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-1 items-center gap-3 w-full sm:w-auto min-w-0">
-                                        <div className="relative flex-1 min-w-[200px]">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
-                                            <input 
-                                                type="text"
-                                                placeholder="Quick name/code search..."
-                                                value={resultSearch}
-                                                onChange={(e) => setResultSearch(e.target.value)}
-                                                className="w-full bg-muted/50 border rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                                            />
-                                        </div>
-
-                                        <div className="hidden lg:flex items-center gap-3 mr-4 bg-muted/30 px-4 py-1.5 rounded-xl border">
-                                            <ZoomOut className="h-3.5 w-3.5 text-muted-foreground" />
-                                            <input 
-                                                type="range" 
-                                                min="0.1" 
-                                                max="0.4" 
-                                                step="0.05" 
-                                                value={zoom}
-                                                onChange={(e) => setZoom(Number.parseFloat(e.target.value))}
-                                                className="w-28 h-2 bg-muted-foreground/20 rounded-lg appearance-none cursor-pointer accent-primary"
-                                            />
-                                            <ZoomIn className="h-4 w-4 text-muted-foreground" />
-                                        </div>
-
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="flex-1 sm:flex-none text-xs h-9 gap-2 transition-all hover:bg-muted"
-                                                onClick={() => setSelectedIds(new Set(participants.map(p => p.registration_uuid)))}
-                                            >
-                                                <CheckSquare className="h-4 w-4 text-primary" />
-                                                All
-                                            </Button>
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="flex-1 sm:flex-none text-xs h-9 gap-2 transition-all hover:bg-muted"
-                                                onClick={() => setSelectedIds(new Set())}
-                                            >
-                                                <Square className="h-4 w-4 text-muted-foreground" />
-                                                None
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div 
-                                    className="grid gap-6 max-h-[800px] overflow-y-auto p-6 border rounded-3xl bg-muted/5 custom-scrollbar shadow-inner"
-                                    style={{ 
-                                        gridTemplateColumns: `repeat(auto-fill, minmax(${zoom * 500 + 40}px, 1fr))` 
-                                    }}
-                                >
-                                    {filteredResults.map((p, idx) => (
-                                        <div 
-                                            key={p.registration_uuid}
-                                            role="button"
-                                            tabIndex={0}
-                                            className={`
-                                                relative group cursor-pointer rounded-2xl border-2 transition-all duration-300 outline-none
-                                                ${selectedParticipantId === p.registration_uuid ? 'border-primary ring-8 ring-primary/5 z-10 scale-[1.02]' : 'border-transparent hover:border-primary/20 hover:scale-[1.01]'}
-                                                ${selectedIds.has(p.registration_uuid) ? 'bg-primary/5 shadow-md border-primary/10' : 'bg-background shadow-sm'}
-                                            `}
-                                            onClick={() => setSelectedParticipantId(p.registration_uuid)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                    setSelectedParticipantId(p.registration_uuid);
-                                                }
-                                            }}
-                                        >
-                                            {/* Sequence Number */}
-                                            <div className="absolute -top-2 -left-2 h-6 min-w-[24px] px-1 bg-muted-foreground text-white text-[10px] font-bold rounded-md flex items-center justify-center shadow-sm z-20 border border-white/20">
-                                                {idx + 1}
+                                        
+                                        <div className="flex flex-1 items-center gap-3 w-full sm:w-auto min-w-0">
+                                            <div className="relative flex-1 min-w-[180px] group">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                                                <input 
+                                                    type="text"
+                                                    placeholder="Matrix search  )
+}
+"
+                                                    value={resultSearch}
+                                                    onChange={(e) => setResultSearch(e.target.value)}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:bg-white/10 transition-all font-medium"
+                                                />
                                             </div>
 
-                                            {/* Thumbnail Container */}
-                                            <div className="relative overflow-hidden rounded-xl m-1.5 bg-white shadow-sm ring-1 ring-black/5 flex items-center justify-center p-2" style={{ aspectRatio: '500/700' }}>
-                                                <div 
-                                                    className="transition-transform duration-500 origin-center pointer-events-none flex-shrink-0"
-                                                    style={{ 
-                                                        transform: `scale(${zoom})`,
-                                                        width: '500px',
-                                                        height: '700px'
-                                                    }}
+                                            <div className="hidden xl:flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                                                <ZoomOut className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                                <input 
+                                                    type="range" 
+                                                    min="0.1" 
+                                                    max="0.4" 
+                                                    step="0.05" 
+                                                    value={zoom}
+                                                    onChange={(e) => setZoom(Number.parseFloat(e.target.value))}
+                                                    className="w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                                                />
+                                                <ZoomIn className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                            </div>
+
+                                            <div className="flex gap-1.5">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 bg-white/5 hover:bg-white/10"
+                                                    onClick={() => setSelectedIds(new Set(participants.map(p => p.registration_uuid)))}
                                                 >
-                                                    <BadgePrint participant={p as RealParticipant & { title_other?: string }} />
+                                                    All
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 bg-white/5 hover:bg-white/10"
+                                                    onClick={() => setSelectedIds(new Set())}
+                                                >
+                                                    None
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div 
+                                        className="grid gap-6 max-h-[750px] overflow-y-auto p-8 rounded-[2rem] bg-white/5 border border-white/10 custom-scrollbar shadow-inner"
+                                        style={{ 
+                                            gridTemplateColumns: `repeat(auto-fill, minmax(${zoom * 500 + 40}px, 1fr))` 
+                                        }}
+                                    >
+                                        {filteredResults.map((p, idx) => (
+                                            <div 
+                                                key={p.registration_uuid}
+                                                role="button"
+                                                tabIndex={0}
+                                                className={cn(
+                                                    "relative group cursor-pointer rounded-2xl border-2 transition-all duration-500 outline-none overflow-hidden",
+                                                    selectedParticipantId === p.registration_uuid 
+                                                        ? 'border-primary shadow-glow-sm scale-[1.02] z-10' 
+                                                        : 'border-white/5 hover:border-primary/20 hover:bg-white/5'
+                                                )}
+                                                onClick={() => setSelectedParticipantId(p.registration_uuid)}
+                                            >
+                                                {/* Sequence Node */}
+                                                <div className="absolute top-2 left-2 h-5 min-w-[20px] px-1 bg-primary text-white text-[9px] font-black rounded-md flex items-center justify-center shadow-lg z-20 border border-white/20">
+                                                    {idx + 1}
                                                 </div>
-                                                
-                                                {/* Selection Overlay */}
-                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.02] transition-colors duration-300" />
-                                                
-                                                {/* Selection Checkbox */}
-                                                <div 
-                                                    role="checkbox"
-                                                    aria-checked={selectedIds.has(p.registration_uuid)}
-                                                    tabIndex={0}
-                                                    className={`absolute top-3 right-3 h-7 w-7 rounded-xl border-2 flex items-center justify-center transition-all duration-300 shadow-sm ${selectedIds.has(p.registration_uuid) ? 'bg-primary border-primary scale-110' : 'bg-white/90 border-gray-200 hover:border-primary/50'}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const newSelected = new Set(selectedIds);
-                                                        if (newSelected.has(p.registration_uuid)) {
-                                                            newSelected.delete(p.registration_uuid);
-                                                        } else {
-                                                            newSelected.add(p.registration_uuid);
-                                                        }
-                                                        setSelectedIds(newSelected);
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                            e.preventDefault();
+
+                                                {/* Thumbnail Matrix */}
+                                                <div className="relative overflow-hidden m-1.5 bg-white rounded-xl shadow-sm flex items-center justify-center p-2 group-hover:scale-[0.98] transition-transform duration-500" style={{ aspectRatio: '500/700' }}>
+                                                    <div 
+                                                        className="transition-transform duration-700 origin-center pointer-events-none flex-shrink-0"
+                                                        style={{ 
+                                                            transform: `scale(${zoom})`,
+                                                            width: '500px',
+                                                            height: '700px'
+                                                        }}
+                                                    >
+                                                        <BadgePrint participant={p as RealParticipant & { title_other?: string }} />
+                                                    </div>
+                                                    
+                                                    {/* Interactive Overlay */}
+                                                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/[0.03] transition-colors duration-500" />
+                                                    
+                                                    {/* Binary Selector */}
+                                                    <div 
+                                                        role="checkbox"
+                                                        aria-checked={selectedIds.has(p.registration_uuid)}
+                                                        className={cn(
+                                                            "absolute top-3 right-3 h-8 w-8 rounded-xl border-2 flex items-center justify-center transition-all duration-500 shadow-xl",
+                                                            selectedIds.has(p.registration_uuid) 
+                                                                ? 'bg-primary border-primary scale-110 shadow-glow-sm' 
+                                                                : 'bg-white/90 border-black/10 hover:border-primary/50'
+                                                        )}
+                                                        onClick={(e) => {
                                                             e.stopPropagation();
                                                             const newSelected = new Set(selectedIds);
                                                             if (newSelected.has(p.registration_uuid)) {
@@ -301,122 +296,135 @@ function UtilitiesContent() {
                                                                 newSelected.add(p.registration_uuid);
                                                             }
                                                             setSelectedIds(newSelected);
-                                                        }
-                                                    }}
-                                                >
-                                                    {selectedIds.has(p.registration_uuid) && (
-                                                        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    )}
-                                                </div>
+                                                        }}
+                                                    >
+                                                        {selectedIds.has(p.registration_uuid) && (
+                                                            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
 
-                                                {/* Remove Action */}
-                                                <button
-                                                    className="absolute bottom-3 right-3 h-8 w-8 bg-destructive/10 text-destructive border-2 border-destructive/20 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-destructive hover:text-white hover:scale-110 active:scale-90"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleRemoveParticipant(p.registration_uuid);
-                                                    }}
-                                                    title="Remove from results"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                    {/* Purge Button */}
+                                                    <button
+                                                        className="absolute bottom-3 right-3 h-8 w-8 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-red-500 hover:text-white hover:scale-110"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveParticipant(p.registration_uuid);
+                                                        }}
+                                                        title="Remove from results"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                                
+                                                {zoom > 0.15 && (
+                                                    <div className="px-3 py-2.5 border-t border-white/5 bg-white/5">
+                                                        <p className="text-[11px] font-bold truncate text-foreground leading-none">
+                                                            {p.first_name} {p.last_name}
+                                                        </p>
+                                                        <p className="text-[9px] text-primary/60 truncate font-mono font-bold mt-1.5 uppercase tracking-tighter">
+                                                            {p.registration_code}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Detail: Inspector Panel */}
+                                <div className="w-full lg:w-[420px] shrink-0 space-y-6">
+                                    <div className="sticky top-8">
+                                        <div className="glass p-8 rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden">
+                                            {/* Glow effect */}
+                                            <div className="absolute -top-24 -right-24 size-48 bg-primary/10 blur-3xl rounded-full" />
                                             
-                                            {zoom > 0.15 && (
-                                                <div className="px-3 py-2 border-t bg-muted/5 rounded-b-2xl">
-                                                    <p className="text-[11px] font-bold truncate leading-tight text-foreground">
-                                                        {p.first_name} {p.last_name}
-                                                    </p>
-                                                    <p className="text-[10px] text-muted-foreground truncate font-mono mt-0.5 opacity-60">
-                                                        {p.registration_code}
-                                                    </p>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h3 className="font-display font-bold text-xl flex items-center gap-3">
+                                                    <UserCheck className="h-6 w-6 text-primary" />
+                                                    Badge Inspector
+                                                </h3>
+                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-[9px] font-black uppercase tracking-[0.2em]">Verified</Badge>
+                                            </div>
+                                            <p className="text-sm font-medium text-muted-foreground italic mb-8">Inspecting high-fidelity render for verification.</p>
+                                            
+                                            <div className="shadow-2xl rounded-3xl bg-white overflow-hidden aspect-[3/4.2] relative group ring-4 ring-white/5 flex items-start justify-center pt-10">
+                                                <div className="transition-transform group-hover:scale-[1.03] duration-1000 origin-top pointer-events-none" style={{ transform: 'scale(0.82)' }}>
+                                                    <BadgePrint participant={(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]) as RealParticipant & { title_other?: string }} />
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                                                
+                                                {/* Intelligence Overlay */}
+                                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-10 text-white transform translate-y-full group-hover:translate-y-0 transition-all duration-700 ease-out">
+                                                    <div className="space-y-1">
+                                                        <p className="font-display font-black text-2xl leading-tight">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.first_name} {(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.last_name}</p>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <Ticket className="size-4 text-primary" />
+                                                            <p className="text-sm font-mono font-bold tracking-[0.3em] text-primary">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.registration_code || '---'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <Separator className="my-6 bg-white/10" />
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Affiliation</p>
+                                                        <p className="text-sm font-bold truncate italic">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.company_name || 'Individual'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                            {/* Detail: Inspector Panel */}
-                            <div className="w-full lg:w-[400px] space-y-6">
-                                <div className="sticky top-6">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-bold text-lg flex items-center gap-2">
-                                            <UserCheck className="h-5 w-5 text-primary" />
-                                            Badge Inspector
-                                        </h3>
-                                        <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-bold">Proof Ready</Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mb-6">Inspecting high-fidelity render for verification.</p>
-                                    
-                                    <div className="border shadow-2xl rounded-[2.5rem] bg-white overflow-hidden aspect-[3/4.5] relative group ring-1 ring-black/5 flex items-start justify-center pt-8">
-                                        <div className="transition-transform group-hover:scale-[1.05] duration-700 origin-top pointer-events-none" style={{ transform: 'scale(0.78)' }}>
-                                            <BadgePrint participant={(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]) as RealParticipant & { title_other?: string }} />
-                                        </div>
-                                        
-                                        {/* Info Overlay */}
-                                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-10 text-white transform translate-y-full group-hover:translate-y-0 transition-all duration-500 ease-out">
-                                            <div className="space-y-1">
-                                                <p className="font-black text-2xl leading-tight">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.first_name} {(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.last_name}</p>
-                                                <p className="text-base font-mono opacity-80 tracking-widest">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.registration_code || '---'}</p>
-                                            </div>
-                                            <div className="mt-4 pt-4 border-t border-white/20">
-                                                <p className="text-xs uppercase tracking-tighter opacity-60">Company</p>
-                                                <p className="text-sm font-semibold truncate leading-none">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.company_name || 'N/A'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-8 space-y-4">
-                                        <Button 
-                                            className="w-full h-16 text-xl font-bold shadow-2xl shadow-primary/30 group relative overflow-hidden rounded-2xl transition-all active:scale-[0.98]" 
-                                            onClick={handleBulkPrint} 
-                                            disabled={isSubmittingBulk || selectedIds.size === 0}
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-primary-foreground group-hover:rotate-12 group-hover:scale-150 transition-all duration-700 opacity-90" />
-                                            <div className="relative flex items-center justify-center gap-3">
-                                                {isSubmittingBulk ? <Loader2 className="w-6 h-6 animate-spin" /> : <Printer className="w-6 h-6 transition-transform group-hover:scale-110" />}
-                                                {selectedIds.size > 0 ? `Print ${selectedIds.size} Badges` : 'None Selected'}
-                                            </div>
-                                        </Button>
-                                        
-                                        <div className="bg-muted/30 rounded-2xl p-4 border border-dashed text-center">
-                                            <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest opacity-60 px-2 mb-2">
-                                                <span>Workload</span>
-                                                <span>{Math.round((selectedIds.size / Math.max(participants.length, 1)) * 100)}%</span>
-                                            </div>
-                                            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-primary transition-all duration-1000 ease-out"
-                                                    style={{ width: `${(selectedIds.size / Math.max(participants.length, 1)) * 100}%` }}
-                                                />
+                                            <div className="mt-10 space-y-6">
+                                                <Button 
+                                                    className="btn-aurora w-full h-16 rounded-2xl shadow-xl shadow-primary/20 relative overflow-hidden transition-all active:scale-[0.98]" 
+                                                    onClick={handleBulkPrint} 
+                                                    disabled={isSubmittingBulk || selectedIds.size === 0}
+                                                >
+                                                    <div className="relative flex items-center justify-center gap-4">
+                                                        {isSubmittingBulk ? <Loader2 className="w-7 h-7 animate-spin" /> : <Printer className="w-7 h-7" />}
+                                                        <span className="font-display font-black text-xl tracking-tight">
+                                                            {selectedIds.size > 0 ? `Print ${selectedIds.size} Badges` : 'None Selected'}
+                                                        </span>
+                                                    </div>
+                                                </Button>
+                                                
+                                                <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+                                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] opacity-40 px-1 mb-3">
+                                                        <span className="flex items-center gap-2"><Cpu className="size-3" /> Matrix Workload</span>
+                                                        <span>{Math.round((selectedIds.size / Math.max(participants.length, 1)) * 100)}%</span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-primary transition-all duration-1000 ease-out shadow-glow-sm"
+                                                            style={{ width: `${(selectedIds.size / Math.max(participants.length, 1)) * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-                
-                {participants.length === 0 && !isSearching && (
-                    <div className="mt-8 flex flex-col items-center justify-center text-center text-muted-foreground min-h-[450px] border-[6px] border-dashed rounded-[3rem] bg-muted/5 transition-all hover:bg-muted/10 group cursor-default">
-                        <div className="bg-background p-10 rounded-[2rem] shadow-xl mb-6 transition-transform group-hover:scale-110 group-hover:rotate-3 duration-500 border-t border-l">
-                            <Printer className="h-20 w-20 opacity-10 text-primary group-hover:opacity-30 transition-opacity" />
+                    )}
+                    
+                    {participants.length === 0 && !isSearching && (
+                        <div className="mt-4 flex flex-col items-center justify-center text-center min-h-[500px] border-4 border-dashed rounded-[3rem] border-white/10 bg-white/[0.02] transition-all hover:bg-white/[0.04] group cursor-default">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full animate-pulse" />
+                                <div className="relative glass p-12 rounded-[2.5rem] border-white/10 shadow-2xl mb-8 transition-transform group-hover:scale-110 group-hover:rotate-3 duration-700">
+                                    <Printer className="h-24 w-24 opacity-20 text-primary" />
+                                </div>
+                            </div>
+                            <h3 className="text-3xl font-display font-black text-foreground mb-3">Empty Workstation</h3>
+                            <p className="text-muted-foreground max-w-[380px] leading-relaxed italic font-medium">
+                                Paste registration codes into the console above to initialize your badge synthesized proof sheet.
+                            </p>
+                            <div className="mt-10 flex gap-4 opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000">
+                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">#DEFT_01</Badge>
+                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">#EXHIB_99</Badge>
+                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">#VIP_CORE</Badge>
+                            </div>
                         </div>
-                        <h3 className="text-2xl font-black text-foreground mb-2 mt-4">Empty Workstation</h3>
-                        <p className="text-base max-w-[340px] leading-relaxed opacity-70">
-                            Paste registration codes into the console above to populate your proof sheet.
-                        </p>
-                        <div className="mt-8 flex gap-3 opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">
-                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">EX123</div>
-                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">VI456</div>
-                             <div className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold font-mono">VG789</div>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </CardContent>
         </Card>
       </div>
@@ -427,8 +435,11 @@ function UtilitiesContent() {
 export default function UtilitiesPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-[200px] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex h-[400px] w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+            <span className="text-xs font-black uppercase tracking-[0.3em] opacity-20 animate-pulse">Initializing Tools</span>
+        </div>
       </div>
     }>
       <UtilitiesContent />
