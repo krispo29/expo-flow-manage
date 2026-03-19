@@ -358,8 +358,8 @@ function UtilitiesContent() {
                                                     <div className="space-y-1">
                                                         <p className="font-display font-black text-2xl leading-tight">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.first_name} {(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.last_name}</p>
                                                         <div className="flex items-center gap-2 mt-2">
-                                                            <Ticket className="size-4 text-primary" />
-                                                            <p className="text-sm font-mono font-bold tracking-[0.3em] text-primary">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.registration_code || '---'}</p>
+                                                            <Ticket className="size-4 text-white/60" />
+                                                            <p className="text-sm font-mono font-bold tracking-[0.3em] text-white/90">{(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0])?.registration_code || '---'}</p>
                                                         </div>
                                                     </div>
                                                     <Separator className="my-6 bg-white/10" />
