@@ -64,11 +64,11 @@ export function NavUser({
                   {user.name.substring(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left leading-tight ml-2">
+              <div className="grid flex-1 text-left leading-tight ml-2 group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-bold text-sm tracking-tight">{user.name}</span>
                 <span className="truncate text-[10px] font-medium opacity-40 uppercase tracking-wider mt-0.5">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4 opacity-30" />
+              <ChevronsUpDown className="ml-auto size-4 opacity-30 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -92,12 +92,12 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-white/5 my-2" />
-            <DropdownMenuItem className="gap-3 p-2.5 rounded-xl transition-colors cursor-pointer group">
+            {/* <DropdownMenuItem className="gap-3 p-2.5 rounded-xl transition-colors cursor-pointer group">
               <div className="flex size-8 items-center justify-center rounded-lg bg-sidebar-accent/50 transition-colors group-hover:bg-primary/20">
                 <User className="size-4" />
               </div>
               <span className="font-semibold text-sm">Account Settings</span>
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
             <DropdownMenuItem 
               onClick={handleLogout}
               className="gap-3 p-2.5 rounded-xl transition-colors cursor-pointer group text-destructive focus:text-destructive focus:bg-destructive/10"

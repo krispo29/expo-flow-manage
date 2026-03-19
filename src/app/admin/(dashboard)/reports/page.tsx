@@ -352,21 +352,21 @@ export default function ReportsPage() {
                         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           placeholder="Search by Name, Company, or ID..."
-                          className="pl-10 h-12 text-base bg-background shadow-sm"
+                          className="pl-10 h-11 text-sm bg-background shadow-sm"
                           value={keyword}
                           onChange={e => setKeyword(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
                         />
                       </div>
-                      <div className="flex gap-2">
-                        <Button size="lg" className="h-12 px-6" onClick={() => handleSearch(1)} disabled={loading}>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="default" className="h-11 px-6" onClick={() => handleSearch(1)} disabled={loading}>
                           {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Search className="h-5 w-5 mr-2" />}
                           Search
                         </Button>
-                        <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleReset}>
+                        <Button variant="outline" size="default" className="h-11 px-4 shadow-sm" onClick={handleReset}>
                           Reset
                         </Button>
-                        <Button variant="outline" size="lg" className="h-12 px-4 shadow-sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
+                        <Button variant="outline" size="default" className="h-11 px-4 shadow-sm" onClick={handleExportAdvancedSearch} disabled={exportingAdvanced}>
                           {exportingAdvanced ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Download className="h-5 w-5 mr-2 text-primary" />}
                           Export
                         </Button>
@@ -374,7 +374,7 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Secondary Filters Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
                       {/* Country Filter */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -405,7 +405,7 @@ export default function ReportsPage() {
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date Start</Label>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                            <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal bg-background">
                               <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                               {dateStart ? format(dateStart, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
                             </Button>
@@ -421,7 +421,7 @@ export default function ReportsPage() {
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date End</Label>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal bg-background">
+                            <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal bg-background">
                               <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                               {dateEnd ? format(dateEnd, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
                             </Button>
@@ -447,7 +447,7 @@ export default function ReportsPage() {
                         </div>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-between font-normal bg-background">
+                            <Button variant="outline" size="sm" className="w-full justify-between font-normal bg-background">
                               <span className="truncate">
                                 {selectedTypeCodes.length === 0 
                                   ? <span className="text-muted-foreground">All Types</span>
@@ -487,7 +487,7 @@ export default function ReportsPage() {
                           checked={includeQuestionnaire}
                           onCheckedChange={(checked) => setIncludeQuestionnaire(!!checked)}
                         />
-                        <Label htmlFor="include_questionnaire" className="text-sm font-medium leading-none cursor-pointer">
+                        <Label htmlFor="include_questionnaire" className="text-xs font-medium leading-none cursor-pointer">
                           Include Questionnaire
                         </Label>
                       </div>
@@ -499,7 +499,7 @@ export default function ReportsPage() {
                           checked={includeStaff}
                           onCheckedChange={(checked) => setIncludeStaff(!!checked)}
                         />
-                        <Label htmlFor="is_include_staff" className="text-sm font-medium leading-none cursor-pointer">
+                        <Label htmlFor="is_include_staff" className="text-xs font-medium leading-none cursor-pointer">
                           Include Staff
                         </Label>
                       </div>
