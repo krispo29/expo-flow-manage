@@ -291,7 +291,11 @@ export default function ExhibitorsPage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-bold text-lg">{item.companyName}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{item.username || '-'}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-xs text-muted-foreground font-mono">{item.username || '-'}</p>
+                            <span className="text-muted-foreground/20 text-[10px]">|</span>
+                            <code className="text-[10px] font-bold text-primary font-mono">{item.passwordNote || '-'}</code>
+                          </div>
                         </div>
                         <Badge variant={item.isActive ? "default" : "secondary"} className={cn("rounded-full px-3", item.isActive ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-muted/50')}>
                           {item.isActive ? 'Active' : 'Inactive'}
@@ -352,6 +356,7 @@ export default function ExhibitorsPage() {
                     <TableRow className="hover:bg-transparent border-white/5">
                       <TableHead className="font-bold py-5 pl-6">Company</TableHead>
                       <TableHead className="font-bold">Username</TableHead>
+                      <TableHead className="font-bold">Password</TableHead>
                       <TableHead className="font-bold">Event & Booth</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold text-center">Quota</TableHead>
@@ -361,7 +366,7 @@ export default function ExhibitorsPage() {
                   <TableBody>
                     {filteredExhibitors.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-20 text-muted-foreground italic">
+                        <TableCell colSpan={7} className="text-center py-20 text-muted-foreground italic">
                           {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
                         </TableCell>
                       </TableRow>
@@ -370,10 +375,12 @@ export default function ExhibitorsPage() {
                         <TableRow key={`${item.id}-${index}`} className="group hover:bg-white/5 border-white/5 transition-colors">
                           <TableCell className="pl-6">
                             <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.companyName}</div>
-                            <div className="text-[10px] text-muted-foreground/60 uppercase font-mono mt-0.5">{item.passwordNote || 'No password note'}</div>
                           </TableCell>
                           <TableCell>
                             <span className="font-medium text-muted-foreground">{item.username || '-'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono">{item.passwordNote || '-'}</code>
                           </TableCell>
                           <TableCell>
                             <div className="font-medium truncate max-w-[200px]">{item.eventName || '-'}</div>

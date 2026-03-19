@@ -12,6 +12,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
+
 import {
   Select,
   SelectContent,
@@ -25,9 +27,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2 } from 'lucide-react'
 import { 
   Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
   resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
@@ -37,8 +40,10 @@ import { getConferences, getRooms, type Conference, type Room } from '@/app/acti
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries } from '@/lib/countries'
-// import { ParticipantExcelOperations } from './participant-excel'
 import { printBadge } from '@/utils/print-badge'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 10
 const CONF_PAGE_SIZE = 9
@@ -87,7 +92,7 @@ export function ParticipantList({
             firstName: p.first_name || '',
             lastName: p.last_name || '',
             companyName: p.company_name || '',
-            country: (p as any).residence_country || 'THAILAND',
+            country: (p as ParticipantDetail).residence_country || 'THAILAND',
             registrationCode: p.registration_code || '',
             category: p.attendee_type_code || 'VISITOR',
           })
@@ -302,181 +307,257 @@ export function ParticipantList({
 
 
   return (
-    <div className="space-y-4">
-
-
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search by name, email, company, code..." 
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setCurrentPage(1)
-            }}
-            className="pl-9 bg-background focus-visible:ring-primary"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={typeFilter} onValueChange={handleTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Types</SelectItem>
-              <SelectItem value="VI">Visitor (VI)</SelectItem>
-              <SelectItem value="VP">VIP (VP)</SelectItem>
-              <SelectItem value="EX">Exhibitor (EX)</SelectItem>
-              <SelectItem value="VG">VIP Group (VG)</SelectItem>
-              <SelectItem value="BY">Buyer (BY)</SelectItem>
-              <SelectItem value="SP">Speaker (SP)</SelectItem>
-              <SelectItem value="PR">Press (PR)</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
-        </div>
-      </div>
-
-      <div className="border rounded-lg bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <Card className="glass shadow-xl shadow-primary/5 border-white/10">
+        <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
+          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-display">Participants</CardTitle>
+              <CardDescription className="font-medium">Filter and manage all event attendees.</CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative w-full sm:w-80 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                <Input 
+                  placeholder="Name, Email, Company, Code..." 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={typeFilter} onValueChange={handleTypeFilter}>
+                  <SelectTrigger className="h-11 w-[160px] bg-white/5 border-white/10 rounded-2xl font-medium">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent className="glass border-white/10">
+                    <SelectItem value="ALL">All Types</SelectItem>
+                    <SelectItem value="VI">Visitor (VI)</SelectItem>
+                    <SelectItem value="VP">VIP (VP)</SelectItem>
+                    <SelectItem value="EX">Exhibitor (EX)</SelectItem>
+                    <SelectItem value="VG">VIP Group (VG)</SelectItem>
+                    <SelectItem value="BY">Buyer (BY)</SelectItem>
+                    <SelectItem value="SP">Speaker (SP)</SelectItem>
+                    <SelectItem value="PR">Press (PR)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          
+          {/* Mobile View: Cards */}
+          <div className="md:hidden divide-y divide-white/5">
             {currentParticipants.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  No participants found.
-                </TableCell>
-              </TableRow>
+              <div className="text-center p-12 text-muted-foreground italic font-medium">
+                No participants captured matching your matrix.
+              </div>
             ) : (
-              currentParticipants.map((p) => (
-                <TableRow key={p.registration_uuid}>
-                  <TableCell className="font-medium">
-                    <span className="px-2 py-1 rounded-full bg-secondary text-xs">{p.attendee_type_code}</span>
-                  </TableCell>
-                  <TableCell>{p.registration_code}</TableCell>
-                  <TableCell>
-                    {p.first_name} {p.last_name}
-                    <div className="text-xs text-muted-foreground">{p.job_position}</div>
-                  </TableCell>
-                  <TableCell>{p.company_name}</TableCell>
-                  <TableCell>
+              currentParticipants.map((p, i) => (
+                <div key={p.registration_uuid || i} className="p-6 space-y-4 hover:bg-white/5 transition-colors">
+                  <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                      <div className="text-xs">{p.email}</div>
-                      <div className="text-xs">Conferences: {p.conference_count}</div>
+                      <p className="font-bold text-lg text-foreground line-clamp-1">{p.first_name} {p.last_name}</p>
+                      <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className={`px-2 py-1 rounded-full text-xs ${p.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {p.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                      {p.is_email_sent && (
-                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
-                          Email Sent
-                        </span>
-                      )}
+                    <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.attendee_type_code}</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 text-sm">
+                    <div className="flex items-center gap-3 text-muted-foreground/80 font-medium">
+                      <Building2 className="h-4 w-4 shrink-0 text-primary/40" />
+                      <span className="truncate">{p.company_name || '---'}</span>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                       <Button variant="outline" size="icon" onClick={() => handleOpenEmailDialog(p)} title="Resend Email">
-                         <Mail className="h-4 w-4 text-purple-500" />
-                       </Button>
-                       <Button variant="outline" size="icon" onClick={() => openConferenceDialog(p)} title="Manage Conferences">
-                         <Calendar className="h-4 w-4 text-green-600" />
-                       </Button>
-                       <Button variant="outline" size="icon" onClick={() => onPrintClick(p)} title="Print Badge">
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(p.registration_uuid)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center gap-3 text-muted-foreground/80 font-medium italic">
+                      <Mail className="h-4 w-4 shrink-0 text-primary/40" />
+                      <span className="truncate">{p.email || '---'}</span>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <Badge className={cn("rounded-full px-3 text-[10px] font-bold", p.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
+                      {p.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                    {p.is_email_sent && (
+                      <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 rounded-full px-3 text-[10px] font-bold">Email Sent</Badge>
+                    )}
+                    <Badge variant="secondary" className="bg-white/5 border-white/5 rounded-full px-3 text-[10px] font-bold">Confs: {p.conference_count}</Badge>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-2">
+                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10 hover:bg-purple-500/10 hover:text-purple-500" onClick={() => handleOpenEmailDialog(p)} title="Resend Email">
+                      <Mail className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500" onClick={() => openConferenceDialog(p)} title="Manage Conferences">
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10 hover:bg-primary/10 hover:text-primary" onClick={() => onPrintClick(p)} title="Print Badge">
+                      <Printer className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1" />
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10" onClick={() => openEdit(p)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(p.registration_uuid)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               ))
             )}
-          </TableBody>
-        </Table>
-        
-        {/* Pagination Controls */}
-        {filteredParticipants.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t bg-muted/5">
-            <div className="text-sm text-muted-foreground italic">
-              Showing <span className="font-medium text-foreground">{Math.min(startIndex + 1, filteredParticipants.length)}</span> to{' '}
-              <span className="font-medium text-foreground">{Math.min(endIndex, filteredParticipants.length)}</span> of{' '}
-              <span className="font-medium text-foreground">{filteredParticipants.length}</span> participants
+          </div>
+
+          {/* Desktop View: Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-white/5">
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest pl-6">Type</TableHead>
+                  <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Participant Information</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company / Org</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status / Email</TableHead>
+                  <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentParticipants.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
+                      No participants found matching your matrix.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  currentParticipants.map((p, i) => (
+                    <TableRow key={p.registration_uuid || i} className="border-white/5 hover:bg-white/5 transition-colors group">
+                      <TableCell className="pl-6">
+                        <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.attendee_type_code}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{p.first_name} {p.last_name}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium mt-0.5">
+                          <Mail className="h-3 w-3 opacity-40" />
+                          {p.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm font-bold text-foreground/80">{p.company_name || '---'}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60 uppercase font-mono mt-0.5">{p.job_position || 'No position'}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1.5 items-start">
+                          <Badge className={cn("rounded-full px-2 py-0 text-[9px] font-bold border", p.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
+                            {p.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                          {p.is_email_sent && (
+                            <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-500/80 uppercase">
+                              <div className="size-1 rounded-full bg-blue-500 animate-pulse" />
+                              Email Confirmed
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-1.5">
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-purple-500/10 hover:text-purple-500 group-hover:scale-110 transition-all duration-300" onClick={() => handleOpenEmailDialog(p)} title="Resend Email">
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 group-hover:scale-110 transition-all duration-300" onClick={() => openConferenceDialog(p)} title="Manage Conferences">
+                            <Calendar className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" onClick={() => onPrintClick(p)} title="Print Badge">
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10 group-hover:scale-110 transition-all duration-300" onClick={() => openEdit(p)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive group-hover:scale-110 transition-all duration-300" onClick={() => handleDelete(p.registration_uuid)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/5 bg-white/5">
+            <div className="text-sm text-muted-foreground italic font-medium">
+              Visualizing <span className="text-foreground">{filteredParticipants.length > 0 ? startIndex + 1 : 0}</span> to <span className="text-foreground">{Math.min(endIndex, filteredParticipants.length)}</span> of <span className="text-foreground font-bold">{filteredParticipants.length}</span> attendees
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-9 w-9 rounded-full bg-white/5 border-white/10"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               
-              <div className="flex items-center gap-1 min-w-[3rem] justify-center">
-                <span className="text-sm font-medium">{currentPage}</span>
-                <span className="text-sm text-muted-foreground mx-0.5">/</span>
-                <span className="text-sm text-muted-foreground">{totalPages || 1}</span>
+              <div className="flex items-center gap-1 mx-2">
+                <span className="text-sm font-bold text-foreground">{currentPage}</span>
+                <span className="text-sm text-muted-foreground/40 font-normal">/</span>
+                <span className="text-sm text-muted-foreground font-bold">{totalPages || 1}</span>
               </div>
               
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-9 w-9 rounded-full bg-white/5 border-white/10"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages || totalPages === 0}
               >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* <div className="pt-8 border-t">
-        <h2 className="text-lg font-semibold mb-4">Data Management</h2>
-        <ParticipantExcelOperations projectId={projectId} />
-      </div> */}
-
+      {/* Main Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedParticipant ? 'Edit Participant' : 'Add Participant'}</DialogTitle>
+        <DialogContent className="glass sm:max-w-5xl border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                {selectedParticipant ? <Pencil className="h-6 w-6 text-primary" /> : <Plus className="h-6 w-6 text-primary" />}
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">{selectedParticipant ? 'Edit Identity' : 'Create Participant'}</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Complete the profile matrix to {selectedParticipant ? 'update existing metadata' : 'initialize a new registration'}.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+          <form ref={formRef} onSubmit={handleSubmit} className="p-8">
             <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="attendee_type_code">Type</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 px-1">
+              <div className="space-y-2.5">
+                <Label htmlFor="attendee_type_code" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Profile Category</Label>
                 <Select name="attendee_type_code" value={attendeeType} onValueChange={setAttendeeType} required>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="glass border-white/10">
                     <SelectItem value="VI">Visitor (VI)</SelectItem>
                     <SelectItem value="VP">VIP (VP)</SelectItem>
                     <SelectItem value="EX">Exhibitor (EX)</SelectItem>
@@ -487,33 +568,33 @@ export function ParticipantList({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+              <div className="space-y-2.5">
+                <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title</Label>
                 <Select name="title" value={title} onValueChange={setTitle} required>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="glass border-white/10">
                     {Array.from(new Set(['Mr', 'Mr.', 'Mrs', 'Mrs.', 'Ms', 'Ms.', 'Dr', 'Dr.', 'Prof', 'Prof.', title])).filter(Boolean).map(t => (
                       <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name *</Label>
-                <Input id="first_name" name="first_name" defaultValue={selectedParticipant?.first_name || ''} required />
+              <div className="space-y-2.5">
+                <Label htmlFor="first_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">First Name *</Label>
+                <Input id="first_name" name="first_name" placeholder="e.g. John" defaultValue={selectedParticipant?.first_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name *</Label>
-                <Input id="last_name" name="last_name" defaultValue={selectedParticipant?.last_name || ''} required />
+              <div className="space-y-2.5">
+                <Label htmlFor="last_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Last Name *</Label>
+                <Input id="last_name" name="last_name" placeholder="e.g. Doe" defaultValue={selectedParticipant?.last_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" name="email" type="email" defaultValue={selectedParticipant?.email || ''} required />
+              <div className="space-y-2.5 sm:col-span-2">
+                <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Email *</Label>
+                <Input id="email" name="email" type="email" placeholder="john.doe@example.com" defaultValue={selectedParticipant?.email || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label>Country Code *</Label>
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Country Code *</Label>
                 <CountrySelector
                   value={mobileCountryCode}
                   onChange={setMobileCountryCode}
@@ -527,20 +608,20 @@ export function ParticipantList({
                   value={countries.find(c => c.code === mobileCountryCode)?.phoneCode || mobileCountryCode}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="mobile_number">Mobile Number *</Label>
-                <Input id="mobile_number" name="mobile_number" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_number || ""} required />
+              <div className="space-y-2.5 sm:col-span-2">
+                <Label htmlFor="mobile_number" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Mobile Number*</Label>
+                <Input id="mobile_number" name="mobile_number" placeholder="e.g. 0812345678" defaultValue={(selectedParticipant as ParticipantDetail)?.mobile_number || ""} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="company_name">Company *</Label>
-                <Input id="company_name" name="company_name" defaultValue={selectedParticipant?.company_name || ''} required />
+              <div className="space-y-2.5 sm:col-span-2">
+                <Label htmlFor="company_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company *</Label>
+                <Input id="company_name" name="company_name" placeholder="Company/Organization Name" defaultValue={selectedParticipant?.company_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="job_position">Position *</Label>
-                <Input id="job_position" name="job_position" defaultValue={selectedParticipant?.job_position || ''} required />
+              <div className="space-y-2.5">
+                <Label htmlFor="job_position" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Position *</Label>
+                <Input id="job_position" name="job_position" placeholder="Job Title / Position" defaultValue={selectedParticipant?.job_position || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label>Residence Country *</Label>
+              <div className="space-y-2.5 sm:col-span-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Residence Country *</Label>
                 <CountrySelector
                   value={residenceCountry}
                   onChange={setResidenceCountry}
@@ -553,109 +634,130 @@ export function ParticipantList({
                   value={countries.find(c => c.code === residenceCountry)?.name || residenceCountry}
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="invitation_code">Invitation Code {selectedParticipant ? "(Cannot be changed)" : "(Optional)"}</Label>
+              <div className="space-y-2.5 sm:col-span-3">
+                <Label htmlFor="invitation_code" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Access/Invitation Token {selectedParticipant ? "(Locked)" : "(Optional)"}</Label>
                 <Input 
                   id="invitation_code" 
                   name="invitation_code" 
                   defaultValue={(selectedParticipant as ParticipantDetail)?.invitation_code || ""} 
                   disabled={!!selectedParticipant}
-                  className={selectedParticipant ? "bg-muted cursor-not-allowed" : ""}
+                  placeholder="Optional access code"
+                  className={cn("h-12 rounded-xl", selectedParticipant ? "bg-white/5 border-white/5 text-muted-foreground cursor-not-allowed opacity-50" : "bg-white/5 border-white/10")}
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {selectedParticipant ? 'Update' : 'Create'}
+            <DialogFooter className="mt-8 pt-8 border-t border-white/5 flex sm:flex-row gap-3">
+              <Button type="button" variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>Abort</Button>
+              <Button type="submit" disabled={loading} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                {selectedParticipant ? 'Save Changes' : 'Initialize Profile'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Email Confirmation Dialog */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Resend Email Confirmation</DialogTitle>
+        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+                <Mail className="h-6 w-6 text-purple-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Email Protocol</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Transmit confirmation payload to attendee.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Send email confirmation to <span className="font-medium text-foreground">{emailTarget?.first_name} {emailTarget?.last_name}</span>.
-            </p>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="participantEmail" className="text-right">Email</Label>
+          <div className="p-8 space-y-6">
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-1">
+              <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Recipient Identity</p>
+              <p className="text-sm font-bold text-foreground">
+                {emailTarget?.first_name} {emailTarget?.last_name}
+              </p>
+            </div>
+            <div className="space-y-2.5">
+              <Label htmlFor="participantEmail" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Target Address</Label>
               <Input 
                 id="participantEmail" 
                 value={targetEmail} 
                 onChange={e => setTargetEmail(e.target.value)} 
-                className="col-span-3" 
+                className="h-12 bg-white/5 border-white/10 rounded-xl" 
                 placeholder="example@email.com"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSendEmail} disabled={sendingEmail}>
+          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSendEmail} disabled={sendingEmail} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
               {sendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-              Send Email
+              Dispatch Now
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Conference Management Dialog */}
       <Dialog open={isConfDialogOpen} onOpenChange={setIsConfDialogOpen}>
-        <DialogContent className="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1000px] xl:max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col w-[95vw]">
-          <DialogHeader>
-            <DialogTitle className="text-xl md:text-2xl">Manage Conferences for <span className="text-primary">{confParticipant?.first_name} {confParticipant?.last_name}</span></DialogTitle>
+        <DialogContent className="glass max-w-[95vw] sm:max-w-[90vw] lg:max-w-[1100px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden flex flex-col h-[90vh]">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10 shrink-0">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                  <Calendar className="h-6 w-6 text-emerald-500" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-display font-bold">Session Matrix</DialogTitle>
+                  <DialogDescription className="font-medium italic">
+                    Manage conference allocations for <span className="text-foreground font-bold">{confParticipant?.first_name} {confParticipant?.last_name}</span>.
+                  </DialogDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 glass p-1.5 rounded-2xl border-white/10">
+                <div className="relative w-48 sm:w-64 group">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+                   <Input 
+                     placeholder="Search sessions..." 
+                     value={confSearchQuery}
+                     onChange={(e) => {
+                       setConfSearchQuery(e.target.value)
+                       setConfCurrentPage(1)
+                     }}
+                     className="pl-9 h-9 text-xs bg-white/5 border-white/5 rounded-xl focus:bg-white/10 transition-all"
+                   />
+                </div>
+                <Separator orientation="vertical" className="h-6 bg-white/10" />
+                <label className="flex items-center gap-2 cursor-pointer group px-2">
+                   <Checkbox 
+                     id="show-only-reserved" 
+                     checked={showOnlyReserved}
+                     onCheckedChange={(checked) => {
+                       setShowOnlyReserved(checked as boolean)
+                       setConfCurrentPage(1)
+                     }}
+                     className="size-3.5 border-white/20"
+                   />
+                   <span className="text-[10px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-tight">Reserved Only</span>
+                </label>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="pt-2 pb-0 space-y-3">
-             <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
-               <div className="relative flex-1 w-full">
-                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                 <Input 
-                   placeholder="Search conferences by title, speaker, or room..." 
-                   value={confSearchQuery}
-                   onChange={(e) => {
-                     setConfSearchQuery(e.target.value)
-                     setConfCurrentPage(1)
-                   }}
-                   className="pl-9 bg-muted/30 border-muted-foreground/20 focus-visible:ring-primary/50"
-                 />
-               </div>
-               <div className="flex items-center space-x-2 bg-muted/20 px-3 py-2 rounded-md border border-muted-foreground/10 h-10 shrink-0">
-                 <Checkbox 
-                   id="show-only-reserved" 
-                   checked={showOnlyReserved}
-                   onCheckedChange={(checked) => {
-                     setShowOnlyReserved(checked as boolean)
-                     setConfCurrentPage(1)
-                   }}
-                 />
-                 <Label 
-                   htmlFor="show-only-reserved" 
-                   className="text-sm font-medium leading-none cursor-pointer select-none"
-                 >
-                   Show Only Reserved
-                 </Label>
-               </div>
-             </div>
-          </div>
-          <div className="space-y-4 mt-2 overflow-y-auto flex-1 p-1">
+
+          <div className="flex-1 overflow-y-auto p-8 scrollbar-hide bg-white/5">
             {confLoading && conferences.length === 0 ? (
-               <div className="flex justify-center p-12"><Loader2 className="h-10 w-10 animate-spin text-muted-foreground" /></div>
+               <div className="flex flex-col items-center justify-center h-full py-20">
+                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                 <p className="text-sm font-bold tracking-widest uppercase opacity-40">Compiling sessions...</p>
+               </div>
             ) : (
-               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                 {conferences.length === 0 ? (
-                   <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border">
-                     No conferences available at this time.
-                   </div>
-                 ) : (
-                   (() => {
+               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                 {(() => {
                      let filtered = Array.from(new Map(conferences.map(c => [c.conference_uuid, c])).values());
                      
-                     // Filter by reservation status
                      if (showOnlyReserved) {
                        filtered = filtered.filter(conf => 
                          (reservations || []).some(r => r.conference_uuid === conf.conference_uuid)
@@ -677,8 +779,10 @@ export function ParticipantList({
                      
                      if (filtered.length === 0) {
                        return (
-                         <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
-                           No conferences found matching &quot;{confSearchQuery}&quot;
+                         <div className="col-span-full flex flex-col items-center justify-center py-24 text-center glass rounded-3xl border-dashed">
+                           <Calendar className="h-12 w-12 text-muted-foreground/20 mb-4" />
+                           <p className="text-lg font-display font-bold">No sessions found</p>
+                           <p className="text-sm text-muted-foreground italic mt-2">Try adjusting your search matrix or filters.</p>
                          </div>
                        );
                      }
@@ -689,56 +793,64 @@ export function ParticipantList({
 
                      return (
                        <>
-                         <div className="col-span-full grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                           {currentConfs.map((conf, index) => {
+                         {currentConfs.map((conf, index) => {
                              const reserved = (reservations || []).some(r => r.conference_uuid === conf.conference_uuid);
                              const room = rooms.find(r => r.room_uuid === conf.location);
                              const locationName = room ? room.room_name : conf.location;
                              
                              return (
-                               <div key={`${conf.conference_uuid}-${index}`} className={`relative p-5 rounded-xl border transition-all duration-200 flex flex-col h-full ${reserved ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-card hover:shadow-md'}`}>
-                                 {reserved && (
-                                   <div className="absolute top-3 right-3 z-10">
-                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
-                                       Reserved
-                                     </span>
-                                   </div>
-                                 )}
-                                 <div className="space-y-4 flex-1 flex flex-col">
+                               <div key={`${conf.conference_uuid}-${index}`} className={cn("glass group/conf p-6 rounded-3xl border transition-all duration-500 flex flex-col h-full", reserved ? 'border-emerald-500/30 bg-emerald-500/5 shadow-lg shadow-emerald-500/5' : 'hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5')}>
+                                 <div className="flex justify-between items-start mb-4">
+                                   <Badge variant="secondary" className="text-[9px] font-black tracking-tighter border-0 bg-white/10 uppercase">
+                                     {conf.conference_type || 'Session'}
+                                   </Badge>
+                                   {reserved && (
+                                      <Badge className="bg-emerald-500 text-white border-0 text-[10px] font-bold px-3 py-0.5 rounded-full animate-in zoom-in-50">RESERVED</Badge>
+                                   )}
+                                 </div>
+
+                                 <div className="flex-1 space-y-4">
                                    <div>
-                                     <h4 className="font-semibold text-lg line-clamp-2 pr-16 leading-tight" title={conf.title}>{conf.title}</h4>
-                                     <p className="text-sm text-primary/80 font-medium mt-1">By {conf.speaker_name}</p>
+                                     <h4 className="font-display font-bold text-lg leading-tight line-clamp-2 group-hover/conf:text-primary transition-colors">{conf.title}</h4>
+                                     <div className="flex items-center gap-2 text-xs font-bold text-primary/60 mt-1.5 uppercase tracking-wide">
+                                       <div className="size-1 rounded-full bg-primary/60" />
+                                       {conf.speaker_name}
+                                     </div>
                                    </div>
                                    
-                                   <div className="grid gap-2.5 text-sm text-muted-foreground mt-auto pt-2">
-                                     <div className="flex items-center gap-2">
-                                       <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+                                   <div className="space-y-2.5 text-[11px] font-medium text-muted-foreground/80">
+                                     <div className="flex items-center gap-2 bg-white/5 p-2 rounded-xl border border-white/5">
+                                       <Calendar className="h-3.5 w-3.5 opacity-40" />
                                        <span>{conf.show_date} • {conf.start_time.substring(0, 5)} - {conf.end_time.substring(0, 5)}</span>
                                      </div>
-                                     <div className="flex items-center gap-2">
-                                       <div className="h-4 w-4 shrink-0 flex items-center justify-center opacity-70">
-                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                                       </div>
-                                       <span className="truncate" title={locationName}>{locationName}</span>
+                                     <div className="flex items-center gap-2 bg-white/5 p-2 rounded-xl border border-white/5">
+                                       <Building2 className="h-3.5 w-3.5 opacity-40" />
+                                       <span className="truncate">{locationName}</span>
                                      </div>
                                    </div>
                                    
-                                   <div className="pt-3 mt-1 flex items-center justify-between border-t border-border/50">
-                                     <div className="text-sm flex flex-col">
+                                   <div className="pt-4 mt-auto border-t border-white/5 flex items-center justify-between">
+                                     <div className="space-y-0.5">
                                        <div className="flex items-baseline gap-1">
-                                         <span className={`font-semibold ${conf.remaining_seats > 0 ? 'text-foreground' : 'text-destructive'}`}>{conf.remaining_seats}</span>
-                                         <span className="text-muted-foreground text-xs">/ {conf.quota}</span>
+                                         <span className={cn("text-base font-display font-black", conf.remaining_seats > 0 ? 'text-foreground' : 'text-destructive')}>{conf.remaining_seats}</span>
+                                         <span className="text-[10px] text-muted-foreground/40 font-bold">/ {conf.quota}</span>
                                        </div>
-                                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">seats left</span>
+                                       <p className="text-[9px] font-bold uppercase tracking-widest opacity-40">Seats Left</p>
                                      </div>
-                                     <div>
+                                     <div className="shrink-0">
                                        {reserved ? (
-                                         <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200 w-full shadow-sm" size="sm" onClick={() => handleCancelReserve(conf.conference_uuid)} disabled={confLoading}>
+                                         <Button variant="ghost" size="sm" className="rounded-xl h-9 px-4 text-xs font-bold uppercase tracking-widest text-red-500 hover:bg-red-500/10" onClick={() => handleCancelReserve(conf.conference_uuid)} disabled={confLoading}>
                                            Cancel
                                          </Button>
                                        ) : (
-                                         <Button variant={conf.remaining_seats > 0 && conf.can_book ? "default" : "secondary"} className="w-full shadow-sm" size="sm" onClick={() => handleReserve(conf.conference_uuid)} disabled={confLoading || !conf.can_book || conf.remaining_seats <= 0}>
-                                           {conf.remaining_seats > 0 ? 'Reserve Seat' : 'Full'}
+                                         <Button 
+                                           variant={conf.remaining_seats > 0 && conf.can_book ? "default" : "secondary"} 
+                                           size="sm"
+                                           className={cn("rounded-xl h-9 px-4 text-xs font-bold uppercase tracking-widest", conf.remaining_seats > 0 && conf.can_book ? 'btn-aurora' : '')} 
+                                           onClick={() => handleReserve(conf.conference_uuid)} 
+                                           disabled={confLoading || !conf.can_book || conf.remaining_seats <= 0}
+                                         >
+                                           {conf.remaining_seats > 0 ? 'Reserve' : 'Full'}
                                          </Button>
                                        )}
                                      </div>
@@ -747,36 +859,35 @@ export function ParticipantList({
                                </div>
                              );
                            })}
-                         </div>
                          
                          {totalConfPages > 1 && (
-                           <div className="col-span-full flex items-center justify-between pt-4 mt-2 border-t text-sm">
-                             <div className="text-muted-foreground">
-                               Showing <span className="font-medium text-foreground">{startIdx + 1}</span> to <span className="font-medium text-foreground">{Math.min(startIdx + CONF_PAGE_SIZE, filtered.length)}</span> of <span className="font-medium text-foreground">{filtered.length}</span> results
+                           <div className="col-span-full flex flex-col sm:flex-row items-center justify-between pt-8 mt-4 border-t border-white/10 text-xs gap-4">
+                             <div className="text-muted-foreground font-medium italic">
+                               Visualizing <span className="text-foreground">{startIdx + 1}</span> to <span className="text-foreground">{Math.min(startIdx + CONF_PAGE_SIZE, filtered.length)}</span> of <span className="text-foreground font-bold">{filtered.length}</span> results
                              </div>
                              <div className="flex gap-2">
                                <Button
                                  type="button"
                                  variant="outline"
-                                 size="sm"
+                                 size="icon"
+                                 className="h-8 w-8 rounded-full bg-white/5 border-white/10"
                                  onClick={() => setConfCurrentPage(prev => Math.max(1, prev - 1))}
                                  disabled={confCurrentPage === 1}
                                >
-                                 <ChevronLeft className="h-4 w-4 mr-1" />
-                                 Previous
+                                 <ChevronLeft className="h-4 w-4" />
                                </Button>
-                               <div className="flex items-center px-4 font-medium">
-                                 {confCurrentPage} / {totalConfPages}
+                               <div className="flex items-center px-4 font-bold">
+                                 {confCurrentPage} <span className="mx-1 opacity-30 font-normal">/</span> {totalConfPages}
                                </div>
                                <Button
                                  type="button"
                                  variant="outline"
-                                 size="sm"
+                                 size="icon"
+                                 className="h-8 w-8 rounded-full bg-white/5 border-white/10"
                                  onClick={() => setConfCurrentPage(prev => Math.min(totalConfPages, prev + 1))}
                                  disabled={confCurrentPage === totalConfPages}
                                >
-                                 Next
-                                 <ChevronRight className="h-4 w-4 ml-1" />
+                                 <ChevronRight className="h-4 w-4" />
                                </Button>
                              </div>
                            </div>
@@ -784,12 +895,12 @@ export function ParticipantList({
                        </>
                      );
                    })()
-                 )}
+                 }
                </div>
             )}
           </div>
-          <DialogFooter className="mt-2 pt-4 border-t">
-             <Button variant="outline" onClick={() => setIsConfDialogOpen(false)}>Close Window</Button>
+          <DialogFooter className="p-6 bg-white/5 border-t border-white/10 shrink-0">
+             <Button variant="ghost" className="rounded-2xl h-11 px-8 font-bold text-xs uppercase tracking-widest" onClick={() => setIsConfDialogOpen(false)}>Close Session Manager</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

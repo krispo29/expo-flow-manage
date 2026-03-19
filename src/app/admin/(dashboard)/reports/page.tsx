@@ -270,9 +270,9 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Reports & Analytics</h1>
+        <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Reports</h1>
         <p className="text-muted-foreground mt-1">
-          Manage, view, and export registration data with advanced insights.
+          View and export registration reports.
         </p>
       </div>
 
@@ -360,9 +360,8 @@ export default function ReportsPage() {
                     <div>
                       <CardTitle className="flex items-center gap-3 text-2xl font-display">
                         <Filter className="h-6 w-6 text-primary" />
-                        Search Filters
-                      </CardTitle>
-                      <CardDescription className="font-medium">
+                        Advanced Search
+                        </CardTitle>                      <CardDescription className="font-medium">
                         Refine your participant list with dynamic metadata filtering.
                       </CardDescription>
                     </div>
