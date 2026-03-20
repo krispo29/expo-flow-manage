@@ -417,9 +417,9 @@ function UtilitiesContent() {
                                 Paste registration codes into the console above to initialize your badge synthesized proof sheet.
                             </p>
                             <div className="mt-10 flex gap-4 opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000">
-                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">#DEFT_01</Badge>
-                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">#EXHIB_99</Badge>
-                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">#VIP_CORE</Badge>
+                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">EX123</Badge>
+                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">VI456</Badge>
+                                 <Badge variant="outline" className="px-4 py-1.5 rounded-full text-[10px] font-mono font-black border-white/10">VG789</Badge>
                             </div>
                         </div>
                     )}
