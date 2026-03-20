@@ -118,7 +118,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 glass-elevated border-none p-2" align="start">
-                  <div className="px-3 py-2 text-[10px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.2em]">Projects</div>
+                  <div className="px-3 py-2 text-[10px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.2em] text-slate-800">Projects</div>
                   {projects?.map((project) => (
                     <DropdownMenuItem
                       key={project.id}
