@@ -30,7 +30,7 @@ import {
   toggleOrganizerStatus,
   type Organizer,
 } from '@/app/actions/organizer'
-import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, User, ShieldCheck, Calendar, Clock, Plus } from 'lucide-react'
+import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, User, ShieldCheck, Calendar, Clock, Plus, Copy, Check } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
@@ -56,6 +56,15 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   const [organizers, setOrganizers] = useState<Organizer[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, id: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    toast.success('Password copied to clipboard')
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   // Create dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -240,7 +249,23 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-muted-foreground font-mono">{org.username}</p>
                             <span className="text-muted-foreground/20 text-[10px]">|</span>
-                            <code className="text-[10px] font-bold text-primary font-mono">{org.password_note || '-'}</code>
+                            <div className="flex items-center gap-1">
+                              <code className="text-[10px] font-bold text-primary font-mono">{org.password_note || '-'}</code>
+                              {org.password_note && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-md hover:bg-white/10"
+                                  onClick={() => copyToClipboard(org.password_note!, org.organizer_uuid)}
+                                >
+                                  {copiedId === org.organizer_uuid ? (
+                                    <Check className="h-3 w-3 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-muted-foreground/60" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <Badge className={cn("rounded-full px-3 text-[10px] font-bold", org.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
@@ -307,7 +332,23 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                             <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{org.username}</span>
                           </TableCell>
                           <TableCell>
-                            <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono uppercase tracking-tighter">{org.password_note || '-'}</code>
+                            <div className="flex items-center gap-2">
+                              <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono uppercase tracking-tighter">{org.password_note || '-'}</code>
+                              {org.password_note && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy"
+                                  onClick={() => copyToClipboard(org.password_note!, org.organizer_uuid)}
+                                >
+                                  {copiedId === org.organizer_uuid ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground/40 group-hover/copy:text-primary transition-colors" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <p className="text-sm font-bold text-foreground/80">{org.full_name}</p>

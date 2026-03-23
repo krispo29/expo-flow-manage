@@ -38,6 +38,7 @@ export interface AdvancedSearchResult {
   last_name: string
   company_name: string
   attendee_type_code: string
+  attendee_type_name?: string
   residence_country: string
   registered_at: string
 }

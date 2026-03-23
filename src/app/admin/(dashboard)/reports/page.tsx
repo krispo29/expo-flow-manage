@@ -573,7 +573,9 @@ export default function ReportsPage() {
                                 </TableCell>
                                 <TableCell className="text-sm font-medium text-muted-foreground">{r.company_name || '---'}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{r.attendee_type_code || '---'}</Badge>
+                                  <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">
+                                    {r.attendee_type_name || r.attendee_type_code || '---'}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell className="text-sm font-medium italic opacity-70">{r.residence_country || '---'}</TableCell>
                                 <TableCell className="pr-6">

@@ -26,10 +26,17 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle } from 'lucide-react'
+import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function ExhibitorsPage() {
   const searchParams = useSearchParams()
@@ -55,6 +62,15 @@ export default function ExhibitorsPage() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    companyName: '',
+    username: '',
+    eventName: '',
+    isActive: 'all' // 'all', 'active', 'inactive'
+  })
+
   // Show/Hide password state
   const [showPassword, setShowPassword] = useState(false)
 
@@ -62,13 +78,31 @@ export default function ExhibitorsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Filter exhibitors based on search
-  const filteredExhibitors = exhibitors.filter(item => 
-    (item.username && item.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.companyName && item.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.eventName && item.eventName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.boothNo && item.boothNo.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  // Filter exhibitors based on search and column filters
+  const filteredExhibitors = exhibitors.filter(item => {
+    // Global search
+    const matchesSearch = !searchQuery || 
+      (item.username && item.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.companyName && item.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.eventName && item.eventName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.boothNo && item.boothNo.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    // Column specific filters
+    const matchesCompany = !columnFilters.companyName || 
+      (item.companyName && item.companyName.toLowerCase().includes(columnFilters.companyName.toLowerCase()))
+    
+    const matchesUsername = !columnFilters.username || 
+      (item.username && item.username.toLowerCase().includes(columnFilters.username.toLowerCase()))
+
+    const matchesEvent = !columnFilters.eventName || 
+      (item.eventName && item.eventName.toLowerCase().includes(columnFilters.eventName.toLowerCase()))
+
+    const matchesStatus = columnFilters.isActive === 'all' || 
+      (columnFilters.isActive === 'active' && item.isActive) ||
+      (columnFilters.isActive === 'inactive' && !item.isActive)
+
+    return matchesSearch && matchesCompany && matchesUsername && matchesEvent && matchesStatus
+  })
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredExhibitors.length / itemsPerPage)
@@ -83,6 +117,24 @@ export default function ExhibitorsPage() {
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
     setCurrentPage(1)
+  }
+
+  // Handle column filter change and reset pagination
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      companyName: '',
+      username: '',
+      eventName: '',
+      isActive: 'all'
+    })
+    setSearchQuery('')
+    setCurrentPage(1)
+    setShowFilters(false)
   }
 
   // Wait for fetchExhibitors
@@ -260,18 +312,86 @@ export default function ExhibitorsPage() {
               <CardTitle className="text-2xl font-display">All Exhibitors</CardTitle>
               <CardDescription>Manage exhibitor accounts and quotas</CardDescription>
             </div>
-            <div className="relative w-full max-sm:max-w-none max-w-sm group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Search by company, booth, username..."
-                className="pl-11 bg-white/5 border-white/10 rounded-full h-11 focus-visible:ring-primary/30 transition-all focus:bg-white/10"
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
+            <div className="flex items-center gap-2 w-full max-sm:max-w-none max-w-lg">
+              <div className="relative flex-1 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                <Input
+                  placeholder="Search by company, booth, username..."
+                  className="pl-11 bg-white/5 border-white/10 rounded-full h-11 focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                />
+              </div>
+              <Button 
+                variant={showFilters ? "default" : "outline"} 
+                size="icon" 
+                className={cn("h-11 w-11 rounded-full shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                onClick={() => setShowFilters(!showFilters)}
+                title="Toggle Filters"
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+              {(showFilters || searchQuery || Object.values(columnFilters).some(v => v !== '' && v !== 'all')) && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-11 w-11 rounded-full shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                  onClick={clearFilters}
+                  title="Clear All Filters"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Company Name</Label>
+                  <Input 
+                    placeholder="Filter by company..." 
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.companyName}
+                    onChange={e => handleColumnFilterChange('companyName', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Username</Label>
+                  <Input 
+                    placeholder="Filter by username..." 
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.username}
+                    onChange={e => handleColumnFilterChange('username', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Event Name</Label>
+                  <Input 
+                    placeholder="Filter by event..." 
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.eventName}
+                    onChange={e => handleColumnFilterChange('eventName', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Status</Label>
+                  <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="flex flex-col items-center justify-center p-20">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -362,6 +482,58 @@ export default function ExhibitorsPage() {
                       <TableHead className="font-bold text-center">Quota</TableHead>
                       <TableHead className="text-right font-bold pr-6">Actions</TableHead>
                     </TableRow>
+                    {showFilters && (
+                      <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                        <TableHead className="pl-6 py-2">
+                          <Input 
+                            placeholder="Filter company..." 
+                            className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                            value={columnFilters.companyName}
+                            onChange={e => handleColumnFilterChange('companyName', e.target.value)}
+                          />
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Input 
+                            placeholder="Filter username..." 
+                            className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                            value={columnFilters.username}
+                            onChange={e => handleColumnFilterChange('username', e.target.value)}
+                          />
+                        </TableHead>
+                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2">
+                          <Input 
+                            placeholder="Filter event..." 
+                            className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                            value={columnFilters.eventName}
+                            onChange={e => handleColumnFilterChange('eventName', e.target.value)}
+                          />
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent className="glass border-white/10 rounded-xl">
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
+                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2 text-right pr-6">
+                           <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                            onClick={clearFilters}
+                          >
+                            Reset
+                          </Button>
+                        </TableHead>
+                      </TableRow>
+                    )}
                   </TableHeader>
                   <TableBody>
                     {filteredExhibitors.length === 0 ? (
@@ -408,7 +580,7 @@ export default function ExhibitorsPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-orange-500/10 hover:text-orange-500 group-hover:scale-110 transition-all duration-300" 
+                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-orange-500/10 hover:text-orange-500 transition-all duration-300" 
                                 title="Test Login" 
                                 onClick={() => handleOpenTestLoginDialog(item)}
                               >
@@ -418,7 +590,7 @@ export default function ExhibitorsPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-purple-500/10 hover:text-purple-500 group-hover:scale-110 transition-all duration-300" 
+                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-purple-500/10 hover:text-purple-500 transition-all duration-300" 
                                 title="Send Credentials" 
                                 onClick={() => handleOpenEmailDialog(item)}
                               >
@@ -429,7 +601,7 @@ export default function ExhibitorsPage() {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" 
+                                  className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary transition-all duration-300" 
                                   title="Edit"
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -439,7 +611,7 @@ export default function ExhibitorsPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-500 group-hover:scale-110 transition-all duration-300" 
+                                className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300" 
                                 title="Reset Password" 
                                 onClick={() => handleOpenPasswordDialog(item)}
                               >
@@ -449,7 +621,7 @@ export default function ExhibitorsPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className={cn("h-9 w-9 rounded-full bg-white/5 border border-white/10 group-hover:scale-110 transition-all duration-300", item.isActive ? 'hover:bg-red-500/10 hover:text-red-500' : 'hover:bg-green-500/10 hover:text-green-500')} 
+                                className={cn("h-9 w-9 rounded-full bg-white/5 border border-white/10 transition-all duration-300", item.isActive ? 'hover:bg-red-500/10 hover:text-red-500' : 'hover:bg-green-500/10 hover:text-green-500')} 
                                 title={item.isActive ? 'Deactivate' : 'Activate'} 
                                 onClick={() => handleToggleStatus(item.id)}
                               >
