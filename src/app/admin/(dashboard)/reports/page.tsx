@@ -348,7 +348,7 @@ export default function ReportsPage() {
           )} 
           onClick={() => setActiveView('conference-summary')}
         >
-          <FileBarChart className="mr-2 h-4 w-4 shrink-0" /> Session Summary
+          <FileBarChart className="mr-2 h-4 w-4 shrink-0" /> Conference Summary
         </Button>
       </div>
 
@@ -771,7 +771,7 @@ export default function ReportsPage() {
               <CardHeader className="bg-white/5 border-b border-white/10 py-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                   <div className="space-y-1">
-                    <CardTitle className="text-2xl font-display">Session Intelligence</CardTitle>
+                    <CardTitle className="text-2xl font-display">Conferences</CardTitle>
                     <CardDescription className="font-medium">
                       Live attendance summary and capacity metrics for all sessions.
                     </CardDescription>
