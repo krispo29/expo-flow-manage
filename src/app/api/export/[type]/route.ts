@@ -71,7 +71,10 @@ export async function GET(
       endpoint = `${baseEndpoint}/export-excel-conference-no-hall`
       break
     case 'conference-summary':
-      endpoint = '/v1/admin/project/report/export-excel-conference-summary'
+      endpoint = `${baseEndpoint}/export-excel-conference-summary`
+      break
+    case 'exhibitors':
+      endpoint = '/v1/admin/project/exhibitors/export-excel-exhibitor'
       break
     case 'participants':
       endpoint = `${baseEndpoint}/export-excel-participant`
@@ -82,23 +85,33 @@ export async function GET(
   }
 
   const selectedEventUuid = request.nextUrl.searchParams.get('event_uuid')
-  const actualEventUuid = selectedEventUuid || projectUuid || ''
 
-  // Construct URL with event_uuid
-  let url = `${API_URL}${endpoint}?event_uuid=${actualEventUuid}`
-  
+  let url = `${API_URL}${endpoint}`
+  const queryParams = new URLSearchParams()
+
+  if (selectedEventUuid) {
+    queryParams.append('event_uuid', selectedEventUuid)
+  } else if (projectUuid && type !== 'conference-summary') {
+    queryParams.append('event_uuid', projectUuid)
+  }
+
   // Organizer endpoints often need project_uuid explicitly in query
   if (isOrganizer && projectUuid) {
-    url += `&project_uuid=${projectUuid}`
+    queryParams.append('project_uuid', projectUuid)
   }
 
   if (type === 'participants') {
-    url += `&include_questionnaire=${includeQuestionnaire}`
+    queryParams.append('include_questionnaire', includeQuestionnaire.toString())
   }
   
   const dateParam = request.nextUrl.searchParams.get('date')
   if ((type === 'attendees-summary' || type === 'attendees-summary-by-questionnaire') && dateParam) {
-    url += `&date=${dateParam}`
+    queryParams.append('date', dateParam)
+  }
+
+  const queryString = queryParams.toString()
+  if (queryString) {
+    url += `?${queryString}`
   }
 
   try {
@@ -106,7 +119,7 @@ export async function GET(
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
-        'X-Project-UUID': actualEventUuid,
+        'X-Project-UUID': projectUuid || '',
       }
     })
 

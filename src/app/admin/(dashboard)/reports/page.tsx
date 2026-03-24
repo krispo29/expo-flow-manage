@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, Building2, Users, FileSpreadsheet, Send, FileText, FileBarChart, Filter } from "lucide-react"
 import { format } from "date-fns"
 import { advancedSearch, getEventsForReport, getConferenceNoHall, getConferenceSummary, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type ConferenceNoHallResponse, type ConferenceSummaryResponse } from "@/app/actions/report"
@@ -268,61 +269,29 @@ export default function ReportsPage() {
     : "Configure filters above to generate data report."
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Reports</h1>
-        <p className="text-muted-foreground mt-1">
-          View and export registration reports.
-        </p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* Left Sidebar Menu                                                   */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        <div className="w-full lg:w-72 shrink-0 space-y-8 glass p-6 rounded-3xl border-white/10 shadow-xl">
-          
-          <div className="space-y-3">
-            <h3 className="px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60 mb-4">Report Views</h3>
-            <div className="grid grid-cols-1 gap-1.5">
-              <Button 
-                variant={activeView === 'advanced-search' ? 'default' : 'ghost'} 
-                className={cn(
-                  "w-full justify-start rounded-xl px-4 h-11 transition-all duration-300",
-                  activeView === 'advanced-search' ? 'btn-aurora shadow-lg shadow-primary/20' : 'hover:bg-white/5'
-                )} 
-                onClick={() => setActiveView('advanced-search')}
-              >
-                <Search className="mr-3 h-4 w-4 shrink-0" /> <span className="font-semibold">Advanced Search</span>
-              </Button>
-              <Button 
-                variant={activeView === 'conference-no-hall' ? 'default' : 'ghost'} 
-                className={cn(
-                  "w-full justify-start rounded-xl px-4 h-11 transition-all duration-300",
-                  activeView === 'conference-no-hall' ? 'btn-aurora shadow-lg shadow-primary/20' : 'hover:bg-white/5'
-                )} 
-                onClick={() => setActiveView('conference-no-hall')}
-              >
-                <Building2 className="mr-3 h-4 w-4 shrink-0" /> <span className="font-semibold">Conference No Hall</span>
-              </Button>
-              <Button 
-                variant={activeView === 'conference-summary' ? 'default' : 'ghost'} 
-                className={cn(
-                  "w-full justify-start rounded-xl px-4 h-11 transition-all duration-300",
-                  activeView === 'conference-summary' ? 'btn-aurora shadow-lg shadow-primary/20' : 'hover:bg-white/5'
-                )} 
-                onClick={() => setActiveView('conference-summary')}
-              >
-                <FileBarChart className="mr-3 h-4 w-4 shrink-0" /> <span className="font-semibold">Session Summary</span>
-              </Button>
-            </div>
-          </div>
-
-          <Separator className="bg-white/10" />
-
-          <div className="space-y-3">
-            <h3 className="px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60 mb-4">Quick Exports</h3>
-            <div className="grid grid-cols-1 gap-1.5">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Header Section                                                      */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Reports</h1>
+          <p className="text-muted-foreground mt-1">
+            View and export registration reports.
+          </p>
+        </div>
+        
+        {/* Quick Export Dropdown */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-11 px-6 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 font-bold gap-2">
+              <Download className="h-4 w-4" />
+              Quick Export
+              <ChevronRight className="h-4 w-4 opacity-40 rotate-90" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-2 glass border-white/10 rounded-2xl shadow-2xl" align="end">
+            <div className="space-y-1">
               {[
                 { id: 'registrations-by-country', label: 'By Country', icon: FileSpreadsheet },
                 { id: 'questionnaires', label: 'Questionnaires', icon: FileBarChart },
@@ -334,25 +303,62 @@ export default function ReportsPage() {
                 <Button 
                   key={opt.id}
                   variant="ghost" 
-                  className="w-full justify-start rounded-xl px-4 h-11 hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all group" 
+                  className="w-full justify-start rounded-xl px-3 h-10 hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all group" 
                   onClick={() => openExportDialog(opt.id)}
                 >
                   <opt.icon className="mr-3 h-4 w-4 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" /> 
-                  <span className="font-medium text-xs">{opt.label}</span>
-                  <Download className="ml-auto h-3 w-3 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all"/>
+                  <span className="font-medium text-sm">{opt.label}</span>
+                  <Download className="ml-auto h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"/>
                 </Button>
               ))}
             </div>
-          </div>
-        </div>
+          </PopoverContent>
+        </Popover>
+      </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* Right Content Area                                                  */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex-1 w-full overflow-hidden space-y-8">
-          
-          {/* ────── Advanced Search View ────── */}
-          {activeView === 'advanced-search' && (
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Report View Tabs                                                    */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="glass p-2 rounded-2xl border-white/10 shadow-lg inline-flex gap-2 flex-wrap">
+        <Button 
+          variant={activeView === 'advanced-search' ? 'default' : 'ghost'} 
+          className={cn(
+            "rounded-xl px-5 h-11 transition-all duration-300 font-semibold",
+            activeView === 'advanced-search' ? 'btn-aurora shadow-lg shadow-primary/20' : 'hover:bg-white/5'
+          )} 
+          onClick={() => setActiveView('advanced-search')}
+        >
+          <Search className="mr-2 h-4 w-4 shrink-0" /> Advanced Search
+        </Button>
+        <Button 
+          variant={activeView === 'conference-no-hall' ? 'default' : 'ghost'} 
+          className={cn(
+            "rounded-xl px-5 h-11 transition-all duration-300 font-semibold",
+            activeView === 'conference-no-hall' ? 'btn-aurora shadow-lg shadow-primary/20' : 'hover:bg-white/5'
+          )} 
+          onClick={() => setActiveView('conference-no-hall')}
+        >
+          <Building2 className="mr-2 h-4 w-4 shrink-0" /> Conference No Hall
+        </Button>
+        <Button 
+          variant={activeView === 'conference-summary' ? 'default' : 'ghost'} 
+          className={cn(
+            "rounded-xl px-5 h-11 transition-all duration-300 font-semibold",
+            activeView === 'conference-summary' ? 'btn-aurora shadow-lg shadow-primary/20' : 'hover:bg-white/5'
+          )} 
+          onClick={() => setActiveView('conference-summary')}
+        >
+          <FileBarChart className="mr-2 h-4 w-4 shrink-0" /> Session Summary
+        </Button>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Content Area - Full Width                                           */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="w-full space-y-6">
+        
+        {/* ────── Advanced Search View ────── */}
+        {activeView === 'advanced-search' && (
             <>
               <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
                 <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
@@ -555,11 +561,11 @@ export default function ReportsPage() {
                           <TableHeader className="bg-white/5">
                             <TableRow className="border-white/10 hover:bg-transparent">
                               <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-widest pl-6">Reg. Code</TableHead>
-                              <TableHead className="font-bold text-[10px] uppercase tracking-widest">Participant</TableHead>
-                              <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company Organization</TableHead>
-                              <TableHead className="font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
-                              <TableHead className="font-bold text-[10px] uppercase tracking-widest">Origin</TableHead>
-                              <TableHead className="font-bold text-[10px] uppercase tracking-widest pr-6">Registered At</TableHead>
+                              <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest">Participant</TableHead>
+                              <TableHead className="w-[250px] font-bold text-[10px] uppercase tracking-widest">Company Organization</TableHead>
+                              <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
+                              <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest">Origin</TableHead>
+                              <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-widest pr-6">Registered At</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -568,16 +574,29 @@ export default function ReportsPage() {
                                 <TableCell className="pl-6">
                                   <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{r.registration_code || '---'}</code>
                                 </TableCell>
-                                <TableCell>
-                                  <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '---'}</p>
+                                <TableCell className="max-w-[180px]">
+                                  <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '---'}</p>
                                 </TableCell>
-                                <TableCell className="text-sm font-medium text-muted-foreground">{r.company_name || '---'}</TableCell>
+                                <TableCell className="max-w-[250px]">
+                                  <TooltipProvider delayDuration={300}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <p className="text-sm font-medium text-muted-foreground truncate cursor-help">{r.company_name || '---'}</p>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-[300px] glass border-white/10 p-3 bg-slate-900/95 backdrop-blur-xl">
+                                        <p className="text-sm font-medium text-black dark:text-white">{r.company_name || '---'}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">
+                                  <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5 truncate max-w-[120px]">
                                     {r.attendee_type_name || r.attendee_type_code || '---'}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-sm font-medium italic opacity-70">{r.residence_country || '---'}</TableCell>
+                                <TableCell className="max-w-[120px]">
+                                  <p className="text-sm font-medium italic opacity-70 truncate">{r.residence_country || '---'}</p>
+                                </TableCell>
                                 <TableCell className="pr-6">
                                   <span className="text-[10px] font-mono font-bold opacity-40">
                                     {r.registered_at ? format(new Date(r.registered_at), 'yyyy-MM-dd HH:mm') : '---'}
@@ -619,11 +638,11 @@ export default function ReportsPage() {
                   )}
                 </CardContent>
               </Card>
-            </>
-          )}
+          </>
+        )}
 
-          {/* ────── Conference No Hall View ────── */}
-          {activeView === 'conference-no-hall' && (
+        {/* ────── Conference No Hall View ────── */}
+        {activeView === 'conference-no-hall' && (
             <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
               <CardHeader className="bg-white/5 border-b border-white/10 py-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -679,17 +698,17 @@ export default function ReportsPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto max-h-[700px] scrollbar-hide">
+                  <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader className="sticky top-0 bg-white/5 backdrop-blur-md z-10">
+                      <TableHeader className="bg-white/5">
                         <TableRow className="border-white/10 hover:bg-transparent">
                           <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-widest pl-6">Reg. Code</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Participant</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Contact Email</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Session</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest pr-6">Scanned At</TableHead>
+                          <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest">Participant</TableHead>
+                          <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest">Contact Email</TableHead>
+                          <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest">Company</TableHead>
+                          <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
+                          <TableHead className="w-[250px] font-bold text-[10px] uppercase tracking-widest">Session</TableHead>
+                          <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-widest pr-6">Scanned At</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -698,15 +717,39 @@ export default function ReportsPage() {
                             <TableCell className="pl-6">
                               <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{r.registration_code || '---'}</code>
                             </TableCell>
-                            <TableCell>
-                              <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '---'}</p>
+                            <TableCell className="max-w-[180px]">
+                              <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '---'}</p>
                             </TableCell>
-                            <TableCell className="text-xs font-medium opacity-60 italic">{r.email || '---'}</TableCell>
-                            <TableCell className="text-sm font-medium text-muted-foreground">{r.company_name || '---'}</TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <p className="text-xs font-medium opacity-60 italic truncate">{r.email || '---'}</p>
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <TooltipProvider delayDuration={300}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="text-sm font-medium text-muted-foreground truncate cursor-help">{r.company_name || '---'}</p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[300px] glass border-white/10 p-3 bg-slate-900/95 backdrop-blur-xl">
+                                    <p className="text-sm font-medium text-black dark:text-white">{r.company_name || '---'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{r.attendee_type_code || '---'}</Badge>
                             </TableCell>
-                            <TableCell className="text-xs font-bold text-primary/80">{r.conference_name || '---'}</TableCell>
+                            <TableCell className="max-w-[250px]">
+                              <TooltipProvider delayDuration={300}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="text-xs font-bold text-primary/80 truncate cursor-help">{r.conference_name || '---'}</p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[400px] glass border-white/10 p-3 bg-slate-900/95 backdrop-blur-xl">
+                                    <p className="text-sm font-medium text-black dark:text-white">{r.conference_name || '---'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableCell>
                             <TableCell className="pr-6">
                               <span className="text-[10px] font-mono font-bold opacity-40">
                                 {r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : '---'}
@@ -718,12 +761,12 @@ export default function ReportsPage() {
                     </Table>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* ────── Conference Summary View ────── */}
-          {activeView === 'conference-summary' && (
+        {/* ────── Conference Summary View ────── */}
+        {activeView === 'conference-summary' && (
             <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
               <CardHeader className="bg-white/5 border-b border-white/10 py-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -772,11 +815,11 @@ export default function ReportsPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto max-h-[700px] scrollbar-hide">
+                  <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader className="sticky top-0 bg-white/5 backdrop-blur-md z-10">
+                      <TableHeader className="bg-white/5">
                         <TableRow className="border-white/10 hover:bg-transparent">
-                          <TableHead className="min-w-[240px] font-bold text-[10px] uppercase tracking-widest pl-6">Session Title</TableHead>
+                          <TableHead className="w-[300px] font-bold text-[10px] uppercase tracking-widest pl-6">Session Title</TableHead>
                           <TableHead className="font-bold text-[10px] uppercase tracking-widest">Timeline</TableHead>
                           <TableHead className="font-bold text-[10px] uppercase tracking-widest">Venue/Room</TableHead>
                           <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest">Capacity</TableHead>
@@ -794,8 +837,19 @@ export default function ReportsPage() {
                           )
                           .map((c, i) => (
                           <TableRow key={`${c.conference_uuid}-${i}`} className="border-white/5 hover:bg-white/5 transition-colors group">
-                            <TableCell className="pl-6">
-                              <p className="font-display font-bold text-sm text-foreground group-hover:text-primary transition-colors leading-tight">{c.title}</p>
+                            <TableCell className="pl-6 max-w-[300px]">
+                              <TooltipProvider delayDuration={300}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="font-display font-bold text-sm text-foreground group-hover:text-primary transition-colors leading-tight truncate cursor-help">
+                                      {c.title}
+                                    </p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[400px] glass border-white/10 p-3 bg-slate-900/95 backdrop-blur-xl">
+                                    <p className="text-sm font-medium leading-relaxed text-black dark:text-white">{c.title}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col gap-0.5">
@@ -817,10 +871,9 @@ export default function ReportsPage() {
                     </Table>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}

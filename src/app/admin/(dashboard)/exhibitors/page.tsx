@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X } from 'lucide-react'
+import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X, FileDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -58,6 +58,7 @@ export default function ExhibitorsPage() {
   const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
   const [testLoginPassword, setTestLoginPassword] = useState('')
   const [testingLogin, setTestingLogin] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -279,6 +280,37 @@ export default function ExhibitorsPage() {
     }
   }
 
+  const handleExport = async () => {
+    if (!projectId) {
+      toast.error('Project ID is missing')
+      return
+    }
+
+    try {
+      setExporting(true)
+      const response = await fetch(`/api/export/exhibitors?event_uuid=${projectId}`)
+      
+      if (!response.ok) throw new Error('Export failed')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `exhibitors-${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success('Exhibitors exported successfully')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to export exhibitors')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (!isOrganizer && !projectId) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] glass rounded-3xl p-12">
@@ -298,11 +330,24 @@ export default function ExhibitorsPage() {
           <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Exhibitors</h1>
           <p className="text-muted-foreground mt-1">Manage and monitor all exhibitors in the system.</p>
         </div>
-        <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
-          <Button className="btn-aurora rounded-full px-6 font-semibold">
-            <Plus className="mr-2 h-5 w-5" /> Add Exhibitor
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {!isOrganizer && (
+            <Button 
+              variant="outline" 
+              className="rounded-full px-6 font-semibold glass border-white/10 hover:bg-white/10"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              {exporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <FileDown className="mr-2 h-5 w-5 text-green-500" />}
+              Export Excel
+            </Button>
+          )}
+          <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
+            <Button className="btn-aurora rounded-full px-6 font-semibold">
+              <Plus className="mr-2 h-5 w-5" /> Add Exhibitor
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card className="glass shadow-xl shadow-primary/5">

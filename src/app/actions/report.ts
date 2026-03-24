@@ -132,7 +132,7 @@ export async function exportOrganizerAdvancedSearch(params: AdvancedSearchParams
 
     return { 
       success: true, 
-      data: response.data,
+      data: new Uint8Array(response.data),
       contentType: response.headers['content-type']
     }
   } catch (error: unknown) {
@@ -221,11 +221,30 @@ export async function exportConferenceSummary() {
     })
     return { 
       success: true, 
-      data: response.data,
+      data: new Uint8Array(response.data),
       contentType: response.headers['content-type']
     }
   } catch (error: unknown) {
     console.error('Error exporting conference summary:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to export conference summary'
+    return { success: false, error: errorMessage }
+  }
+}
+
+export async function exportOrganizerConferenceSummary() {
+  try {
+    const { headers } = await getAuthHeaders()
+    const response = await api.get('/v1/organizer/report/export-excel-conference-summary', { 
+      headers,
+      responseType: 'arraybuffer'
+    })
+    return { 
+      success: true, 
+      data: new Uint8Array(response.data),
+      contentType: response.headers['content-type']
+    }
+  } catch (error: unknown) {
+    console.error('Error exporting organizer conference summary:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to export conference summary'
     return { success: false, error: errorMessage }
   }

@@ -33,7 +33,7 @@ export default async function ConferencesPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <ConferenceExcelOperations conferences={conferences || []} />
+          <ConferenceExcelOperations userRole={userRole} />
           <Link href={`/organizer/conferences/new?projectId=${projectId}`}>
             <Button className="btn-aurora rounded-full px-6 font-semibold">
               <Plus className="mr-2 h-5 w-5" />
