@@ -117,7 +117,8 @@ export function ParticipantList({
     name: '',
     registrationCode: '',
     company: '',
-    type: 'ALL'
+    type: 'ALL',
+    isActive: 'all'
   })
 
   // Email Dialog State
@@ -175,6 +176,11 @@ export function ParticipantList({
       filtered = filtered.filter(p => p.attendee_type_code === columnFilters.type)
     }
 
+    if (columnFilters.isActive !== 'all') {
+      const isActive = columnFilters.isActive === 'active'
+      filtered = filtered.filter(p => p.is_active === isActive)
+    }
+
     return filtered
   }, [participants, searchQuery, typeFilter, columnFilters])
 
@@ -200,7 +206,8 @@ export function ParticipantList({
       name: '',
       registrationCode: '',
       company: '',
-      type: 'ALL'
+      type: 'ALL',
+      isActive: 'all'
     })
     setSearchQuery('')
     setTypeFilter('ALL')
@@ -399,7 +406,7 @@ export function ParticipantList({
                 >
                   <Filter className="h-4 w-4" />
                 </Button>
-                {(showFilters || searchQuery || typeFilter !== 'ALL' || Object.values(columnFilters).some(v => v !== '' && v !== 'ALL')) && (
+                {showFilters && (searchQuery || typeFilter !== 'ALL' || Object.values(columnFilters).some(v => v !== '' && v !== 'ALL')) && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -481,6 +488,19 @@ export function ParticipantList({
                       <SelectItem value="BY">Buyer (BY)</SelectItem>
                       <SelectItem value="SP">Speaker (SP)</SelectItem>
                       <SelectItem value="PR">Press (PR)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Status</Label>
+                  <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -604,7 +624,18 @@ export function ParticipantList({
                         onChange={e => handleColumnFilterChange('company', e.target.value)}
                       />
                     </TableHead>
-                    <TableHead className="py-2"></TableHead>
+                    <TableHead className="py-2">
+                      <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
                     <TableHead className="py-2 text-right pr-6">
                        <Button 
                         variant="ghost" 

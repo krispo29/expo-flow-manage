@@ -369,7 +369,7 @@ export default function ReportsPage() {
             <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
               <CardHeader className="bg-white/5 border-b border-white/10 py-6">
                 <div className="space-y-1">
-                  <CardTitle className="text-xl font-display">Data Intelligence Table</CardTitle>
+                  <CardTitle className="text-xl font-display">Result</CardTitle>
                   <CardDescription className="font-medium">{searchResultsDescription}</CardDescription>
                 </div>
               </CardHeader>

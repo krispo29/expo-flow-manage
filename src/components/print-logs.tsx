@@ -60,7 +60,11 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
   const [columnFilters, setColumnFilters] = useState({
     registrationCode: '',
     name: '',
-    company: ''
+    company: '',
+    hasAttendance: 'all',
+    hasHall: 'all',
+    hasConference: 'all',
+    isActive: 'all'
   })
 
   // History Dialog
@@ -174,8 +178,8 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
     }
   }
 
-  // Filter logs based on column filters
-  const filteredLogs = logs.filter(log => {
+  // Filter logs based on column filters (only for pending mode)
+  const filteredLogs = filterStatus === 'pending' ? logs.filter(log => {
     const matchesCode = !columnFilters.registrationCode ||
       (log.registration_code && log.registration_code.toLowerCase().includes(columnFilters.registrationCode.toLowerCase()))
 
@@ -186,8 +190,24 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
     const matchesCompany = !columnFilters.company ||
       (log.company_name && log.company_name.toLowerCase().includes(columnFilters.company.toLowerCase()))
 
-    return matchesCode && matchesName && matchesCompany
-  })
+    const matchesAttendance = columnFilters.hasAttendance === 'all' ||
+      (columnFilters.hasAttendance === 'yes' && log.has_attendance) ||
+      (columnFilters.hasAttendance === 'no' && !log.has_attendance)
+
+    const matchesHall = columnFilters.hasHall === 'all' ||
+      (columnFilters.hasHall === 'yes' && log.has_hall) ||
+      (columnFilters.hasHall === 'no' && !log.has_hall)
+
+    const matchesConference = columnFilters.hasConference === 'all' ||
+      (columnFilters.hasConference === 'yes' && log.has_conference) ||
+      (columnFilters.hasConference === 'no' && !log.has_conference)
+
+    const matchesActive = columnFilters.isActive === 'all' ||
+      (columnFilters.isActive === 'active' && log.is_active) ||
+      (columnFilters.isActive === 'inactive' && !log.is_active)
+
+    return matchesCode && matchesName && matchesCompany && matchesAttendance && matchesHall && matchesConference && matchesActive
+  }) : logs
 
   const handleColumnFilterChange = (key: string, value: string) => {
     setColumnFilters(prev => ({ ...prev, [key]: value }))
@@ -198,7 +218,11 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
     setColumnFilters({
       registrationCode: '',
       name: '',
-      company: ''
+      company: '',
+      hasAttendance: 'all',
+      hasHall: 'all',
+      hasConference: 'all',
+      isActive: 'all'
     })
     setSearchInput('')
     setKeyword('')
@@ -260,7 +284,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
               >
                 <Filter className="h-4 w-4" />
               </Button>
-              {(showFilters || searchInput || Object.values(columnFilters).some(v => v !== '')) && (
+              {showFilters && (searchInput || Object.values(columnFilters).some(v => v !== '' && v !== 'all')) && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -288,7 +312,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
             <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">registration code</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Registration Code</Label>
                   <Input
                     placeholder="Filter by code..."
                     className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
@@ -297,7 +321,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">first name/last name</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Name</Label>
                   <Input
                     placeholder="Filter by name..."
                     className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
@@ -306,7 +330,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">company name</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Company</Label>
                   <Input
                     placeholder="Filter by company..."
                     className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
@@ -314,6 +338,62 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                     onChange={e => handleColumnFilterChange('company', e.target.value)}
                   />
                 </div>
+                {filterStatus === 'pending' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Has Attendance</Label>
+                      <Select value={columnFilters.hasAttendance} onValueChange={v => handleColumnFilterChange('hasAttendance', v)}>
+                        <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Has Hall</Label>
+                      <Select value={columnFilters.hasHall} onValueChange={v => handleColumnFilterChange('hasHall', v)}>
+                        <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Has Conference</Label>
+                      <Select value={columnFilters.hasConference} onValueChange={v => handleColumnFilterChange('hasConference', v)}>
+                        <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Is Active</Label>
+                      <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                        <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -452,10 +532,54 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                     </TableHead>
                     {filterStatus === 'pending' && (
                       <>
-                        <TableHead className="py-2"></TableHead>
-                        <TableHead className="py-2"></TableHead>
-                        <TableHead className="py-2"></TableHead>
-                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2">
+                          <Select value={columnFilters.hasAttendance} onValueChange={v => handleColumnFilterChange('hasAttendance', v)}>
+                            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                              <SelectValue placeholder="Attendance" />
+                            </SelectTrigger>
+                            <SelectContent className="glass border-white/10 rounded-xl">
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Select value={columnFilters.hasHall} onValueChange={v => handleColumnFilterChange('hasHall', v)}>
+                            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                              <SelectValue placeholder="Hall" />
+                            </SelectTrigger>
+                            <SelectContent className="glass border-white/10 rounded-xl">
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Select value={columnFilters.hasConference} onValueChange={v => handleColumnFilterChange('hasConference', v)}>
+                            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                              <SelectValue placeholder="Conference" />
+                            </SelectTrigger>
+                            <SelectContent className="glass border-white/10 rounded-xl">
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
+                        <TableHead className="py-2 text-center">
+                          <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                              <SelectValue placeholder="Active" />
+                            </SelectTrigger>
+                            <SelectContent className="glass border-white/10 rounded-xl">
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
                       </>
                     )}
                     <TableHead className="py-2 text-right pr-6">
