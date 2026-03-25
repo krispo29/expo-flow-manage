@@ -61,6 +61,32 @@ export async function getOrganizerConferences() {
   }
 }
 
+export async function exportOrganizerConferenceReservationSummary(projectId?: string) {
+  try {
+    const { headers } = await getOrganizerAuthHeaders()
+    if (projectId) {
+      Object.assign(headers, { 'X-Project-UUID': projectId })
+    }
+
+    const response = await api.get(
+      '/v1/organizer/conferences/export-excel-conference-summary-reservation',
+      {
+        headers,
+        responseType: 'arraybuffer',
+      }
+    )
+
+    return {
+      success: true,
+      data: new Uint8Array(response.data),
+      contentType: response.headers['content-type'],
+    }
+  } catch (error: unknown) {
+    console.error('Error exporting organizer conference reservation summary:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
 // GET /v1/organizer/conferences/:id
 export async function getOrganizerConferenceById(id: string) {
   try {
