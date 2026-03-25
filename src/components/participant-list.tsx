@@ -30,7 +30,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2 } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X } from 'lucide-react'
 import { 
   Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
   resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
@@ -111,6 +111,15 @@ export function ParticipantList({
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [currentPage, setCurrentPage] = useState(1)
 
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    name: '',
+    registrationCode: '',
+    company: '',
+    type: 'ALL'
+  })
+
   // Email Dialog State
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [emailTarget, setEmailTarget] = useState<Participant | null>(null)
@@ -120,6 +129,8 @@ export function ParticipantList({
   // Client-side filtering
   const filteredParticipants = useMemo(() => {
     let filtered = participants
+    
+    // Global search
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase()
       filtered = filtered.filter(p =>
@@ -130,11 +141,42 @@ export function ParticipantList({
         p.registration_code.toLowerCase().includes(lowerQuery)
       )
     }
+    
+    // Original select filter
     if (typeFilter && typeFilter !== 'ALL') {
       filtered = filtered.filter(p => p.attendee_type_code === typeFilter)
     }
+
+    // Column specific filters
+    if (columnFilters.name.trim()) {
+      const lowerQuery = columnFilters.name.toLowerCase()
+      filtered = filtered.filter(p => 
+        (p.first_name + ' ' + p.last_name).toLowerCase().includes(lowerQuery) ||
+        p.email.toLowerCase().includes(lowerQuery)
+      )
+    }
+
+    if (columnFilters.registrationCode.trim()) {
+      const lowerQuery = columnFilters.registrationCode.toLowerCase()
+      filtered = filtered.filter(p => 
+        p.registration_code.toLowerCase().includes(lowerQuery)
+      )
+    }
+
+    if (columnFilters.company.trim()) {
+      const lowerQuery = columnFilters.company.toLowerCase()
+      filtered = filtered.filter(p => 
+        (p.company_name || '').toLowerCase().includes(lowerQuery) ||
+        (p.job_position || '').toLowerCase().includes(lowerQuery)
+      )
+    }
+
+    if (columnFilters.type !== 'ALL') {
+      filtered = filtered.filter(p => p.attendee_type_code === columnFilters.type)
+    }
+
     return filtered
-  }, [participants, searchQuery, typeFilter])
+  }, [participants, searchQuery, typeFilter, columnFilters])
 
   // Sliced participants for pagination
   const totalPages = Math.ceil(filteredParticipants.length / PAGE_SIZE)
@@ -146,6 +188,24 @@ export function ParticipantList({
   function handleTypeFilter(type: string) {
     setTypeFilter(type)
     setCurrentPage(1) // Reset to first page on filter
+  }
+
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      name: '',
+      registrationCode: '',
+      company: '',
+      type: 'ALL'
+    })
+    setSearchQuery('')
+    setTypeFilter('ALL')
+    setCurrentPage(1)
+    setShowFilters(false)
   }
 
   function openCreate() {
@@ -316,22 +376,44 @@ export function ParticipantList({
               <CardTitle className="text-2xl font-display">Participants</CardTitle>
               <CardDescription className="font-medium">Filter and manage all event attendees.</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative w-full sm:w-80 group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-                <Input 
-                  placeholder="Name, Email, Company, Code..." 
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
-                />
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-80 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                  <Input 
+                    placeholder="Search Name, Email, Company..." 
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setCurrentPage(1)
+                    }}
+                    className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                  />
+                </div>
+                <Button 
+                  variant={showFilters ? "default" : "outline"} 
+                  size="icon" 
+                  className={cn("h-11 w-11 rounded-2xl shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Toggle Filters"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                {(showFilters || searchQuery || typeFilter !== 'ALL' || Object.values(columnFilters).some(v => v !== '' && v !== 'ALL')) && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-11 w-11 rounded-2xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                    onClick={clearFilters}
+                    title="Clear All Filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Select value={typeFilter} onValueChange={handleTypeFilter}>
-                  <SelectTrigger className="h-11 w-[160px] bg-white/5 border-white/10 rounded-2xl font-medium">
+                  <SelectTrigger className="h-11 flex-1 sm:w-[160px] bg-white/5 border-white/10 rounded-2xl font-medium">
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
                   <SelectContent className="glass border-white/10">
@@ -345,7 +427,7 @@ export function ParticipantList({
                     <SelectItem value="PR">Press (PR)</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20">
+                <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 shrink-0">
                   <Plus className="h-5 w-5 mr-2" />
                   Add
                 </Button>
@@ -354,6 +436,57 @@ export function ParticipantList({
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Participant Name / Email</Label>
+                  <Input 
+                    placeholder="Filter by name or email..." 
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.name}
+                    onChange={e => handleColumnFilterChange('name', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Registration Code</Label>
+                  <Input 
+                    placeholder="Filter by code..." 
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.registrationCode}
+                    onChange={e => handleColumnFilterChange('registrationCode', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Company / Position</Label>
+                  <Input 
+                    placeholder="Filter by company..." 
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.company}
+                    onChange={e => handleColumnFilterChange('company', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Type</Label>
+                  <Select value={columnFilters.type} onValueChange={v => handleColumnFilterChange('type', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="ALL">All Types</SelectItem>
+                      <SelectItem value="VI">Visitor (VI)</SelectItem>
+                      <SelectItem value="VP">VIP (VP)</SelectItem>
+                      <SelectItem value="EX">Exhibitor (EX)</SelectItem>
+                      <SelectItem value="VG">VIP Group (VG)</SelectItem>
+                      <SelectItem value="BY">Buyer (BY)</SelectItem>
+                      <SelectItem value="SP">Speaker (SP)</SelectItem>
+                      <SelectItem value="PR">Press (PR)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Mobile View: Cards */}
           <div className="md:hidden divide-y divide-white/5">
@@ -428,6 +561,62 @@ export function ParticipantList({
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status / Email</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
+                {showFilters && (
+                  <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                    <TableHead className="pl-6 py-2">
+                      <Select value={columnFilters.type} onValueChange={v => handleColumnFilterChange('type', v)}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="ALL">All</SelectItem>
+                          <SelectItem value="VI">VI</SelectItem>
+                          <SelectItem value="VP">VP</SelectItem>
+                          <SelectItem value="EX">EX</SelectItem>
+                          <SelectItem value="VG">VG</SelectItem>
+                          <SelectItem value="BY">BY</SelectItem>
+                          <SelectItem value="SP">SP</SelectItem>
+                          <SelectItem value="PR">PR</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input 
+                        placeholder="Filter code..." 
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.registrationCode}
+                        onChange={e => handleColumnFilterChange('registrationCode', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input 
+                        placeholder="Filter name..." 
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.name}
+                        onChange={e => handleColumnFilterChange('name', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input 
+                        placeholder="Filter company..." 
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.company}
+                        onChange={e => handleColumnFilterChange('company', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2"></TableHead>
+                    <TableHead className="py-2 text-right pr-6">
+                       <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                        onClick={clearFilters}
+                      >
+                        Reset
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                )}
               </TableHeader>
               <TableBody>
                 {currentParticipants.length === 0 ? (

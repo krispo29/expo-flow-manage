@@ -44,6 +44,35 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
 
+  // Column filter state for Data Intelligence Table
+  const [showTableFilters, setShowTableFilters] = useState(false)
+  const [tableColumnFilters, setTableColumnFilters] = useState({
+    registrationCode: '',
+    participant: '',
+    company: '',
+    type: '',
+    origin: ''
+  })
+
+  // Column filter state for Conference No Hall Table
+  const [showConferenceNoHallFilters, setShowConferenceNoHallFilters] = useState(false)
+  const [conferenceNoHallFilters, setConferenceNoHallFilters] = useState({
+    regCode: '',
+    participant: '',
+    email: '',
+    company: '',
+    type: '',
+    conference: ''
+  })
+
+  // Column filter state for Conference Summary Table
+  const [showConferenceSummaryFilters, setShowConferenceSummaryFilters] = useState(false)
+  const [conferenceSummaryFilters, setConferenceSummaryFilters] = useState({
+    title: '',
+    room: '',
+    search: ''  // General search for both title and room
+  })
+
   // ─── Attendee types & Events from API ─────────────────────────────────────────
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
   const [events, setEvents] = useState<ReportEvent[]>([])
@@ -255,13 +284,123 @@ export default function ReportsPage() {
     setSearched(false)
   }
 
+  // Table column filter handlers
+  const handleTableColumnFilterChange = (key: string, value: string) => {
+    setTableColumnFilters(prev => ({ ...prev, [key]: value }))
+    setPage(1)
+  }
+
+  const clearTableFilters = () => {
+    setTableColumnFilters({
+      registrationCode: '',
+      participant: '',
+      company: '',
+      type: '',
+      origin: ''
+    })
+    setPage(1)
+    setShowTableFilters(false)
+  }
+
+  const clearConferenceNoHallFilters = () => {
+    setConferenceNoHallFilters({
+      regCode: '',
+      participant: '',
+      email: '',
+      company: '',
+      type: '',
+      conference: ''
+    })
+    setShowConferenceNoHallFilters(false)
+  }
+
+  const clearConferenceSummaryFilters = () => {
+    setConferenceSummaryFilters({
+      title: '',
+      room: '',
+      search: ''
+    })
+    setConferenceKeyword('')
+    setShowConferenceSummaryFilters(false)
+  }
+
+  const handleConferenceNoHallFilterChange = (key: string, value: string) => {
+    setConferenceNoHallFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  const handleConferenceSummaryFilterChange = (key: string, value: string) => {
+    setConferenceSummaryFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  // Filter results based on column filters
+  const filteredResults = results.filter(r => {
+    const matchesRegCode = !tableColumnFilters.registrationCode ||
+      (r.registration_code && r.registration_code.toLowerCase().includes(tableColumnFilters.registrationCode.toLowerCase()))
+
+    const participantName = [r.first_name, r.last_name].filter(Boolean).join(' ').toLowerCase()
+    const matchesParticipant = !tableColumnFilters.participant ||
+      participantName.includes(tableColumnFilters.participant.toLowerCase())
+
+    const matchesCompany = !tableColumnFilters.company ||
+      (r.company_name && r.company_name.toLowerCase().includes(tableColumnFilters.company.toLowerCase()))
+
+    const typeMatch = (r.attendee_type_name || r.attendee_type_code || '').toLowerCase()
+    const matchesType = !tableColumnFilters.type ||
+      typeMatch.includes(tableColumnFilters.type.toLowerCase())
+
+    const matchesOrigin = !tableColumnFilters.origin ||
+      (r.residence_country && r.residence_country.toLowerCase().includes(tableColumnFilters.origin.toLowerCase()))
+
+    return matchesRegCode && matchesParticipant && matchesCompany && matchesType && matchesOrigin
+  })
+
+  // Filter Conference No Hall data
+  const filteredHallData = hallData.filter(r => {
+    const matchesRegCode = !conferenceNoHallFilters.regCode ||
+      (r.registration_code && r.registration_code.toLowerCase().includes(conferenceNoHallFilters.regCode.toLowerCase()))
+
+    const participantName = [r.first_name, r.last_name].filter(Boolean).join(' ').toLowerCase()
+    const matchesParticipant = !conferenceNoHallFilters.participant ||
+      participantName.includes(conferenceNoHallFilters.participant.toLowerCase())
+
+    const matchesEmail = !conferenceNoHallFilters.email ||
+      (r.email && r.email.toLowerCase().includes(conferenceNoHallFilters.email.toLowerCase()))
+
+    const matchesCompany = !conferenceNoHallFilters.company ||
+      (r.company_name && r.company_name.toLowerCase().includes(conferenceNoHallFilters.company.toLowerCase()))
+
+    const matchesType = !conferenceNoHallFilters.type ||
+      (r.attendee_type_code && r.attendee_type_code.toLowerCase().includes(conferenceNoHallFilters.type.toLowerCase()))
+
+    const matchesConference = !conferenceNoHallFilters.conference ||
+      (r.conference_name && r.conference_name.toLowerCase().includes(conferenceNoHallFilters.conference.toLowerCase()))
+
+    return matchesRegCode && matchesParticipant && matchesEmail && matchesCompany && matchesType && matchesConference
+  })
+
+  // Filter Conference Summary data
+  const filteredConferenceSummary = conferenceSummary.filter(c => {
+    const matchesTitle = !conferenceSummaryFilters.title ||
+      c.title.toLowerCase().includes(conferenceSummaryFilters.title.toLowerCase())
+
+    const matchesRoom = !conferenceSummaryFilters.room ||
+      c.room_name.toLowerCase().includes(conferenceSummaryFilters.room.toLowerCase())
+
+    // General search searches both title and room
+    const matchesSearch = !conferenceSummaryFilters.search ||
+      c.title.toLowerCase().includes(conferenceSummaryFilters.search.toLowerCase()) ||
+      c.room_name.toLowerCase().includes(conferenceSummaryFilters.search.toLowerCase())
+
+    return matchesTitle && matchesRoom && matchesSearch
+  })
+
   const toggleTypeCode = (code: string) => {
     setSelectedTypeCodes(prev =>
       prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
     )
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / limit))
+  const totalPages = Math.max(1, Math.ceil(filteredResults.length / limit))
 
   const recordPlural = total !== 1 ? "s" : ""
   const searchResultsDescription = searched
@@ -531,10 +670,41 @@ export default function ReportsPage() {
                 <CardHeader className="bg-white/5 border-b border-white/10 py-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <CardTitle className="text-xl font-display">Data Intelligence Table</CardTitle>
+                      <CardTitle className="text-xl font-display">Result</CardTitle>
                       <CardDescription className="font-medium">
                         {searchResultsDescription}
                       </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                        <Input
+                          placeholder="Quick search in results..."
+                          className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl w-64"
+                          value={tableColumnFilters.participant}
+                          onChange={e => handleTableColumnFilterChange('participant', e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        variant={showTableFilters ? "default" : "outline"}
+                        size="icon"
+                        className={cn("h-10 w-10 rounded-xl shrink-0 transition-all", showTableFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                        onClick={() => setShowTableFilters(!showTableFilters)}
+                        title="Toggle Filters"
+                      >
+                        <Filter className="h-4 w-4" />
+                      </Button>
+                      {(showTableFilters || Object.values(tableColumnFilters).some(v => v !== '')) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                          onClick={clearTableFilters}
+                          title="Clear All Filters"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -567,43 +737,108 @@ export default function ReportsPage() {
                               <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest">Origin</TableHead>
                               <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-widest pr-6">Registered At</TableHead>
                             </TableRow>
+                            {showTableFilters && (
+                              <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                                <TableHead className="pl-6 py-2">
+                                  <Input
+                                    placeholder="Filter code..."
+                                    className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                    value={tableColumnFilters.registrationCode}
+                                    onChange={e => handleTableColumnFilterChange('registrationCode', e.target.value)}
+                                  />
+                                </TableHead>
+                                <TableHead className="py-2">
+                                  <div className="relative">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                                    <Input
+                                      placeholder="Quick search name..."
+                                      className="pl-8 h-9 bg-white/5 border-white/10 rounded-lg text-xs font-medium"
+                                      value={tableColumnFilters.participant}
+                                      onChange={e => handleTableColumnFilterChange('participant', e.target.value)}
+                                    />
+                                  </div>
+                                </TableHead>
+                                <TableHead className="py-2">
+                                  <Input
+                                    placeholder="Filter company..."
+                                    className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                    value={tableColumnFilters.company}
+                                    onChange={e => handleTableColumnFilterChange('company', e.target.value)}
+                                  />
+                                </TableHead>
+                                <TableHead className="py-2">
+                                  <Input
+                                    placeholder="Filter type..."
+                                    className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                    value={tableColumnFilters.type}
+                                    onChange={e => handleTableColumnFilterChange('type', e.target.value)}
+                                  />
+                                </TableHead>
+                                <TableHead className="py-2">
+                                  <Input
+                                    placeholder="Filter origin..."
+                                    className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                    value={tableColumnFilters.origin}
+                                    onChange={e => handleTableColumnFilterChange('origin', e.target.value)}
+                                  />
+                                </TableHead>
+                                <TableHead className="py-2 pr-6">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                                    onClick={clearTableFilters}
+                                  >
+                                    Reset
+                                  </Button>
+                                </TableHead>
+                              </TableRow>
+                            )}
                           </TableHeader>
                           <TableBody>
-                            {results.map((r, i) => (
-                              <TableRow key={`${r.registration_uuid}-${i}`} className="border-white/5 hover:bg-white/5 transition-colors group">
-                                <TableCell className="pl-6">
-                                  <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{r.registration_code || '---'}</code>
-                                </TableCell>
-                                <TableCell className="max-w-[180px]">
-                                  <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '---'}</p>
-                                </TableCell>
-                                <TableCell className="max-w-[250px]">
-                                  <TooltipProvider delayDuration={300}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <p className="text-sm font-medium text-muted-foreground truncate cursor-help">{r.company_name || '---'}</p>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="max-w-[300px] glass border-white/10 p-3 bg-slate-900/95 backdrop-blur-xl">
-                                        <p className="text-sm font-medium text-black dark:text-white">{r.company_name || '---'}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5 truncate max-w-[120px]">
-                                    {r.attendee_type_name || r.attendee_type_code || '---'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="max-w-[120px]">
-                                  <p className="text-sm font-medium italic opacity-70 truncate">{r.residence_country || '---'}</p>
-                                </TableCell>
-                                <TableCell className="pr-6">
-                                  <span className="text-[10px] font-mono font-bold opacity-40">
-                                    {r.registered_at ? format(new Date(r.registered_at), 'yyyy-MM-dd HH:mm') : '---'}
-                                  </span>
+                            {filteredResults.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
+                                  {searched ? 'No participants matched the specified filter matrix.' : 'Perform a search to populate this analytics grid.'}
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            ) : (
+                              filteredResults.map((r, i) => (
+                                <TableRow key={`${r.registration_uuid}-${i}`} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                  <TableCell className="pl-6">
+                                    <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{r.registration_code || '---'}</code>
+                                  </TableCell>
+                                  <TableCell className="max-w-[180px]">
+                                    <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">{[r.first_name, r.last_name].filter(Boolean).join(' ') || '---'}</p>
+                                  </TableCell>
+                                  <TableCell className="max-w-[250px]">
+                                    <TooltipProvider delayDuration={300}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <p className="text-sm font-medium text-muted-foreground truncate cursor-help">{r.company_name || '---'}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[300px] glass border-white/10 p-3 bg-slate-900/95 backdrop-blur-xl">
+                                          <p className="text-sm font-medium text-black dark:text-white">{r.company_name || '---'}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5 truncate max-w-[120px]">
+                                      {r.attendee_type_name || r.attendee_type_code || '---'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="max-w-[120px]">
+                                    <p className="text-sm font-medium italic opacity-70 truncate">{r.residence_country || '---'}</p>
+                                  </TableCell>
+                                  <TableCell className="pr-6">
+                                    <span className="text-[10px] font-mono font-bold opacity-40">
+                                      {r.registered_at ? format(new Date(r.registered_at), 'yyyy-MM-dd HH:mm') : '---'}
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
                           </TableBody>
                         </Table>
                       </div>
@@ -611,7 +846,7 @@ export default function ReportsPage() {
                       {/* Pagination */}
                       <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/10 bg-white/5">
                         <p className="text-sm text-muted-foreground italic font-medium">
-                          Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span> results
+                          Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span> ({filteredResults.length} results)
                         </p>
                         <div className="flex items-center gap-2">
                           <Button
@@ -645,39 +880,72 @@ export default function ReportsPage() {
         {activeView === 'conference-no-hall' && (
             <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
               <CardHeader className="bg-white/5 border-b border-white/10 py-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                   <div className="space-y-1">
                     <CardTitle className="text-2xl font-display">Conference No Hall</CardTitle>
                     <CardDescription className="font-medium">
                       Participants attending sessions without visiting the main exhibition hall.
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-3 w-full sm:w-auto p-2 glass rounded-2xl border-white/10">
-                    <div className="flex items-center gap-3 px-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">EVENT</span>
-                      <Select value={selectedHallEventUuid} onValueChange={setSelectedHallEventUuid}>
-                        <SelectTrigger className="w-[160px] h-10 bg-white/5 border-white/10 rounded-xl">
-                          <SelectValue placeholder="Select Event" />
-                        </SelectTrigger>
-                        <SelectContent className="glass border-white/10">
-                          {events.map((e) => (
-                            <SelectItem key={e.event_uuid} value={e.event_uuid}>
-                              {e.event_code}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+                    <div className="flex items-center gap-3 w-full sm:w-auto p-2 glass rounded-2xl border-white/10">
+                      <div className="flex items-center gap-3 px-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">EVENT</span>
+                        <Select value={selectedHallEventUuid} onValueChange={setSelectedHallEventUuid}>
+                          <SelectTrigger className="w-[160px] h-10 bg-white/5 border-white/10 rounded-xl">
+                            <SelectValue placeholder="Select Event" />
+                          </SelectTrigger>
+                          <SelectContent className="glass border-white/10">
+                            {events.map((e) => (
+                              <SelectItem key={e.event_uuid} value={e.event_uuid}>
+                                {e.event_code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Separator orientation="vertical" className="h-8 bg-white/10" />
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(`/api/export/conference-no-hall?event_uuid=${selectedHallEventUuid}`, '_blank')}
+                        disabled={!selectedHallEventUuid || loadingHall}
+                        className="h-10 rounded-xl px-4 gap-2 bg-white/5 border-white/10 hover:bg-primary/10 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline font-bold text-xs">EXPORT</span>
+                      </Button>
                     </div>
-                    <Separator orientation="vertical" className="h-8 bg-white/10" />
-                    <Button 
-                      variant="outline" 
-                      onClick={() => window.open(`/api/export/conference-no-hall?event_uuid=${selectedHallEventUuid}`, '_blank')}
-                      disabled={!selectedHallEventUuid || loadingHall} 
-                      className="h-10 rounded-xl px-4 gap-2 bg-white/5 border-white/10 hover:bg-primary/10 transition-colors"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span className="hidden sm:inline font-bold text-xs">EXPORT</span>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                        <Input
+                          placeholder="Quick search..."
+                          className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl w-48"
+                          value={conferenceNoHallFilters.participant}
+                          onChange={e => handleConferenceNoHallFilterChange('participant', e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        variant={showConferenceNoHallFilters ? "default" : "outline"}
+                        size="icon"
+                        className={cn("h-10 w-10 rounded-xl shrink-0 transition-all", showConferenceNoHallFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                        onClick={() => setShowConferenceNoHallFilters(!showConferenceNoHallFilters)}
+                        title="Toggle Filters"
+                      >
+                        <Filter className="h-4 w-4" />
+                      </Button>
+                      {(showConferenceNoHallFilters || Object.values(conferenceNoHallFilters).some(v => v !== '')) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                          onClick={clearConferenceNoHallFilters}
+                          title="Clear All Filters"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -707,12 +975,84 @@ export default function ReportsPage() {
                           <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest">Contact Email</TableHead>
                           <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest">Company</TableHead>
                           <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
-                          <TableHead className="w-[250px] font-bold text-[10px] uppercase tracking-widest">Session</TableHead>
+                          <TableHead className="w-[250px] font-bold text-[10px] uppercase tracking-widest">Conference Name</TableHead>
                           <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-widest pr-6">Scanned At</TableHead>
                         </TableRow>
+                        {showConferenceNoHallFilters && (
+                          <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                            <TableHead className="pl-6 py-2">
+                              <Input
+                                placeholder="Filter code..."
+                                className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                value={conferenceNoHallFilters.regCode}
+                                onChange={e => handleConferenceNoHallFilterChange('regCode', e.target.value)}
+                              />
+                            </TableHead>
+                            <TableHead className="py-2">
+                              <div className="relative">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                                <Input
+                                  placeholder="Quick search..."
+                                  className="pl-8 h-9 bg-white/5 border-white/10 rounded-lg text-xs font-medium"
+                                  value={conferenceNoHallFilters.participant}
+                                  onChange={e => handleConferenceNoHallFilterChange('participant', e.target.value)}
+                                />
+                              </div>
+                            </TableHead>
+                            <TableHead className="py-2">
+                              <Input
+                                placeholder="Filter email..."
+                                className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                value={conferenceNoHallFilters.email}
+                                onChange={e => handleConferenceNoHallFilterChange('email', e.target.value)}
+                              />
+                            </TableHead>
+                            <TableHead className="py-2">
+                              <Input
+                                placeholder="Filter company..."
+                                className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                value={conferenceNoHallFilters.company}
+                                onChange={e => handleConferenceNoHallFilterChange('company', e.target.value)}
+                              />
+                            </TableHead>
+                            <TableHead className="py-2">
+                              <Input
+                                placeholder="Filter type..."
+                                className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                value={conferenceNoHallFilters.type}
+                                onChange={e => handleConferenceNoHallFilterChange('type', e.target.value)}
+                              />
+                            </TableHead>
+                            <TableHead className="py-2">
+                              <Input
+                                placeholder="Filter conference..."
+                                className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                value={conferenceNoHallFilters.conference}
+                                onChange={e => handleConferenceNoHallFilterChange('conference', e.target.value)}
+                              />
+                            </TableHead>
+                            <TableHead className="py-2 pr-6">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                                onClick={clearConferenceNoHallFilters}
+                              >
+                                Reset
+                              </Button>
+                            </TableHead>
+                          </TableRow>
+                        )}
                       </TableHeader>
                       <TableBody>
-                        {hallData.map((r, i) => (
+                        {filteredHallData.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-24 italic text-muted-foreground font-medium">
+                              {hallData.length === 0 ? (searchedHall ? 'All participants for this event have recorded hall entry.' : 'Select an event to cross-reference data.') : 'No results matching your filters.'}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredHallData.map((r, i) => (
                           <TableRow key={`${r.registration_code}-${i}`} className="border-white/5 hover:bg-white/5 transition-colors group">
                             <TableCell className="pl-6">
                               <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{r.registration_code || '---'}</code>
@@ -756,7 +1096,7 @@ export default function ReportsPage() {
                               </span>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )))}
                       </TableBody>
                     </Table>
                   </div>
@@ -769,27 +1109,49 @@ export default function ReportsPage() {
         {activeView === 'conference-summary' && (
             <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
               <CardHeader className="bg-white/5 border-b border-white/10 py-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                   <div className="space-y-1">
                     <CardTitle className="text-2xl font-display">Conferences</CardTitle>
                     <CardDescription className="font-medium">
                       Live attendance summary and capacity metrics for all sessions.
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-80 group">
-                      <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-                      <Input
-                        placeholder="Search title or room..."
-                        className="pl-10 h-11 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-sm"
-                        value={conferenceKeyword}
-                        onChange={(e) => setConferenceKeyword(e.target.value)}
-                      />
+                  <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <div className="relative flex-1 sm:w-80 group">
+                        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          placeholder="Search title or room..."
+                          className="pl-10 h-11 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-sm"
+                          value={conferenceSummaryFilters.search}
+                          onChange={e => handleConferenceSummaryFilterChange('search', e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        variant={showConferenceSummaryFilters ? "default" : "outline"}
+                        size="icon"
+                        className={cn("h-11 w-11 rounded-2xl shrink-0 transition-all", showConferenceSummaryFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                        onClick={() => setShowConferenceSummaryFilters(!showConferenceSummaryFilters)}
+                        title="Toggle Filters"
+                      >
+                        <Filter className="h-4 w-4" />
+                      </Button>
+                      {(showConferenceSummaryFilters || conferenceSummaryFilters.search || conferenceSummaryFilters.title || conferenceSummaryFilters.room) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 rounded-2xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                          onClick={clearConferenceSummaryFilters}
+                          title="Clear All Filters"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => window.open('/api/export/conference-summary', '_blank')}
-                      disabled={loadingSummary} 
+                      disabled={loadingSummary}
                       className="h-11 rounded-2xl px-5 gap-2 bg-white/5 border-white/10 hover:bg-primary/10 transition-all shrink-0 font-bold text-xs"
                     >
                       <Download className="h-4 w-4" />
@@ -828,14 +1190,54 @@ export default function ReportsPage() {
                           <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest">Matched</TableHead>
                           <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Walk-in</TableHead>
                         </TableRow>
+                        {showConferenceSummaryFilters && (
+                          <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                            <TableHead className="pl-6 py-2">
+                              <div className="relative">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                                <Input
+                                  placeholder="Filter title..."
+                                  className="pl-8 h-9 bg-white/5 border-white/10 rounded-lg text-xs font-medium"
+                                  value={conferenceSummaryFilters.title}
+                                  onChange={e => handleConferenceSummaryFilterChange('title', e.target.value)}
+                                />
+                              </div>
+                            </TableHead>
+                            <TableHead className="py-2"></TableHead>
+                            <TableHead className="py-2">
+                              <Input
+                                placeholder="Filter room..."
+                                className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                                value={conferenceSummaryFilters.room}
+                                onChange={e => handleConferenceSummaryFilterChange('room', e.target.value)}
+                              />
+                            </TableHead>
+                            <TableHead className="py-2"></TableHead>
+                            <TableHead className="py-2"></TableHead>
+                            <TableHead className="py-2"></TableHead>
+                            <TableHead className="py-2"></TableHead>
+                            <TableHead className="py-2 pr-6">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                                onClick={clearConferenceSummaryFilters}
+                              >
+                                Reset
+                              </Button>
+                            </TableHead>
+                          </TableRow>
+                        )}
                       </TableHeader>
                       <TableBody>
-                        {conferenceSummary
-                          .filter(c => 
-                            c.title.toLowerCase().includes(conferenceKeyword.toLowerCase()) || 
-                            c.room_name.toLowerCase().includes(conferenceKeyword.toLowerCase())
-                          )
-                          .map((c, i) => (
+                        {filteredConferenceSummary.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-24 italic text-muted-foreground font-medium">
+                              {conferenceSummary.length === 0 ? 'Session data will be available once the event timeline begins.' : 'No results matching your filters.'}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredConferenceSummary.map((c, i) => (
                           <TableRow key={`${c.conference_uuid}-${i}`} className="border-white/5 hover:bg-white/5 transition-colors group">
                             <TableCell className="pl-6 max-w-[300px]">
                               <TooltipProvider delayDuration={300}>
@@ -866,7 +1268,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right text-xs font-medium text-emerald-500">{c.pre_registration_show_up}</TableCell>
                             <TableCell className="text-right pr-6 text-xs font-medium text-amber-500">{c.walk_in}</TableCell>
                           </TableRow>
-                        ))}
+                        )))}
                       </TableBody>
                     </Table>
                   </div>

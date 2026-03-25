@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,8 +28,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Building2, ShieldCheck, Power } from 'lucide-react'
-import { 
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Building2, ShieldCheck, Power, Filter, X } from 'lucide-react'
+import {
   createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes
 } from '@/app/actions/staff'
 import { toast } from 'sonner'
@@ -64,9 +64,9 @@ interface StaffListProps {
   projectId: string
 }
 
-export function StaffList({ 
-  initialData, 
-  projectId, 
+export function StaffList({
+  initialData,
+  projectId,
 }: StaffListProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -76,17 +76,27 @@ export function StaffList({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null)
-  
+
   const formRef = useRef<HTMLFormElement>(null)
-  
+
   const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
-  
+
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '')
-  
+
   // Staff Types state
   const [staffTypes, setStaffTypes] = useState<{type_code: string, type_name: string}[]>([])
+
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    staffCode: '',
+    type: '',
+    name: '',
+    company: '',
+    isActive: 'all'
+  })
 
   useEffect(() => {
     getStaffTypes(projectId).then(res => {
@@ -169,7 +179,7 @@ export function StaffList({
 
   async function confirmDelete() {
     if (!staffToDelete) return
-    
+
     setLoading(true)
     const result = await deleteProjectStaff(projectId, staffToDelete)
     setLoading(false)
@@ -218,26 +228,87 @@ export function StaffList({
     }
   }
 
+  // Filter staff based on column filters
+  const filteredStaff = initialData.items.filter(staff => {
+    const matchesCode = !columnFilters.staffCode ||
+      (staff.staff_code && staff.staff_code.toLowerCase().includes(columnFilters.staffCode.toLowerCase()))
+
+    const matchesType = !columnFilters.type || columnFilters.type === 'all' ||
+      (staff.staff_type_code && staff.staff_type_code.toLowerCase().includes(columnFilters.type.toLowerCase()))
+
+    const matchesName = !columnFilters.name ||
+      ((staff.first_name && staff.first_name.toLowerCase().includes(columnFilters.name.toLowerCase())) ||
+       (staff.last_name && staff.last_name.toLowerCase().includes(columnFilters.name.toLowerCase())) ||
+       (staff.title && staff.title.toLowerCase().includes(columnFilters.name.toLowerCase())))
+
+    const matchesCompany = !columnFilters.company ||
+      (staff.company_name && staff.company_name.toLowerCase().includes(columnFilters.company.toLowerCase()))
+
+    const matchesStatus = columnFilters.isActive === 'all' ||
+      (columnFilters.isActive === 'active' && staff.is_active) ||
+      (columnFilters.isActive === 'inactive' && !staff.is_active)
+
+    return matchesCode && matchesType && matchesName && matchesCompany && matchesStatus
+  })
+
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      staffCode: '',
+      type: '',
+      name: '',
+      company: '',
+      isActive: 'all'
+    })
+    setSearchQuery('')
+    setShowFilters(false)
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
       <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
         <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
-          <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
+          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-display">Staff List</CardTitle>
               <CardDescription className="font-medium">Monitoring real-time check-in events across all active zones.</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative w-full sm:w-80 group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-                <Input 
-                  placeholder="Search by name, company, code..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
-                />
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-80 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                  <Input
+                    placeholder="Search by name, company, code..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                  />
+                </div>
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  size="icon"
+                  className={cn("h-11 w-11 rounded-2xl shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Toggle Filters"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                {(showFilters || searchQuery || Object.values(columnFilters).some(v => v !== '' && v !== 'all')) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 rounded-2xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                    onClick={clearFilters}
+                    title="Clear All Filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20">
+              <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 Add Staff
               </Button>
@@ -245,15 +316,70 @@ export function StaffList({
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Staff Code</Label>
+                  <Input
+                    placeholder="Filter by code..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.staffCode}
+                    onChange={e => handleColumnFilterChange('staffCode', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Type</Label>
+                  <Input
+                    placeholder="Filter by type..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.type}
+                    onChange={e => handleColumnFilterChange('type', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Name</Label>
+                  <Input
+                    placeholder="Filter by name..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.name}
+                    onChange={e => handleColumnFilterChange('name', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Company</Label>
+                  <Input
+                    placeholder="Filter by company..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.company}
+                    onChange={e => handleColumnFilterChange('company', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Status</Label>
+                  <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Mobile View: Cards */}
           <div className="md:hidden divide-y divide-white/5">
-            {initialData.items.length === 0 ? (
+            {filteredStaff.length === 0 ? (
               <div className="text-center p-12 text-muted-foreground italic font-medium">
                 No staff members found.
               </div>
             ) : (
-              initialData.items.map((p) => (
+              filteredStaff.map((p) => (
                 <div key={p.staff_uuid} className="p-6 space-y-4 hover:bg-white/5 transition-colors group">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1.5">
@@ -304,16 +430,74 @@ export function StaffList({
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
+                {showFilters && (
+                  <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                    <TableHead className="pl-6 py-2">
+                      <Input
+                        placeholder="Filter code..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.staffCode}
+                        onChange={e => handleColumnFilterChange('staffCode', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter type..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.type}
+                        onChange={e => handleColumnFilterChange('type', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter name..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.name}
+                        onChange={e => handleColumnFilterChange('name', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter company..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.company}
+                        onChange={e => handleColumnFilterChange('company', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2 text-center">
+                      <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="py-2 text-right pr-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                        onClick={clearFilters}
+                      >
+                        Reset
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                )}
               </TableHeader>
               <TableBody>
-                {initialData.items.length === 0 ? (
+                {filteredStaff.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
                       No staff members found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  initialData.items.map((p) => (
+                  filteredStaff.map((p) => (
                     <TableRow key={p.staff_uuid} className="border-white/5 hover:bg-white/5 transition-colors group">
                       <TableCell className="pl-6">
                         <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
@@ -351,7 +535,7 @@ export function StaffList({
               </TableBody>
             </Table>
           </div>
-          
+
           {/* Pagination */}
           {initialData.total_items > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/5 bg-white/5">
@@ -360,7 +544,7 @@ export function StaffList({
                 <span className="text-foreground">{Math.min(initialData.page * initialData.limit, initialData.total_items)}</span> of{' '}
                 <span className="text-foreground font-bold">{initialData.total_items}</span> staff
               </div>
-              
+
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
@@ -371,13 +555,13 @@ export function StaffList({
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                
+
                 <div className="flex items-center gap-1 mx-2">
                   <span className="text-sm font-bold text-foreground">{initialData.page}</span>
                   <span className="text-sm text-muted-foreground/40 font-normal">/</span>
                   <span className="text-sm text-muted-foreground font-bold">{initialData.total_pages || 1}</span>
                 </div>
-                
+
                 <Button
                   variant="outline"
                   size="icon"
@@ -432,7 +616,7 @@ export function StaffList({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2.5 sm:col-span-2">
                 <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title <span className="text-red-500">*</span></Label>
@@ -456,12 +640,12 @@ export function StaffList({
                 <Input id="last_name" name="last_name" defaultValue={selectedStaff?.last_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
             </div>
-            
+
             <div className="space-y-2.5">
               <Label htmlFor="company_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name <span className="text-red-500">*</span></Label>
               <Input id="company_name" name="company_name" defaultValue={selectedStaff?.company_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
             </div>
-            
+
             <DialogFooter className="mt-8 pt-8 border-t border-white/5 flex sm:flex-row gap-3">
               <Button type="button" variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={loading} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">

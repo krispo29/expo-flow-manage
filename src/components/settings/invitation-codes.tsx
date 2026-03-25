@@ -9,10 +9,17 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Building2, User, Link as LinkIcon, ShieldCheck, Power, Ticket } from "lucide-react"
+import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Building2, User, Link as LinkIcon, ShieldCheck, Power, Ticket, Filter, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface InvitationCodeSettingsProps {
   projectUuid: string
@@ -31,15 +38,38 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    company: '',
+    code: '',
+    isActive: 'all'
+  })
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Filter invitations based on search
-  const filteredInvitations = invitations.filter(invite => 
-    invite.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    invite.invite_code.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter invitations based on search and column filters
+  const filteredInvitations = invitations.filter(invite => {
+    // Global search
+    const matchesSearch = !searchQuery ||
+      invite.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      invite.invite_code.toLowerCase().includes(searchQuery.toLowerCase())
+
+    // Column specific filters
+    const matchesCompany = !columnFilters.company ||
+      (invite.company_name && invite.company_name.toLowerCase().includes(columnFilters.company.toLowerCase()))
+
+    const matchesCode = !columnFilters.code ||
+      (invite.invite_code && invite.invite_code.toLowerCase().includes(columnFilters.code.toLowerCase()))
+
+    const matchesStatus = columnFilters.isActive === 'all' ||
+      (columnFilters.isActive === 'active' && invite.is_active) ||
+      (columnFilters.isActive === 'inactive' && !invite.is_active)
+
+    return matchesSearch && matchesCompany && matchesCode && matchesStatus
+  })
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredInvitations.length / itemsPerPage)
@@ -54,6 +84,23 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
     setCurrentPage(1)
+  }
+
+  // Handle column filter change and reset pagination
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      company: '',
+      code: '',
+      isActive: 'all'
+    })
+    setSearchQuery('')
+    setCurrentPage(1)
+    setShowFilters(false)
   }
 
   async function fetchInvitations() {
@@ -124,22 +171,44 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
     <div className="space-y-6 animate-in fade-in duration-700">
       <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
         <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
-          <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
+          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-display">Invitation Codes</CardTitle>
               <CardDescription className="font-medium">Manage invitation codes for special access.</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative w-full sm:w-80 group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-                <Input
-                  placeholder="Search company or code..."
-                  className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                />
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-80 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                  <Input
+                    placeholder="Search company or code..."
+                    className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                </div>
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  size="icon"
+                  className={cn("h-11 w-11 rounded-2xl shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Toggle Filters"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                {(showFilters || searchQuery || Object.values(columnFilters).some(v => v !== '' && v !== 'all')) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 rounded-2xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                    onClick={clearFilters}
+                    title="Clear All Filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20">
+              <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 Add Code
               </Button>
@@ -147,6 +216,43 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Company</Label>
+                  <Input
+                    placeholder="Filter by company..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.company}
+                    onChange={e => handleColumnFilterChange('company', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Code</Label>
+                  <Input
+                    placeholder="Filter by code..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.code}
+                    onChange={e => handleColumnFilterChange('code', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Status</Label>
+                  <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Mobile View: Cards */}
           <div className="md:hidden divide-y divide-white/5">
@@ -213,6 +319,51 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
+                {showFilters && (
+                  <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                    <TableHead className="pl-6 py-2">
+                      <Input
+                        placeholder="Filter company..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.company}
+                        onChange={e => handleColumnFilterChange('company', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter code..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.code}
+                        onChange={e => handleColumnFilterChange('code', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2"></TableHead>
+                    <TableHead className="py-2"></TableHead>
+                    <TableHead className="py-2"></TableHead>
+                    <TableHead className="py-2 text-center">
+                      <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="py-2 text-right pr-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                        onClick={clearFilters}
+                      >
+                        Reset
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                )}
               </TableHeader>
               <TableBody>
                 {filteredInvitations.length === 0 ? (

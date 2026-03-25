@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Search, ChevronLeft, ChevronRight, CheckSquare, RefreshCw, Printer, CheckCircle2, XCircle, Clock, Building2, User, LayoutDashboard, Filter } from 'lucide-react'
+import { Loader2, Search, ChevronLeft, ChevronRight, CheckSquare, RefreshCw, Printer, CheckCircle2, XCircle, Clock, Building2, User, LayoutDashboard, Filter, X } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -44,7 +44,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
   const [logs, setLogs] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  
+
   // Pagination & Search
   const [page, setPage] = useState(1)
   const [limit] = useState(50)
@@ -54,7 +54,15 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
 
   // Selection
   const [selectedCodes, setSelectedCodes] = useState<string[]>([])
-  
+
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    registrationCode: '',
+    name: '',
+    company: ''
+  })
+
   // History Dialog
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
   const [historyLogs, setHistoryLogs] = useState<{created_at: string, created_by: string}[]>([])
@@ -85,12 +93,12 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
     let active = true
     const doFetch = async () => {
       setLoading(true)
-      const res = filterStatus === 'all' 
+      const res = filterStatus === 'all'
         ? await getPrintLogs(page, limit, keyword)
         : await getPrintedNoAttendance(page, limit, keyword)
-        
+
       if (!active) return
-      
+
       if (res.success) {
         setLogs(res.items || [])
         setTotal(res.total || 0)
@@ -101,7 +109,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
       }
       setLoading(false)
     }
-    
+
     doFetch()
     return () => { active = false }
   }, [page, limit, keyword, filterStatus, refreshCounter])
@@ -127,7 +135,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
   }
 
   const toggleOne = (code: string) => {
-    setSelectedCodes(prev => 
+    setSelectedCodes(prev =>
       prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
     )
   }
@@ -166,6 +174,38 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
     }
   }
 
+  // Filter logs based on column filters
+  const filteredLogs = logs.filter(log => {
+    const matchesCode = !columnFilters.registrationCode ||
+      (log.registration_code && log.registration_code.toLowerCase().includes(columnFilters.registrationCode.toLowerCase()))
+
+    const matchesName = !columnFilters.name ||
+      ((log.first_name && log.first_name.toLowerCase().includes(columnFilters.name.toLowerCase())) ||
+       (log.last_name && log.last_name.toLowerCase().includes(columnFilters.name.toLowerCase())))
+
+    const matchesCompany = !columnFilters.company ||
+      (log.company_name && log.company_name.toLowerCase().includes(columnFilters.company.toLowerCase()))
+
+    return matchesCode && matchesName && matchesCompany
+  })
+
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+    setPage(1)
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      registrationCode: '',
+      name: '',
+      company: ''
+    })
+    setSearchInput('')
+    setKeyword('')
+    setPage(1)
+    setShowFilters(false)
+  }
+
   const totalPages = Math.ceil(total / limit)
 
   return (
@@ -178,24 +218,24 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                 <Printer className="h-6 w-6 text-primary" />
               </div>
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-display">Print Intelligence</CardTitle>
+                <CardTitle className="text-2xl font-display">Print Logs</CardTitle>
                 <CardDescription className="font-medium italic">Tracking badge emission and cross-referencing activity.</CardDescription>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-3 p-1.5 glass rounded-2xl border-white/10 items-center">
               <div className="relative w-48 sm:w-64 group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-                <Input 
-                  placeholder="Search logs..." 
+                <Input
+                  placeholder="Search logs..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9 h-9 text-xs bg-white/5 border-white/5 rounded-xl focus:bg-white/10 transition-all"
                 />
               </div>
               <Separator orientation="vertical" className="h-6 bg-white/10" />
-              <Select 
-                value={filterStatus} 
+              <Select
+                value={filterStatus}
                 onValueChange={(val: 'all' | 'pending') => {
                   setFilterStatus(val)
                   setPage(1)
@@ -211,9 +251,29 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                   <SelectItem value="pending" className="text-[10px] font-bold">MISSING ACTIVITY</SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="icon"
+                className={cn("h-9 w-9 rounded-xl shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/5")}
+                onClick={() => setShowFilters(!showFilters)}
+                title="Toggle Filters"
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+              {(showFilters || searchInput || Object.values(columnFilters).some(v => v !== '')) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                  onClick={clearFilters}
+                  title="Clear All Filters"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setRefreshCounter(prev => prev + 1)}
                 className="h-9 w-9 rounded-xl hover:bg-white/5"
               >
@@ -222,9 +282,42 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-0">
-            
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">registration code</Label>
+                  <Input
+                    placeholder="Filter by code..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.registrationCode}
+                    onChange={e => handleColumnFilterChange('registrationCode', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">first name/last name</Label>
+                  <Input
+                    placeholder="Filter by name..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.name}
+                    onChange={e => handleColumnFilterChange('name', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">company name</Label>
+                  <Input
+                    placeholder="Filter by company..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.company}
+                    onChange={e => handleColumnFilterChange('company', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Bar for Pending */}
           {filterStatus === 'pending' && (
             <div className="bg-white/5 border-b border-white/5 p-4 flex items-center justify-between gap-4">
@@ -233,7 +326,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                   <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Selection: {selectedCodes.length} nodes</span>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setIsGenerateDialogOpen(true)}
                 disabled={selectedCodes.length === 0}
                 className="btn-aurora h-10 px-6 rounded-xl font-bold text-xs shadow-lg shadow-primary/20"
@@ -246,20 +339,20 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
 
           {/* Mobile View: Stream Cards */}
           <div className="md:hidden divide-y divide-white/5">
-            {loading && logs.length === 0 ? (
+            {loading && filteredLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                 <p className="text-sm font-bold tracking-widest uppercase opacity-40">Syncing logs...</p>
               </div>
-            ) : logs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <div className="text-center p-12 text-muted-foreground italic font-medium">No print artifacts found.</div>
             ) : (
-              logs.map((log, i) => (
+              filteredLogs.map((log, i) => (
                 <div key={log.print_log_uuid || log.registration_uuid || i} className="p-6 space-y-4 hover:bg-white/5 transition-colors group">
                   <div className="flex justify-between items-start">
                     <div className="flex items-start gap-3">
                       {filterStatus === 'pending' && (
-                        <Checkbox 
+                        <Checkbox
                           checked={selectedCodes.includes(log.registration_code)}
                           onCheckedChange={() => toggleOne(log.registration_code)}
                           className="mt-1"
@@ -270,8 +363,8 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                         <code className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{log.registration_code}</code>
                       </div>
                     </div>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className={cn("text-[9px] font-black tracking-tighter border-0 bg-white/10 uppercase py-1 px-3 rounded-full cursor-pointer", filterStatus === 'all' && 'hover:bg-primary/20 transition-all')}
                       onClick={() => {
                         if (filterStatus === 'all') {
@@ -282,7 +375,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                       }}
                     >
                       <Printer className="w-2.5 h-2.5 mr-1.5 opacity-60" />
-                      X{log.print_count || 1}
+                      print count: {log.print_count || 1}
                     </Badge>
                   </div>
 
@@ -293,9 +386,9 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                     </div>
                     {filterStatus === 'pending' && (
                       <div className="flex flex-wrap gap-2 pt-1">
-                        <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_attendance ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>Att: {log.has_attendance ? 'YES' : 'NO'}</Badge>
-                        <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_hall ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>Hall: {log.has_hall ? 'YES' : 'NO'}</Badge>
-                        <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_conference ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>Conf: {log.has_conference ? 'YES' : 'NO'}</Badge>
+                        <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_attendance ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>has attendance: {log.has_attendance ? 'YES' : 'NO'}</Badge>
+                        <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_hall ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>has hall: {log.has_hall ? 'YES' : 'NO'}</Badge>
+                        <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_conference ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>has conference: {log.has_conference ? 'YES' : 'NO'}</Badge>
                       </div>
                     )}
                   </div>
@@ -311,46 +404,93 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                 <TableRow className="border-white/10 hover:bg-transparent">
                   {filterStatus === 'pending' && (
                     <TableHead className="w-12 pl-6">
-                      <Checkbox 
+                      <Checkbox
                         checked={logs.length > 0 && selectedCodes.length === logs.length}
                         onCheckedChange={toggleAll}
                       />
                     </TableHead>
                   )}
-                  <TableHead className={cn("w-[120px] font-bold text-[10px] uppercase tracking-widest", filterStatus !== 'pending' && 'pl-6')}>Entry Code</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Attendee Matrix</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Org Reference</TableHead>
+                  <TableHead className={cn("w-[120px] font-bold text-[10px] uppercase tracking-widest", filterStatus !== 'pending' && 'pl-6')}>registration code</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">first name last name</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">company name</TableHead>
                   {filterStatus === 'pending' && (
                     <>
-                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">ATT</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">HALL</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">CONF</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">ACTIVE</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">has attendance</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">has hall</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">has conference</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">is active</TableHead>
                     </>
                   )}
-                  <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Emission Status</TableHead>
+                  <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">print count</TableHead>
                 </TableRow>
+                {showFilters && (
+                  <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                    {filterStatus === 'pending' && <TableHead className="pl-6 py-2"></TableHead>}
+                    <TableHead className={cn("py-2", filterStatus !== 'pending' && 'pl-6')}>
+                      <Input
+                        placeholder="Filter code..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.registrationCode}
+                        onChange={e => handleColumnFilterChange('registrationCode', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter name..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.name}
+                        onChange={e => handleColumnFilterChange('name', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter company..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.company}
+                        onChange={e => handleColumnFilterChange('company', e.target.value)}
+                      />
+                    </TableHead>
+                    {filterStatus === 'pending' && (
+                      <>
+                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2"></TableHead>
+                      </>
+                    )}
+                    <TableHead className="py-2 text-right pr-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                        onClick={clearFilters}
+                      >
+                        Reset
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                )}
               </TableHeader>
               <TableBody>
-                {loading && logs.length === 0 ? (
+                {loading && filteredLogs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={filterStatus === 'pending' ? 12 : 5} className="text-center py-24">
                       <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
                       <span className="text-sm font-bold tracking-widest uppercase opacity-40">Compiling emission logs...</span>
                     </TableCell>
                   </TableRow>
-                ) : logs.length === 0 ? (
+                ) : filteredLogs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={filterStatus === 'pending' ? 12 : 5} className="text-center py-24 italic text-muted-foreground font-medium">
                       No logs captured.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  logs.map((log, i) => (
+                  filteredLogs.map((log, i) => (
                     <TableRow key={log.print_log_uuid || log.registration_uuid || i} className="border-white/5 hover:bg-white/5 transition-colors group">
                       {filterStatus === 'pending' && (
                         <TableCell className="pl-6">
-                          <Checkbox 
+                          <Checkbox
                             checked={selectedCodes.includes(log.registration_code)}
                             onCheckedChange={() => toggleOne(log.registration_code)}
                           />
@@ -385,8 +525,8 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                         </>
                       )}
                       <TableCell className="text-right pr-6">
-                        <Badge 
-                          variant="secondary" 
+                        <Badge
+                          variant="secondary"
                           className={cn("bg-white/5 text-foreground/80 border-white/5 font-bold text-[9px] uppercase tracking-tighter py-1 px-3 rounded-full", filterStatus === 'all' && 'hover:bg-primary/20 transition-all cursor-pointer')}
                           onClick={() => {
                             if (filterStatus === 'all') {
@@ -397,7 +537,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                           }}
                         >
                           <Printer className="w-2.5 h-2.5 mr-1.5 opacity-60" />
-                          Printed ({log.print_count || 1})
+                          print count: {log.print_count || 1}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -406,13 +546,13 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
               </TableBody>
             </Table>
           </div>
-          
+
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/5 bg-white/5">
             <div className="text-sm text-muted-foreground italic font-medium">
               Streaming <span className="text-foreground">{(page - 1) * limit + 1}</span> to <span className="text-foreground">{Math.min(page * limit, total)}</span> of <span className="text-foreground font-bold">{total}</span> artifacts
             </div>
-            
+
             <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
@@ -510,13 +650,13 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                 <SelectContent className="glass border-white/10">
                   {rooms.map(room => (
                     <SelectItem key={room.room_uuid} value={room.room_uuid} className="text-xs font-bold">
-                      {room.room_name} 
+                      {room.room_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Date</Label>

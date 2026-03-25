@@ -30,7 +30,7 @@ import {
   toggleOrganizerStatus,
   type Organizer,
 } from '@/app/actions/organizer'
-import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, User, ShieldCheck, Calendar, Clock, Plus, Copy, Check } from 'lucide-react'
+import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, User, ShieldCheck, Calendar, Clock, Plus, Copy, Check, Filter, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
@@ -42,6 +42,13 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import { cn } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface OrganizerListProps {
   projectUuid: string
@@ -87,6 +94,15 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    username: '',
+    passwordNote: '',
+    fullName: '',
+    isActive: 'all'
+  })
+
   // Show/Hide password state
   const [showPassword, setShowPassword] = useState(false)
 
@@ -94,11 +110,29 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Filter organizers based on search
-  const filteredOrganizers = organizers.filter(org => 
-    org.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    org.full_name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter organizers based on search and column filters
+  const filteredOrganizers = organizers.filter(org => {
+    // Global search
+    const matchesSearch = !searchQuery ||
+      (org.username && org.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (org.full_name && org.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    // Column specific filters
+    const matchesUsername = !columnFilters.username ||
+      (org.username && org.username.toLowerCase().includes(columnFilters.username.toLowerCase()))
+
+    const matchesPassword = !columnFilters.passwordNote ||
+      (org.password_note && org.password_note.toLowerCase().includes(columnFilters.passwordNote.toLowerCase()))
+
+    const matchesName = !columnFilters.fullName ||
+      (org.full_name && org.full_name.toLowerCase().includes(columnFilters.fullName.toLowerCase()))
+
+    const matchesStatus = columnFilters.isActive === 'all' ||
+      (columnFilters.isActive === 'active' && org.is_active) ||
+      (columnFilters.isActive === 'inactive' && !org.is_active)
+
+    return matchesSearch && matchesUsername && matchesPassword && matchesName && matchesStatus
+  })
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredOrganizers.length / itemsPerPage)
@@ -113,6 +147,24 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
     setCurrentPage(1)
+  }
+
+  // Handle column filter change and reset pagination
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      username: '',
+      passwordNote: '',
+      fullName: '',
+      isActive: 'all'
+    })
+    setSearchQuery('')
+    setCurrentPage(1)
+    setShowFilters(false)
   }
 
   async function fetchOrganizers() {
@@ -206,23 +258,93 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
     <div className="space-y-6 animate-in fade-in duration-700">
       <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
         <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-display">All Organizers</CardTitle>
               <CardDescription className="font-medium">Manage user accounts and permissions for this project.</CardDescription>
             </div>
-            <div className="relative w-full max-sm:max-w-none max-w-sm group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Search username or name..."
-                className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-80 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                  <Input
+                    placeholder="Search username or name..."
+                    className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                </div>
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  size="icon"
+                  className={cn("h-11 w-11 rounded-2xl shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Toggle Filters"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                {(showFilters || searchQuery || Object.values(columnFilters).some(v => v !== '' && v !== 'all')) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 rounded-2xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                    onClick={clearFilters}
+                    title="Clear All Filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Username</Label>
+                  <Input
+                    placeholder="Filter by username..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.username}
+                    onChange={e => handleColumnFilterChange('username', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Password Note</Label>
+                  <Input
+                    placeholder="Filter by password..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.passwordNote}
+                    onChange={e => handleColumnFilterChange('passwordNote', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Full Name</Label>
+                  <Input
+                    placeholder="Filter by name..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.fullName}
+                    onChange={e => handleColumnFilterChange('fullName', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Status</Label>
+                  <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="flex flex-col items-center justify-center p-20">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -291,10 +413,10 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                         <Button variant="outline" size="sm" className="h-9 rounded-full bg-white/5 border-white/10 hover:bg-blue-500/10 hover:text-blue-500 flex-1" onClick={() => { setResetOrg(org); setNewPassword(org.password_note || ''); setShowPassword(false); }}>
                           <KeyRound className="h-3.5 w-3.5 mr-2" /> Reset
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className={cn("h-9 w-9 rounded-full bg-white/5 border-white/10", org.is_active ? 'hover:bg-red-500/10 hover:text-red-500' : 'hover:bg-emerald-500/10 hover:text-emerald-500')} 
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className={cn("h-9 w-9 rounded-full bg-white/5 border-white/10", org.is_active ? 'hover:bg-red-500/10 hover:text-red-500' : 'hover:bg-emerald-500/10 hover:text-emerald-500')}
                           onClick={() => handleToggleStatus(org)}
                         >
                           <Power className={cn("h-4 w-4", org.is_active ? 'text-emerald-500' : 'text-muted-foreground')} />
@@ -314,9 +436,60 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                       <TableHead className="font-bold text-[10px] uppercase tracking-widest">Password Note</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase tracking-widest">Full Name</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase tracking-widest">Temporal Intelligence</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase tracking-widest">Last Login</TableHead>
                       <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                     </TableRow>
+                    {showFilters && (
+                      <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                        <TableHead className="pl-6 py-2">
+                          <Input
+                            placeholder="Filter username..."
+                            className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                            value={columnFilters.username}
+                            onChange={e => handleColumnFilterChange('username', e.target.value)}
+                          />
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Input
+                            placeholder="Filter password..."
+                            className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                            value={columnFilters.passwordNote}
+                            onChange={e => handleColumnFilterChange('passwordNote', e.target.value)}
+                          />
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Input
+                            placeholder="Filter name..."
+                            className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                            value={columnFilters.fullName}
+                            onChange={e => handleColumnFilterChange('fullName', e.target.value)}
+                          />
+                        </TableHead>
+                        <TableHead className="py-2">
+                          <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent className="glass border-white/10 rounded-xl">
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
+                        <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2 text-right pr-6">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                            onClick={clearFilters}
+                          >
+                            Reset
+                          </Button>
+                        </TableHead>
+                      </TableRow>
+                    )}
                   </TableHeader>
                   <TableBody>
                     {filteredOrganizers.length === 0 ? (

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Edit, Plus, Loader2, MapPin, Users, Building, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Monitor, ShieldCheck, Power } from "lucide-react"
+import { Edit, Plus, Loader2, MapPin, Users, Building, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Monitor, ShieldCheck, Power, Filter, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
@@ -32,17 +32,48 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Column filter state
+  const [showFilters, setShowFilters] = useState(false)
+  const [columnFilters, setColumnFilters] = useState({
+    roomName: '',
+    roomType: '',
+    location: '',
+    deviceId: '',
+    isActive: 'all'
+  })
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Filter rooms based on search
-  const filteredRooms = rooms.filter(room => 
-    room.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (room.location_detail?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (room.device_id?.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  // Filter rooms based on search and column filters
+  const filteredRooms = rooms.filter(room => {
+    // Global search
+    const matchesSearch = !searchQuery ||
+      room.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (room.location_detail?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (room.device_id?.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    // Column specific filters
+    const matchesRoomName = !columnFilters.roomName ||
+      (room.room_name && room.room_name.toLowerCase().includes(columnFilters.roomName.toLowerCase()))
+
+    const matchesRoomType = !columnFilters.roomType || columnFilters.roomType === 'all' ||
+      (room.room_type && room.room_type.toLowerCase().includes(columnFilters.roomType.toLowerCase()))
+
+    const matchesLocation = !columnFilters.location ||
+      (room.location_detail && room.location_detail.toLowerCase().includes(columnFilters.location.toLowerCase()))
+
+    const matchesDeviceId = !columnFilters.deviceId ||
+      (room.device_id && room.device_id.toLowerCase().includes(columnFilters.deviceId.toLowerCase()))
+
+    const matchesStatus = columnFilters.isActive === 'all' ||
+      (columnFilters.isActive === 'active' && room.is_active) ||
+      (columnFilters.isActive === 'inactive' && !room.is_active)
+
+    return matchesSearch && matchesRoomName && matchesRoomType && matchesLocation && matchesDeviceId && matchesStatus
+  })
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredRooms.length / itemsPerPage)
@@ -57,6 +88,25 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
     setCurrentPage(1)
+  }
+
+  // Handle column filter change and reset pagination
+  const handleColumnFilterChange = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setColumnFilters({
+      roomName: '',
+      roomType: '',
+      location: '',
+      deviceId: '',
+      isActive: 'all'
+    })
+    setSearchQuery('')
+    setCurrentPage(1)
+    setShowFilters(false)
   }
 
   async function fetchData() {
@@ -132,22 +182,44 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
     <div className="space-y-6 animate-in fade-in duration-700">
       <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
         <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
-          <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
+          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-display">Room Management</CardTitle>
               <CardDescription className="font-medium">Manage conference rooms for this project.</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative w-full sm:w-80 group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-                <Input
-                  placeholder="Search rooms..."
-                  className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                />
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-80 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+                  <Input
+                    placeholder="Search rooms..."
+                    className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                </div>
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  size="icon"
+                  className={cn("h-11 w-11 rounded-2xl shrink-0 transition-all", showFilters ? "shadow-lg shadow-primary/20" : "bg-white/5 border-white/10")}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Toggle Filters"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                {(showFilters || searchQuery || Object.values(columnFilters).some(v => v !== '' && v !== 'all')) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 rounded-2xl shrink-0 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10"
+                    onClick={clearFilters}
+                    title="Clear All Filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20">
+              <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 Add Room
               </Button>
@@ -155,6 +227,65 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {showFilters && (
+            <div className="p-6 bg-primary/5 border-b border-white/5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Room Name</Label>
+                  <Input
+                    placeholder="Filter by room name..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.roomName}
+                    onChange={e => handleColumnFilterChange('roomName', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Room Type</Label>
+                  <Select value={columnFilters.roomType} onValueChange={v => handleColumnFilterChange('roomType', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="conference">Conference</SelectItem>
+                      <SelectItem value="hall">Hall</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Location</Label>
+                  <Input
+                    placeholder="Filter by location..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.location}
+                    onChange={e => handleColumnFilterChange('location', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Device ID</Label>
+                  <Input
+                    placeholder="Filter by device ID..."
+                    className="h-10 bg-white/5 border-white/10 rounded-xl text-sm"
+                    value={columnFilters.deviceId}
+                    onChange={e => handleColumnFilterChange('deviceId', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-1">Status</Label>
+                  <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                    <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl text-sm">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Mobile View: Cards */}
           <div className="md:hidden divide-y divide-white/5">
@@ -216,6 +347,69 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
+                {showFilters && (
+                  <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
+                    <TableHead className="pl-6 py-2">
+                      <Input
+                        placeholder="Filter room..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.roomName}
+                        onChange={e => handleColumnFilterChange('roomName', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Select value={columnFilters.roomType} onValueChange={v => handleColumnFilterChange('roomType', v)}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="conference">Conference</SelectItem>
+                          <SelectItem value="hall">Hall</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter location..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.location}
+                        onChange={e => handleColumnFilterChange('location', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2">
+                      <Input
+                        placeholder="Filter device..."
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
+                        value={columnFilters.deviceId}
+                        onChange={e => handleColumnFilterChange('deviceId', e.target.value)}
+                      />
+                    </TableHead>
+                    <TableHead className="py-2"></TableHead>
+                    <TableHead className="py-2 text-center">
+                      <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 rounded-xl">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="py-2 text-right pr-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground hover:text-red-500 transition-colors"
+                        onClick={clearFilters}
+                      >
+                        Reset
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                )}
               </TableHeader>
               <TableBody>
                 {filteredRooms.length === 0 ? (
