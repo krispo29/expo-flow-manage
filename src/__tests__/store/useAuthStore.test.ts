@@ -2,11 +2,12 @@ import { useAuthStore } from '@/store/useAuthStore'
 
 // Helper to reset the store before each test
 const resetStore = () => {
-  useAuthStore.setState({
-    user: null,
-    isAuthenticated: false,
-    isHydrated: false,
-  })
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isHydrated: false,
+      expiresAt: null,
+    })
 }
 
 describe('useAuthStore', () => {
@@ -39,7 +40,7 @@ describe('useAuthStore', () => {
         role: 'ADMIN',
       }
 
-      useAuthStore.getState().login(testUser)
+      useAuthStore.getState().login(testUser, 3600)
 
       const { user, isAuthenticated } = useAuthStore.getState()
       expect(user).toEqual(testUser)
@@ -54,7 +55,7 @@ describe('useAuthStore', () => {
         projectId: 'project-123',
       }
 
-      useAuthStore.getState().login(testUser)
+      useAuthStore.getState().login(testUser, 3600)
 
       const { isAuthenticated } = useAuthStore.getState()
       expect(isAuthenticated).toBe(true)
@@ -74,8 +75,8 @@ describe('useAuthStore', () => {
         projectId: 'project-123',
       }
 
-      useAuthStore.getState().login(firstUser)
-      useAuthStore.getState().login(secondUser)
+      useAuthStore.getState().login(firstUser, 3600)
+      useAuthStore.getState().login(secondUser, 3600)
 
       const { user } = useAuthStore.getState()
       expect(user).toEqual(secondUser)
@@ -89,7 +90,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      })
+      }, 3600)
 
       // Then logout
       useAuthStore.getState().logout()
@@ -104,7 +105,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      })
+      }, 3600)
 
       useAuthStore.getState().logout()
 
@@ -139,7 +140,7 @@ describe('useAuthStore', () => {
         role: 'ADMIN',
       }
 
-      useAuthStore.getState().login(testUser)
+      useAuthStore.getState().login(testUser, 3600)
       useAuthStore.getState().setHydrated()
 
       const { user, isHydrated } = useAuthStore.getState()
@@ -157,7 +158,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      })
+      }, 3600)
 
       const { isAuthenticated: isAuth } = useAuthStore.getState()
       expect(isAuth).toBe(true)
@@ -168,7 +169,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      })
+      }, 3600)
 
       useAuthStore.getState().logout()
 
@@ -186,7 +187,7 @@ describe('useAuthStore', () => {
         username: 'admin',
         role: 'ADMIN',
         projectId: 'proj-1',
-      })
+      }, 3600)
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
       expect(useAuthStore.getState().user?.username).toBe('admin')
 
@@ -198,6 +199,25 @@ describe('useAuthStore', () => {
       useAuthStore.getState().logout()
       expect(useAuthStore.getState().isAuthenticated).toBe(false)
       expect(useAuthStore.getState().user).toBeNull()
+    })
+
+    it('should clear stale sessions during sync', () => {
+      useAuthStore.setState({
+        user: {
+          id: '123',
+          username: 'expired',
+          role: 'ADMIN',
+        },
+        isAuthenticated: true,
+        isHydrated: false,
+        expiresAt: Date.now() - 1000,
+      })
+
+      useAuthStore.getState().syncSession()
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().expiresAt).toBeNull()
     })
   })
 })

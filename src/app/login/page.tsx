@@ -11,25 +11,23 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import { setStoredUser, setStoredProjects, clearAuthStorage, type StoredProject } from '@/lib/auth-storage'
+import { setStoredUser, setStoredProjects, type StoredProject } from '@/lib/auth-storage'
+import { clearClientAuthState } from '@/lib/client-auth'
 
 type LoginRole = 'admin' | 'organizer'
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
-  const logout = useAuthStore((state) => state.logout)
   const [loading, setLoading] = useState(false)
   const [loginRole, setLoginRole] = useState<LoginRole>('admin')
   const [mounted, setMounted] = useState(false)
 
   // Clear auth state (both client and server) when landing on login page
   useEffect(() => {
-    logout()
+    clearClientAuthState()
     logoutAction()
-    // Clear sessionStorage as well
-    clearAuthStorage()
-  }, [logout])
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -53,7 +51,7 @@ export default function LoginPage() {
       }
 
       if (result.success && result.user) {
-        login(result.user)
+        login(result.user, result.expiresIn)
         toast.success('Logged in successfully')
         
         if (loginRole === 'organizer') {

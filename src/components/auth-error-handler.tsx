@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/useAuthStore'
+import { clearClientAuthState } from '@/lib/client-auth'
 
 /**
  * Client-side component that listens for auth expiration events.
@@ -11,17 +11,16 @@ import { useAuthStore } from '@/store/useAuthStore'
  */
 export function AuthErrorHandler() {
   const router = useRouter()
-  const logout = useAuthStore((state) => state.logout)
 
   useEffect(() => {
     const handleAuthExpired = () => {
-      logout()
+      clearClientAuthState()
       router.push('/login')
     }
 
     globalThis.addEventListener('auth:expired', handleAuthExpired)
     return () => globalThis.removeEventListener('auth:expired', handleAuthExpired)
-  }, [logout, router])
+  }, [router])
 
   return null
 }

@@ -55,7 +55,7 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
     }
   }, [projectId, pathname, router, projects, isOrganizer, isHydrated, mounted])
 
-  const isLoading = !mounted || !isHydrated || (pathname !== '/admin/projects' && !projectId && !isOrganizer);
+  const isLoading = !mounted || !isHydrated || (pathname !== '/admin/projects' && !projectId && !isOrganizer)
 
   return (
     <>

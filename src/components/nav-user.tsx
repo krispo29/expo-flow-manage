@@ -29,6 +29,7 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 import { useRouter } from "next/navigation"
 import { logoutAction } from "@/app/actions/auth"
+import { clearClientAuthState } from "@/lib/client-auth"
 
 export function NavUser({
   user,
@@ -40,12 +41,11 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const { logout } = useAuthStore()
   const router = useRouter()
 
   const handleLogout = async () => {
     await logoutAction()
-    logout()
+    clearClientAuthState()
     router.push("/login")
   }
 

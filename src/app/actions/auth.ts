@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import api from '@/lib/api'
 import { withAuthRateLimit } from '@/lib/rate-limit'
+import { getRemainingTokenLifetime } from '@/lib/auth-session'
 
 export async function getUserRole(): Promise<string> {
   const cookieStore = await cookies()
@@ -55,6 +56,7 @@ export async function loginAction(formData: FormData) {
 
         return {
           success: true,
+          expiresIn: tokenMaxAge,
           user: {
             id: uuid,
             username,
@@ -136,6 +138,7 @@ export async function organizerLoginAction(formData: FormData) {
 
       return {
         success: true,
+        expiresIn: tokenMaxAge,
         user: {
           id: organizer_uuid,
           username,
@@ -156,11 +159,18 @@ export async function organizerLoginAction(formData: FormData) {
 
 export async function setProjectCookie(projectUuid: string) {
   const cookieStore = await cookies()
+  const accessToken = cookieStore.get('access_token')?.value
+  const projectCookieMaxAge = getRemainingTokenLifetime(accessToken) ?? 604800
+
+  if (!accessToken) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
   cookieStore.set('project_uuid', projectUuid, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 604800,  // 7 days - matches token expiration
+    maxAge: projectCookieMaxAge,
     path: '/',
   })
   return { success: true }

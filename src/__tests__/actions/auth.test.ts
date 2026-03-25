@@ -7,6 +7,10 @@ jest.mock('@/lib/api', () => ({
   post: jest.fn(),
 }))
 
+jest.mock('@/lib/rate-limit', () => ({
+  withAuthRateLimit: async <T>(callback: () => Promise<T>) => callback(),
+}))
+
 const mockApiPost = api.post as jest.MockedFunction<typeof api.post>
 
 // Mock next/headers
@@ -114,6 +118,7 @@ describe('auth actions', () => {
 
       expect(result).toEqual({
         success: true,
+        expiresIn: 604800,
         user: {
           id: 'admin-123',
           username: 'admin',
@@ -184,6 +189,7 @@ describe('auth actions', () => {
 
       expect(result).toEqual({
         success: true,
+        expiresIn: 604800,
         user: {
           id: 'organizer-123',
           username: 'organizer',
@@ -213,8 +219,12 @@ describe('auth actions', () => {
 
   describe('setProjectCookie', () => {
     it('should set project UUID cookie', async () => {
+      const exp = Math.floor(Date.now() / 1000) + 3600
+      const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url')
+      const mockToken = `header.${payload}.signature`
       const mockCookieStore = {
         set: jest.fn(),
+        get: jest.fn().mockReturnValue({ value: mockToken }),
       }
       mockCookies.mockResolvedValue(mockCookieStore as any)
 
@@ -226,11 +236,23 @@ describe('auth actions', () => {
         'project-123',
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'lax',
-          maxAge: 604800,
+          sameSite: 'strict',
           path: '/',
         })
       )
+    })
+
+    it('should return unauthorized when access token is missing', async () => {
+      const mockCookieStore = {
+        set: jest.fn(),
+        get: jest.fn().mockReturnValue(undefined),
+      }
+      mockCookies.mockResolvedValue(mockCookieStore as any)
+
+      const result = await setProjectCookie('project-123')
+
+      expect(result).toEqual({ success: false, error: 'Unauthorized' })
+      expect(mockCookieStore.set).not.toHaveBeenCalled()
     })
   })
 })
