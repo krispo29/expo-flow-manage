@@ -16,7 +16,7 @@ export default function EditExhibitorPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const id = params?.id as string
-  const { user } = useAuthStore()
+  const { user, isAuthenticated, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
   
   const [exhibitor, setExhibitor] = useState<any>(null)
@@ -41,6 +41,14 @@ export default function EditExhibitorPage() {
     }
     fetchExhibitor()
   }, [id, projectId, isOrganizer])
+
+  if (!isHydrated || !isAuthenticated || !user) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   if (!isOrganizer && !projectId) {
     return <div>Project ID is required</div>

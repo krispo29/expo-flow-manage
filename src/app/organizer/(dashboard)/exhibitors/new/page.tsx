@@ -10,8 +10,16 @@ import { ArrowLeft } from 'lucide-react'
 export default function NewExhibitorPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
-  const { user } = useAuthStore()
+  const { user, isAuthenticated, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
+
+  if (!isHydrated || !isAuthenticated || !user) {
+    return (
+      <div className="flex justify-center p-8">
+        <ArrowLeft className="h-8 w-8 animate-pulse text-muted-foreground/40" />
+      </div>
+    )
+  }
 
   if (!isOrganizer && !projectId) {
     return <div>Project ID is required</div>

@@ -57,7 +57,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const projectId = searchParams.get('projectId')
-  const { user } = useAuthStore()
+  const { user, isAuthenticated, isHydrated } = useAuthStore()
 
   const activeProject = projects?.find(p => p.id === projectId)
 
@@ -76,6 +76,28 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   const isActive = (path: string) => {
     if (path === basePath && pathname === basePath) return true
     return pathname.startsWith(path) && path !== basePath
+  }
+
+  if (!isHydrated || !isAuthenticated || !user) {
+    return (
+      <Sidebar collapsible="icon" className="border-none" {...props}>
+        <SidebarHeader>
+          <div className="mx-2 h-16 animate-pulse rounded-2xl bg-white/5" />
+        </SidebarHeader>
+        <SidebarContent className="px-2">
+          <div className="space-y-3 px-2 py-4">
+            <div className="h-4 w-20 animate-pulse rounded bg-white/5" />
+            <div className="h-10 animate-pulse rounded-xl bg-white/5" />
+            <div className="h-10 animate-pulse rounded-xl bg-white/5" />
+            <div className="h-10 animate-pulse rounded-xl bg-white/5" />
+          </div>
+        </SidebarContent>
+        <SidebarFooter className="p-4">
+          <div className="h-14 animate-pulse rounded-xl bg-white/5" />
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+    )
   }
 
   return (

@@ -41,7 +41,7 @@ import {
 export default function ExhibitorsPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
-  const { user } = useAuthStore()
+  const { user, isAuthenticated, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
   
   const [exhibitors, setExhibitors] = useState<any[]>([])
@@ -277,6 +277,14 @@ export default function ExhibitorsPage() {
     } else {
       toast.error(result.error || 'Invalid credentials')
     }
+  }
+
+  if (!isHydrated || !isAuthenticated || !user) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   if (!isOrganizer && !projectId) {
