@@ -710,7 +710,7 @@ function ImportsContent() {
             )}
           </div>
           <DialogFooter className="p-6 bg-white/5 border-t border-white/10">
-            <Button variant="ghost" className="rounded-2xl h-11 w-full font-bold text-xs uppercase tracking-widest" onClick={() => setViewDetailUuid(null)}>Close Pipeline</Button>
+            <Button variant="ghost" className="rounded-2xl h-11 w-full font-bold text-xs uppercase tracking-widest" onClick={() => setViewDetailUuid(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

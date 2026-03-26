@@ -271,7 +271,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                   <SelectValue placeholder="Stream Mode" />
                 </SelectTrigger>
                 <SelectContent className="glass border-white/10">
-                  <SelectItem value="all" className="text-[10px] font-bold">ALL EMISSIONS</SelectItem>
+                  <SelectItem value="all" className="text-[10px] font-bold">ALL</SelectItem>
                   <SelectItem value="pending" className="text-[10px] font-bold">MISSING ACTIVITY</SelectItem>
                 </SelectContent>
               </Select>
