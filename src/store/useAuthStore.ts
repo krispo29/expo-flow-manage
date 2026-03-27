@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { calculateExpiresAt, isSessionExpired } from '@/lib/auth-session'
+import { isSessionExpired } from '@/lib/auth-session'
 
 interface User {
   id: string
@@ -14,7 +14,7 @@ interface AuthState {
   isAuthenticated: boolean
   isHydrated: boolean
   expiresAt: number | null
-  login: (user: User, expiresInSeconds: number) => void
+  login: (user: User, expiresAt: number) => void
   logout: () => void
   setHydrated: () => void
   syncSession: () => void
@@ -27,11 +27,11 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isHydrated: false,
       expiresAt: null,
-      login: (user, expiresInSeconds) =>
+      login: (user, expiresAt) =>
         set({
           user,
           isAuthenticated: true,
-          expiresAt: calculateExpiresAt(expiresInSeconds),
+          expiresAt,
         }),
       logout: () => set({ user: null, isAuthenticated: false, expiresAt: null }),
       setHydrated: () => set({ isHydrated: true }),

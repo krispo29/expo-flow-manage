@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { setProjectCookie } from '@/app/actions/auth'
 import { useAuthStore } from '@/store/useAuthStore'
+import { clearClientAuthState } from '@/lib/client-auth'
 
 interface ProjectGuardProps {
   children: React.ReactNode
@@ -49,9 +50,16 @@ export function ProjectGuard({ children, projects }: ProjectGuardProps) {
     } else if (projectId !== lastProjectIdRef.current) {
       // Only set cookie if projectId has changed
       lastProjectIdRef.current = projectId
-      setProjectCookie(projectId).catch((err) => {
-        console.error('Failed to set project cookie:', err)
-      })
+      setProjectCookie(projectId)
+        .then((result) => {
+          if (!result.success && result.error === 'Unauthorized') {
+            clearClientAuthState()
+            router.replace('/login')
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to set project cookie:', err)
+        })
     }
   }, [projectId, pathname, router, projects, isOrganizer, isHydrated, mounted])
 

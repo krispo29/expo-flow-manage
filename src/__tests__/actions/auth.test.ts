@@ -21,9 +21,16 @@ jest.mock('next/headers', () => ({
 const mockCookies = cookies as jest.MockedFunction<typeof cookies>
 
 describe('auth actions', () => {
+  const fixedNow = 1_700_000_000_000
+
   beforeEach(() => {
     jest.clearAllMocks()
     mockApiPost.mockReset()
+    jest.spyOn(Date, 'now').mockReturnValue(fixedNow)
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
   })
 
   describe('getUserRole', () => {
@@ -116,17 +123,58 @@ describe('auth actions', () => {
 
       const result = await loginAction(formData)
 
-      expect(result).toEqual({
-        success: true,
-        expiresIn: 604800,
-        user: {
-          id: 'admin-123',
-          username: 'admin',
-          role: 'ADMIN',
-          com_uuid: 'company-456',
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: true,
+          user: {
+            id: 'admin-123',
+            username: 'admin',
+            role: 'ADMIN',
+            com_uuid: 'company-456',
+          },
+        })
+      )
+      expect((result as { expiresAt: number }).expiresAt).toBe(fixedNow + 604800 * 1000)
+      expect(mockCookieStore.set).toHaveBeenCalledTimes(2)
+    })
+
+    it('should use JWT exp to align cookie maxAge when available', async () => {
+      const formData = new FormData()
+      formData.append('username', 'admin')
+      formData.append('password', 'password123')
+
+      const exp = Math.floor(fixedNow / 1000) + 1800
+      const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url')
+      const token = `header.${payload}.signature`
+
+      mockApiPost.mockResolvedValue({
+        data: {
+          code: 200,
+          data: {
+            access_token: token,
+            uuid: 'admin-123',
+            com_uuid: 'company-456',
+            expires_in: 604800,
+          },
         },
       })
-      expect(mockCookieStore.set).toHaveBeenCalledTimes(2)
+
+      const mockCookieStore = {
+        set: jest.fn(),
+        get: jest.fn().mockReturnValue(undefined),
+      }
+      mockCookies.mockResolvedValue(mockCookieStore as any)
+
+      const result = await loginAction(formData)
+
+      expect((result as { expiresAt: number }).expiresAt).toBe(exp * 1000)
+      expect(mockCookieStore.set).toHaveBeenCalledWith(
+        'access_token',
+        token,
+        expect.objectContaining({
+          maxAge: 1800,
+        })
+      )
     })
   })
 
@@ -187,16 +235,18 @@ describe('auth actions', () => {
 
       const result = await organizerLoginAction(formData)
 
-      expect(result).toEqual({
-        success: true,
-        expiresIn: 604800,
-        user: {
-          id: 'organizer-123',
-          username: 'organizer',
-          role: 'ORGANIZER',
-          projectId: 'project-456',
-        },
-      })
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: true,
+          user: {
+            id: 'organizer-123',
+            username: 'organizer',
+            role: 'ORGANIZER',
+            projectId: 'project-456',
+          },
+        })
+      )
+      expect((result as { expiresAt: number }).expiresAt).toBe(fixedNow + 604800 * 1000)
       expect(mockCookieStore.set).toHaveBeenCalledTimes(3)
     })
   })
@@ -253,6 +303,26 @@ describe('auth actions', () => {
 
       expect(result).toEqual({ success: false, error: 'Unauthorized' })
       expect(mockCookieStore.set).not.toHaveBeenCalled()
+    })
+
+    it('should return unauthorized when access token is already expired', async () => {
+      const expiredExp = Math.floor(fixedNow / 1000) - 10
+      const payload = Buffer.from(JSON.stringify({ exp: expiredExp })).toString('base64url')
+      const mockToken = `header.${payload}.signature`
+      const mockCookieStore = {
+        set: jest.fn(),
+        get: jest.fn().mockReturnValue({ value: mockToken }),
+        delete: jest.fn(),
+      }
+      mockCookies.mockResolvedValue(mockCookieStore as any)
+
+      const result = await setProjectCookie('project-123')
+
+      expect(result).toEqual({ success: false, error: 'Unauthorized' })
+      expect(mockCookieStore.set).not.toHaveBeenCalled()
+      expect(mockCookieStore.delete).toHaveBeenCalledWith('access_token')
+      expect(mockCookieStore.delete).toHaveBeenCalledWith('project_uuid')
+      expect(mockCookieStore.delete).toHaveBeenCalledWith('user_role')
     })
   })
 })

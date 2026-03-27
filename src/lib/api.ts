@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { isTokenExpiredError } from '@/lib/auth-helpers'
+import { clearServerAuthCookies } from '@/lib/server-auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft.co'
 
@@ -63,7 +65,15 @@ api.interceptors.response.use(
     }
     return response
   },
-  (error) => {
+  async (error) => {
+    if (axios.isAxiosError(error) && isTokenExpiredError(error)) {
+      try {
+        await clearServerAuthCookies()
+      } catch {
+        // Ignore cleanup failures and preserve the original API error path.
+      }
+    }
+
     if (process.env.NODE_ENV === 'development') {
       console.log('====== API ERROR ======')
       console.log(`[${error.config?.method?.toUpperCase()}] ${error.config?.url}`)

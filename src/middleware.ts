@@ -1,5 +1,18 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getSessionTiming } from '@/lib/auth-session'
+
+function redirectToLogin(request: NextRequest, clearCookies = false) {
+  const response = NextResponse.redirect(new URL('/login', request.url))
+
+  if (clearCookies) {
+    response.cookies.delete('access_token')
+    response.cookies.delete('project_uuid')
+    response.cookies.delete('user_role')
+  }
+
+  return response
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -16,8 +29,11 @@ export function middleware(request: NextRequest) {
 
   // If no token, redirect to login
   if (!accessToken) {
-    const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
+    return redirectToLogin(request)
+  }
+
+  if (!getSessionTiming(accessToken)) {
+    return redirectToLogin(request, true)
   }
 
   // Role-based route protection

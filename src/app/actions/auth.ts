@@ -3,7 +3,8 @@
 import { cookies } from 'next/headers'
 import api from '@/lib/api'
 import { withAuthRateLimit } from '@/lib/rate-limit'
-import { getRemainingTokenLifetime } from '@/lib/auth-session'
+import { getSessionTiming } from '@/lib/auth-session'
+import { clearServerAuthCookies } from '@/lib/server-auth'
 
 export async function getUserRole(): Promise<string> {
   const cookieStore = await cookies()
@@ -33,7 +34,12 @@ export async function loginAction(formData: FormData) {
         }
 
         const { access_token, uuid, com_uuid, expires_in } = result.data
-        const tokenMaxAge = expires_in || 604800  // Use server-provided expiry or default to 7 days
+        const sessionTiming = getSessionTiming(access_token, expires_in || 604800)
+
+        if (!sessionTiming) {
+          await clearServerAuthCookies()
+          return { error: 'Invalid access token received from server' }
+        }
 
         // Store access token in HTTP-only cookie with secure settings
         const cookieStore = await cookies()
@@ -41,7 +47,7 @@ export async function loginAction(formData: FormData) {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          maxAge: tokenMaxAge,
+          maxAge: sessionTiming.maxAge,
           path: '/',
         })
 
@@ -50,13 +56,13 @@ export async function loginAction(formData: FormData) {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          maxAge: tokenMaxAge,
+          maxAge: sessionTiming.maxAge,
           path: '/',
         })
 
         return {
           success: true,
-          expiresIn: tokenMaxAge,
+          expiresAt: sessionTiming.expiresAt,
           user: {
             id: uuid,
             username,
@@ -76,10 +82,7 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-  const cookieStore = await cookies()
-  cookieStore.delete('access_token')
-  cookieStore.delete('project_uuid')
-  cookieStore.delete('user_role')
+  await clearServerAuthCookies()
   return { success: true }
 }
 
@@ -106,7 +109,12 @@ export async function organizerLoginAction(formData: FormData) {
       }
 
       const { access_token, organizer_uuid, project_uuid, expires_in } = result.data
-      const tokenMaxAge = expires_in || 604800  // Use server-provided expiry or default to 7 days
+      const sessionTiming = getSessionTiming(access_token, expires_in || 604800)
+
+      if (!sessionTiming) {
+        await clearServerAuthCookies()
+        return { error: 'Invalid access token received from server' }
+      }
 
       // Store access token in HTTP-only cookie with secure settings
       const cookieStore = await cookies()
@@ -114,7 +122,7 @@ export async function organizerLoginAction(formData: FormData) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: tokenMaxAge,
+        maxAge: sessionTiming.maxAge,
         path: '/',
       })
 
@@ -123,7 +131,7 @@ export async function organizerLoginAction(formData: FormData) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: tokenMaxAge,
+        maxAge: sessionTiming.maxAge,
         path: '/',
       })
 
@@ -132,13 +140,13 @@ export async function organizerLoginAction(formData: FormData) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: tokenMaxAge,
+        maxAge: sessionTiming.maxAge,
         path: '/',
       })
 
       return {
         success: true,
-        expiresIn: tokenMaxAge,
+        expiresAt: sessionTiming.expiresAt,
         user: {
           id: organizer_uuid,
           username,
@@ -160,9 +168,14 @@ export async function organizerLoginAction(formData: FormData) {
 export async function setProjectCookie(projectUuid: string) {
   const cookieStore = await cookies()
   const accessToken = cookieStore.get('access_token')?.value
-  const projectCookieMaxAge = getRemainingTokenLifetime(accessToken) ?? 604800
+  const sessionTiming = getSessionTiming(accessToken)
 
   if (!accessToken) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  if (!sessionTiming) {
+    await clearServerAuthCookies()
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -170,7 +183,7 @@ export async function setProjectCookie(projectUuid: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: projectCookieMaxAge,
+    maxAge: sessionTiming.maxAge,
     path: '/',
   })
   return { success: true }

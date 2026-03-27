@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import api from '@/lib/api'
 import { isTokenExpiredError } from '@/lib/auth-helpers'
+import { clearServerAuthCookies } from '@/lib/server-auth'
 
 export interface Project {
   project_uuid: string
@@ -51,6 +52,7 @@ export async function getProjects() {
 
     // If token is expired/invalid, return 'key incorrect' so the layout can redirect
     if (isTokenExpiredError(error)) {
+      await clearServerAuthCookies()
       return { success: false, error: 'key incorrect', projects: [] as Project[] }
     }
 

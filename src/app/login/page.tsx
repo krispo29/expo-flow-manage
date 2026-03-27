@@ -21,20 +21,39 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login)
   const [loading, setLoading] = useState(false)
   const [loginRole, setLoginRole] = useState<LoginRole>('admin')
-  const [mounted, setMounted] = useState(false)
-
-  // Clear auth state (both client and server) when landing on login page
-  useEffect(() => {
-    clearClientAuthState()
-    logoutAction()
-  }, [])
+  const [isSessionReady, setIsSessionReady] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    let isActive = true
+
+    const resetSession = async () => {
+      clearClientAuthState()
+
+      try {
+        await logoutAction()
+      } catch (error) {
+        console.error('Failed to clear existing auth session:', error)
+      } finally {
+        if (isActive) {
+          setIsSessionReady(true)
+        }
+      }
+    }
+
+    void resetSession()
+
+    return () => {
+      isActive = false
+    }
   }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!isSessionReady) {
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -51,7 +70,7 @@ export default function LoginPage() {
       }
 
       if (result.success && result.user) {
-        login(result.user, result.expiresIn)
+        login(result.user, result.expiresAt)
         toast.success('Logged in successfully')
         
         if (loginRole === 'organizer') {
@@ -101,8 +120,12 @@ export default function LoginPage() {
     }
   }
 
-  if (!mounted) {
-    return null
+  if (!isSessionReady) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-muted/40">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -155,7 +178,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full mt-4" type="submit" disabled={loading}>
+            <Button className="w-full mt-4" type="submit" disabled={loading || !isSessionReady}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <span>{loginRole === 'organizer' ? 'Sign in as Organizer' : 'Sign in'}</span>
             </Button>

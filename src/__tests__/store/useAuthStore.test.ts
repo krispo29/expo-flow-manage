@@ -10,6 +10,8 @@ const resetStore = () => {
     })
 }
 
+const futureExpiry = () => Date.now() + 3600 * 1000
+
 describe('useAuthStore', () => {
   beforeEach(() => {
     resetStore()
@@ -40,7 +42,7 @@ describe('useAuthStore', () => {
         role: 'ADMIN',
       }
 
-      useAuthStore.getState().login(testUser, 3600)
+      useAuthStore.getState().login(testUser, futureExpiry())
 
       const { user, isAuthenticated } = useAuthStore.getState()
       expect(user).toEqual(testUser)
@@ -55,7 +57,7 @@ describe('useAuthStore', () => {
         projectId: 'project-123',
       }
 
-      useAuthStore.getState().login(testUser, 3600)
+      useAuthStore.getState().login(testUser, futureExpiry())
 
       const { isAuthenticated } = useAuthStore.getState()
       expect(isAuthenticated).toBe(true)
@@ -75,8 +77,8 @@ describe('useAuthStore', () => {
         projectId: 'project-123',
       }
 
-      useAuthStore.getState().login(firstUser, 3600)
-      useAuthStore.getState().login(secondUser, 3600)
+      useAuthStore.getState().login(firstUser, futureExpiry())
+      useAuthStore.getState().login(secondUser, futureExpiry())
 
       const { user } = useAuthStore.getState()
       expect(user).toEqual(secondUser)
@@ -90,7 +92,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      }, 3600)
+      }, futureExpiry())
 
       // Then logout
       useAuthStore.getState().logout()
@@ -105,7 +107,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      }, 3600)
+      }, futureExpiry())
 
       useAuthStore.getState().logout()
 
@@ -140,7 +142,7 @@ describe('useAuthStore', () => {
         role: 'ADMIN',
       }
 
-      useAuthStore.getState().login(testUser, 3600)
+      useAuthStore.getState().login(testUser, futureExpiry())
       useAuthStore.getState().setHydrated()
 
       const { user, isHydrated } = useAuthStore.getState()
@@ -158,7 +160,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      }, 3600)
+      }, futureExpiry())
 
       const { isAuthenticated: isAuth } = useAuthStore.getState()
       expect(isAuth).toBe(true)
@@ -169,7 +171,7 @@ describe('useAuthStore', () => {
         id: '123',
         username: 'testuser',
         role: 'ADMIN',
-      }, 3600)
+      }, futureExpiry())
 
       useAuthStore.getState().logout()
 
@@ -187,7 +189,7 @@ describe('useAuthStore', () => {
         username: 'admin',
         role: 'ADMIN',
         projectId: 'proj-1',
-      }, 3600)
+      }, futureExpiry())
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
       expect(useAuthStore.getState().user?.username).toBe('admin')
 
