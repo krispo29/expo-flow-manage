@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X } from 'lucide-react'
+import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -73,6 +73,15 @@ export default function ExhibitorsPage() {
 
   // Show/Hide password state
   const [showPassword, setShowPassword] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, id: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    toast.success('Password copied to clipboard')
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -422,7 +431,23 @@ export default function ExhibitorsPage() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-xs text-muted-foreground font-mono">{item.username || '-'}</p>
                             <span className="text-muted-foreground/20 text-[10px]">|</span>
-                            <code className="text-[10px] font-bold text-primary font-mono">{item.passwordNote || '-'}</code>
+                            <div className="flex items-center gap-1">
+                              <code className="text-[10px] font-bold text-primary font-mono">{item.passwordNote || '-'}</code>
+                              {item.passwordNote && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-md hover:bg-white/10"
+                                  onClick={() => copyToClipboard(item.passwordNote!, item.id)}
+                                >
+                                  {copiedId === item.id ? (
+                                    <Check className="h-3 w-3 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-muted-foreground/60" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <Badge variant={item.isActive ? "default" : "secondary"} className={cn("rounded-full px-3", item.isActive ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-muted/50')}>
@@ -560,7 +585,23 @@ export default function ExhibitorsPage() {
                             <span className="font-medium text-muted-foreground">{item.username || '-'}</span>
                           </TableCell>
                           <TableCell>
-                            <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono">{item.passwordNote || '-'}</code>
+                            <div className="flex items-center gap-2">
+                              <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono">{item.passwordNote || '-'}</code>
+                              {item.passwordNote && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy"
+                                  onClick={() => copyToClipboard(item.passwordNote!, item.id)}
+                                >
+                                  {copiedId === item.id ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground/40 group-hover/copy:text-primary transition-colors" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="font-medium truncate max-w-[200px]">{item.eventName || '-'}</div>

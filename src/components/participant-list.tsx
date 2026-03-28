@@ -30,7 +30,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X, Copy, Check } from 'lucide-react'
 import { 
   Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
   resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
@@ -59,6 +59,15 @@ export function ParticipantList({
 }: ParticipantListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, id: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    toast.success('Code copied to clipboard')
+    setTimeout(() => setCopiedId(null), 2000)
+  }
   
 
   // Conference Dialog State
@@ -520,7 +529,23 @@ export function ParticipantList({
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <p className="font-bold text-lg text-foreground line-clamp-1">{p.first_name} {p.last_name}</p>
-                      <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
+                        {p.registration_code && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 rounded-md hover:bg-white/10" 
+                            onClick={() => copyToClipboard(p.registration_code, p.registration_uuid)}
+                          >
+                            {copiedId === p.registration_uuid ? (
+                              <Check className="h-3 w-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3 w-3 text-muted-foreground/60" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.attendee_type_code}</Badge>
                   </div>
@@ -663,7 +688,23 @@ export function ParticipantList({
                         <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.attendee_type_code}</Badge>
                       </TableCell>
                       <TableCell>
-                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
+                        <div className="flex items-center gap-2">
+                          <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
+                          {p.registration_code && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy" 
+                              onClick={() => copyToClipboard(p.registration_code, p.registration_uuid)}
+                            >
+                              {copiedId === p.registration_uuid ? (
+                                <Check className="h-3.5 w-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5 text-muted-foreground/40 group-hover/copy:text-primary transition-colors" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{p.first_name} {p.last_name}</p>
