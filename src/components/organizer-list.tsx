@@ -33,6 +33,7 @@ import {
 import { Pencil, Loader2, KeyRound, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, User, ShieldCheck, Calendar, Clock, Plus, Copy, Check, Filter, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { copyTextToClipboard } from '@/lib/clipboard'
 
 import {
   Card,
@@ -65,12 +66,18 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
   const [saving, setSaving] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const copyToClipboard = (text: string, id: string) => {
+  const copyToClipboard = async (text: string, id: string) => {
     if (!text) return
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    toast.success('Password copied to clipboard')
-    setTimeout(() => setCopiedId(null), 2000)
+
+    try {
+      await copyTextToClipboard(text)
+      setCopiedId(id)
+      toast.success('Password copied to clipboard')
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy organizer password:', error)
+      toast.error('Failed to copy password')
+    }
   }
 
   // Create dialog
@@ -378,7 +385,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6 rounded-md hover:bg-white/10"
-                                  onClick={() => copyToClipboard(org.password_note!, org.organizer_uuid)}
+                                  onClick={() => void copyToClipboard(org.password_note!, org.organizer_uuid)}
                                 >
                                   {copiedId === org.organizer_uuid ? (
                                     <Check className="h-3 w-3 text-emerald-500" />
@@ -512,7 +519,7 @@ export const OrganizerList = forwardRef<OrganizerListHandle, OrganizerListProps>
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy"
-                                  onClick={() => copyToClipboard(org.password_note!, org.organizer_uuid)}
+                                  onClick={() => void copyToClipboard(org.password_note!, org.organizer_uuid)}
                                 >
                                   {copiedId === org.organizer_uuid ? (
                                     <Check className="h-3.5 w-3.5 text-emerald-500" />

@@ -4,6 +4,40 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+const INJECTED_SCRIPT_PATTERNS = [
+  "injectedscript.bundle.js",
+  "chrome-extension://",
+  "moz-extension://",
+  "safari-web-extension://",
+  "edge-extension://",
+]
+
+function normalizeSentryValue(value?: string | null) {
+  return value?.toLowerCase() ?? ""
+}
+
+function isInjectedScriptNoise(event: Sentry.Event) {
+  const exceptionMessages = event.exception?.values?.flatMap((value) => [
+    value.type,
+    value.value,
+  ]) ?? []
+  const frameSources = event.exception?.values?.flatMap(
+    (value) => value.stacktrace?.frames?.map((frame) => frame.filename) ?? [],
+  ) ?? []
+  const sources = [event.request?.url, ...frameSources]
+    .map((value) => normalizeSentryValue(value))
+    .filter(Boolean)
+  const message = normalizeSentryValue([event.message, ...exceptionMessages].filter(Boolean).join(" "))
+
+  const hasInjectedSource = sources.some((source) =>
+    INJECTED_SCRIPT_PATTERNS.some((pattern) => source.includes(pattern)),
+  )
+
+  if (!hasInjectedSource) return false
+
+  return message.includes("sendmessage") || message.includes("non-error promise rejection captured")
+}
+
 Sentry.init({
   dsn: "https://ebbd910218f43f49a7cae8750905d4e1@o4510945679048704.ingest.us.sentry.io/4510946125873152",
 
@@ -26,6 +60,14 @@ Sentry.init({
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
+
+  beforeSend(event) {
+    if (isInjectedScriptNoise(event)) {
+      return null
+    }
+
+    return event
+  },
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

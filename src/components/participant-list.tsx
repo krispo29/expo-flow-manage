@@ -44,6 +44,7 @@ import { printBadge } from '@/utils/print-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { copyTextToClipboard } from '@/lib/clipboard'
 
 const PAGE_SIZE = 10
 const CONF_PAGE_SIZE = 9
@@ -61,12 +62,18 @@ export function ParticipantList({
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const copyToClipboard = (text: string, id: string) => {
+  const copyToClipboard = async (text: string, id: string) => {
     if (!text) return
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    toast.success('Code copied to clipboard')
-    setTimeout(() => setCopiedId(null), 2000)
+
+    try {
+      await copyTextToClipboard(text)
+      setCopiedId(id)
+      toast.success('Code copied to clipboard')
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy participant code:', error)
+      toast.error('Failed to copy code')
+    }
   }
   
 
@@ -536,7 +543,7 @@ export function ParticipantList({
                             variant="ghost" 
                             size="icon" 
                             className="h-6 w-6 rounded-md hover:bg-white/10" 
-                            onClick={() => copyToClipboard(p.registration_code, p.registration_uuid)}
+                            onClick={() => void copyToClipboard(p.registration_code, p.registration_uuid)}
                           >
                             {copiedId === p.registration_uuid ? (
                               <Check className="h-3 w-3 text-emerald-500" />
@@ -695,7 +702,7 @@ export function ParticipantList({
                               variant="ghost" 
                               size="icon" 
                               className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy" 
-                              onClick={() => copyToClipboard(p.registration_code, p.registration_uuid)}
+                                onClick={() => void copyToClipboard(p.registration_code, p.registration_uuid)}
                             >
                               {copiedId === p.registration_uuid ? (
                                 <Check className="h-3.5 w-3.5 text-emerald-500" />
