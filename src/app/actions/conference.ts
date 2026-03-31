@@ -86,6 +86,7 @@ export interface Conference {
   quota: number
   remaining_seats: number
   conference_type: 'public' | 'private'
+  charge_type?: 'free' | 'paid'
   reserved_count: number
   status: string
   is_active?: boolean
@@ -103,6 +104,16 @@ export interface ConferenceLog {
   details: string
   created_at: string
   attendee_name: string
+}
+
+export interface ConferenceVoucher {
+  voucher_uuid: string
+  voucher_code: string
+  max_uses: number
+  used_count: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface ShowDate {
@@ -186,6 +197,22 @@ export async function getConferenceLogs(conferenceUuid: string) {
     return { error: getErrorMessage(error) }
   }
 }
+
+export async function getConferenceVouchers(projectId?: string) {
+  try {
+    const headers = await getAuthHeaders()
+    if (projectId) {
+      Object.assign(headers, { 'X-Project-UUID': projectId })
+    }
+    const response = await api.get('/v1/admin/project/conferences/vouchers', { headers })
+
+    return { success: true, data: response.data.data as ConferenceVoucher[] }
+  } catch (error: unknown) {
+    console.error('Error fetching conference vouchers:', error)
+    return { success: false, error: getErrorMessage(error), data: [] as ConferenceVoucher[] }
+  }
+}
+
 export async function toggleConferenceActive(conferenceUuid: string, nextIsActive: boolean) {
   try {
     const headers = await getAuthHeaders()
@@ -194,6 +221,77 @@ export async function toggleConferenceActive(conferenceUuid: string, nextIsActiv
     return { success: true }
   } catch (error: unknown) {
     console.error('Error toggling conference active:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+export async function importConferenceVouchers(formData: FormData, projectId?: string) {
+  try {
+    const headers = await getAuthHeaders()
+    if (projectId) {
+      Object.assign(headers, { 'X-Project-UUID': projectId })
+    }
+    const file = formData.get('file') as File | null
+
+    if (!file) {
+      return { success: false, error: 'Voucher file is required' }
+    }
+
+    const uploadData = new FormData()
+    uploadData.append('file', file)
+
+    await api.post('/v1/admin/project/conferences/vouchers/import', uploadData, {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    revalidatePath('/admin/conferences')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error importing conference vouchers:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+export async function createConferenceVoucher(voucherCode: string, projectId?: string) {
+  try {
+    const headers = await getAuthHeaders()
+    if (projectId) {
+      Object.assign(headers, { 'X-Project-UUID': projectId })
+    }
+
+    await api.post('/v1/admin/project/conferences/vouchers', {
+      voucher_code: voucherCode,
+    }, { headers })
+
+    revalidatePath('/admin/conferences')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error creating conference voucher:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+export async function deleteConferenceVoucher(voucherUuid: string, projectId?: string) {
+  try {
+    const headers = await getAuthHeaders()
+    if (projectId) {
+      Object.assign(headers, { 'X-Project-UUID': projectId })
+    }
+
+    await api.delete('/v1/admin/project/conferences/vouchers', {
+      headers,
+      data: {
+        voucher_uuid: voucherUuid,
+      },
+    })
+
+    revalidatePath('/admin/conferences')
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error deleting conference voucher:', error)
     return { success: false, error: getErrorMessage(error) }
   }
 }
@@ -270,6 +368,7 @@ export async function createConference(formData: FormData) {
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const chargeType = (formData.get('charge_type') as string) || 'free'
     const isActive = parseIsActive(formData.get('is_active'))
     const detail = formData.get('detail') as string
 
@@ -287,6 +386,7 @@ export async function createConference(formData: FormData) {
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
+      charge_type: chargeType,
       is_active: isActive,
       detail: detail || undefined,
     }
@@ -321,6 +421,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const chargeType = (formData.get('charge_type') as string) || 'free'
     const isActive = parseIsActive(formData.get('is_active'))
     const detail = formData.get('detail') as string
 
@@ -339,6 +440,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
+      charge_type: chargeType,
       is_active: isActive,
       detail: detail || undefined,
     }

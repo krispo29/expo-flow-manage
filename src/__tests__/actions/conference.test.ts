@@ -160,6 +160,7 @@ describe('conference actions', () => {
       formData.append('location', 'Bangkok')
       formData.append('quota', '100')
       formData.append('conference_type', 'public')
+      formData.append('charge_type', 'paid')
 
       mockApiPost.mockResolvedValue({ data: { code: 201 } })
 
@@ -171,6 +172,11 @@ describe('conference actions', () => {
       const result = await createConference(formData)
 
       expect(result).toEqual({ success: true })
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/admin/project/conferences',
+        expect.objectContaining({ charge_type: 'paid' }),
+        expect.any(Object)
+      )
     })
 
     it('should return error when creation fails', async () => {
@@ -194,6 +200,7 @@ describe('conference actions', () => {
     it('should update conference successfully', async () => {
       const formData = new FormData()
       formData.append('title', 'Updated Title')
+      formData.append('charge_type', 'free')
 
       mockApiPut.mockResolvedValue({ data: { code: 200 } })
 
@@ -205,6 +212,11 @@ describe('conference actions', () => {
       const result = await updateConference('conf-1', formData)
 
       expect(result).toEqual({ success: true })
+      expect(mockApiPut).toHaveBeenCalledWith(
+        '/v1/admin/project/conferences',
+        expect.objectContaining({ charge_type: 'free' }),
+        expect.any(Object)
+      )
     })
 
     it('should return error when update fails', async () => {

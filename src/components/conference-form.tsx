@@ -99,6 +99,7 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
   }
 
   const [conferenceType, setConferenceType] = useState<'public' | 'private'>(conference?.conference_type ?? 'public')
+  const [chargeType, setChargeType] = useState<'free' | 'paid'>(conference?.charge_type ?? 'free')
   const [detail, setDetail] = useState(conference?.detail || '')
   
   const initialSpeakers = conference?.speakers && conference.speakers.length > 0
@@ -521,6 +522,33 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
               </RadioGroup>
               <input type="hidden" name="conference_type" value={conferenceType} />
             </div>
+
+            {!isOrganizer && (
+              <>
+                <Separator />
+
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Charge Type</Label>
+                  <RadioGroup defaultValue={chargeType} onValueChange={(value) => setChargeType(value as 'free' | 'paid')} className="grid grid-cols-2 gap-3">
+                    <Label htmlFor="charge-free" className={`flex items-center gap-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${chargeType === 'free' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <RadioGroupItem value="free" id="charge-free" />
+                      <div>
+                        <div className="font-medium">Free</div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">No payment required</p>
+                      </div>
+                    </Label>
+                    <Label htmlFor="charge-paid" className={`flex items-center gap-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${chargeType === 'paid' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <RadioGroupItem value="paid" id="charge-paid" />
+                      <div>
+                        <div className="font-medium">Paid</div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Payment required</p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+                  <input type="hidden" name="charge_type" value={chargeType} />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

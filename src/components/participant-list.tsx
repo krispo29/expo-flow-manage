@@ -973,7 +973,7 @@ export function ParticipantList({
                   <Calendar className="h-6 w-6 text-emerald-500" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-display font-bold">Session Matrix</DialogTitle>
+                  <DialogTitle className="text-2xl font-display font-bold">Conference</DialogTitle>
                   <DialogDescription className="font-medium italic">
                     Manage conference allocations for <span className="text-foreground font-bold">{confParticipant?.first_name} {confParticipant?.last_name}</span>.
                   </DialogDescription>
@@ -1062,14 +1062,21 @@ export function ParticipantList({
                              
                              return (
                                <div key={`${conf.conference_uuid}-${index}`} className={cn("glass group/conf p-6 rounded-3xl border transition-all duration-500 flex flex-col h-full", reserved ? 'border-emerald-500/30 bg-emerald-500/5 shadow-lg shadow-emerald-500/5' : 'hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5')}>
-                                 <div className="flex justify-between items-start mb-4">
-                                   <Badge variant="secondary" className="text-[9px] font-black tracking-tighter border-0 bg-white/10 uppercase">
-                                     {conf.conference_type || 'Session'}
-                                   </Badge>
-                                   {reserved && (
-                                      <Badge className="bg-emerald-500 text-white border-0 text-[10px] font-bold px-3 py-0.5 rounded-full animate-in zoom-in-50">RESERVED</Badge>
-                                   )}
-                                 </div>
+                                <div className="flex justify-between items-start mb-4">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="secondary" className="text-[9px] font-black tracking-tighter border-0 bg-white/10 uppercase">
+                                      {conf.conference_type || 'Session'}
+                                    </Badge>
+                                    {conf.charge_type && (
+                                      <Badge variant="outline" className="text-[9px] font-black tracking-tighter uppercase border-white/10 bg-white/5">
+                                        {conf.charge_type === 'paid' ? 'Paid' : 'Free'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {reserved && (
+                                     <Badge className="bg-emerald-500 text-white border-0 text-[10px] font-bold px-3 py-0.5 rounded-full animate-in zoom-in-50">RESERVED</Badge>
+                                  )}
+                                </div>
 
                                  <div className="flex-1 space-y-4">
                                    <div>
@@ -1162,7 +1169,7 @@ export function ParticipantList({
             )}
           </div>
           <DialogFooter className="p-6 bg-white/5 border-t border-white/10 shrink-0">
-             <Button variant="ghost" className="rounded-2xl h-11 px-8 font-bold text-xs uppercase tracking-widest" onClick={() => setIsConfDialogOpen(false)}>Close Session Manager</Button>
+             <Button variant="ghost" className="rounded-2xl h-11 px-8 font-bold text-xs uppercase tracking-widest" onClick={() => setIsConfDialogOpen(false)}>Close Conference Manager</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

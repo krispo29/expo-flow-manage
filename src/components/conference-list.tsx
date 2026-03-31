@@ -321,6 +321,11 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                 <Badge variant="secondary" className="rounded-full px-3 py-0.5 capitalize border-white/5 font-bold text-[10px]">
                                   {conference.conference_type}
                                 </Badge>
+                                {conference.charge_type && (
+                                  <Badge variant="outline" className="rounded-full px-3 py-0.5 capitalize border-white/10 font-bold text-[10px]">
+                                    {conference.charge_type}
+                                  </Badge>
+                                )}
                                 <Badge 
                                   variant={conference.status === 'available' ? 'default' : 'destructive'} 
                                   className={cn("rounded-full px-3 py-0.5 capitalize font-bold text-[10px]", conference.status === 'available' ? 'bg-green-500/10 text-green-500 border-green-500/20' : '')}
@@ -482,14 +487,19 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                   <div className="space-y-6">
                     <div className="space-y-3">
                       <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Status & Type</p>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="rounded-full px-4 py-1 capitalize font-bold text-[10px]">
-                          {previewConference.conference_type}
-                        </Badge>
-                        <Badge 
-                          variant={previewConference.status === 'available' ? 'default' : 'destructive'} 
-                          className={cn("rounded-full px-4 py-1 capitalize font-bold text-[10px]", previewConference.status === 'available' ? 'bg-green-500/10 text-green-500' : '')}
-                        >
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary" className="rounded-full px-4 py-1 capitalize font-bold text-[10px]">
+                            {previewConference.conference_type}
+                          </Badge>
+                          {previewConference.charge_type && (
+                            <Badge variant="outline" className="rounded-full px-4 py-1 capitalize font-bold text-[10px]">
+                              {previewConference.charge_type}
+                            </Badge>
+                          )}
+                          <Badge 
+                            variant={previewConference.status === 'available' ? 'default' : 'destructive'} 
+                            className={cn("rounded-full px-4 py-1 capitalize font-bold text-[10px]", previewConference.status === 'available' ? 'bg-green-500/10 text-green-500' : '')}
+                          >
                           {previewConference.status}
                         </Badge>
                         {previewConference.can_book && <Badge variant="outline" className="rounded-full px-4 py-1 font-bold text-[10px]">Can Book</Badge>}
