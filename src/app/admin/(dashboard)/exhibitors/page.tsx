@@ -30,6 +30,7 @@ import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, Chev
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import {
   Select,
   SelectContent,
@@ -76,12 +77,18 @@ export default function ExhibitorsPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const copyToClipboard = (text: string, id: string) => {
+  const copyToClipboard = async (text: string, id: string) => {
     if (!text) return
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    toast.success('Password copied to clipboard')
-    setTimeout(() => setCopiedId(null), 2000)
+
+    try {
+      await copyTextToClipboard(text)
+      setCopiedId(id)
+      toast.success('Password copied to clipboard')
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy exhibitor password:', error)
+      toast.error('Failed to copy password')
+    }
   }
 
   // Pagination state
@@ -483,7 +490,7 @@ export default function ExhibitorsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6 rounded-md hover:bg-white/10"
-                                  onClick={() => copyToClipboard(item.passwordNote!, item.id)}
+                                  onClick={() => void copyToClipboard(item.passwordNote!, item.id)}
                                 >
                                   {copiedId === item.id ? (
                                     <Check className="h-3 w-3 text-emerald-500" />
@@ -637,7 +644,7 @@ export default function ExhibitorsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy"
-                                  onClick={() => copyToClipboard(item.passwordNote!, item.id)}
+                                  onClick={() => void copyToClipboard(item.passwordNote!, item.id)}
                                 >
                                   {copiedId === item.id ? (
                                     <Check className="h-3.5 w-3.5 text-emerald-500" />

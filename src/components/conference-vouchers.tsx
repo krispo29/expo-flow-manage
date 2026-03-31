@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import { Copy, Loader2, Plus, Search, Ticket, Trash2, Upload } from 'lucide-react'
 
 interface ConferenceVouchersProps {
@@ -143,9 +144,10 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
 
   async function handleCopyVoucherCode(code: string) {
     try {
-      await navigator.clipboard.writeText(code)
+      await copyTextToClipboard(code)
       toast.success('Voucher code copied')
-    } catch {
+    } catch (error) {
+      console.error('Failed to copy voucher code:', error)
       toast.error('Failed to copy voucher code')
     }
   }
@@ -289,7 +291,7 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10"
-                          onClick={() => handleCopyVoucherCode(voucher.voucher_code)}
+                          onClick={() => void handleCopyVoucherCode(voucher.voucher_code)}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -357,7 +359,7 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10"
-                              onClick={() => handleCopyVoucherCode(voucher.voucher_code)}
+                              onClick={() => void handleCopyVoucherCode(voucher.voucher_code)}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>

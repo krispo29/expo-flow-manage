@@ -13,6 +13,7 @@ import { Copy, Edit, Plus, Loader2, ExternalLink, ChevronLeft, ChevronRight, Che
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import {
   Select,
   SelectContent,
@@ -153,9 +154,14 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
     }
   }
 
-  function copyLink(link: string) {
-    navigator.clipboard.writeText(link)
-    toast.success("Link copied to clipboard")
+  async function copyLink(link: string) {
+    try {
+      await copyTextToClipboard(link)
+      toast.success("Link copied to clipboard")
+    } catch (error) {
+      console.error("Failed to copy invitation link:", error)
+      toast.error("Failed to copy link")
+    }
   }
 
   if (loading) {
@@ -292,7 +298,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 px-4" onClick={() => copyLink(invite.invite_link)}>
+                    <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 px-4" onClick={() => void copyLink(invite.invite_link)}>
                       <Copy className="h-3.5 w-3.5 mr-2" />
                       Copy
                     </Button>
@@ -412,7 +418,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 rounded-full hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" 
-                            onClick={() => copyLink(invite.invite_link)}
+                            onClick={() => void copyLink(invite.invite_link)}
                             title="Copy Link"
                           >
                             <Copy className="h-4 w-4" />
