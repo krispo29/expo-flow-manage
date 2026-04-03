@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import {
-  ConferenceVoucher,
+  type Conference,
+  type ConferenceVoucher,
   createConferenceVoucher,
   deleteConferenceVoucher,
   getConferenceVouchers,
@@ -14,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { copyTextToClipboard } from '@/lib/clipboard'
@@ -22,6 +24,7 @@ import { Copy, Loader2, Plus, Search, Ticket, Trash2, Upload } from 'lucide-reac
 interface ConferenceVouchersProps {
   initialVouchers: ConferenceVoucher[]
   projectId: string
+  conferences: Conference[]
 }
 
 function formatVoucherDate(value: string) {
@@ -39,10 +42,12 @@ function formatVoucherDate(value: string) {
   }).format(date)
 }
 
-export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<ConferenceVouchersProps>) {
+export function ConferenceVouchers({ initialVouchers, projectId, conferences }: Readonly<ConferenceVouchersProps>) {
   const [vouchers, setVouchers] = useState(initialVouchers)
   const [searchQuery, setSearchQuery] = useState('')
   const [newVoucherCode, setNewVoucherCode] = useState('')
+  const [createConferenceUuid, setCreateConferenceUuid] = useState('')
+  const [importConferenceUuid, setImportConferenceUuid] = useState('')
   const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -50,11 +55,20 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
   const [deletingVoucherUuid, setDeletingVoucherUuid] = useState<string | null>(null)
 
   const filteredVouchers = useMemo(() => {
-    const keyword = searchQuery.trim().toLowerCase()
-    if (!keyword) return vouchers
+    // Deduplicate by voucher_uuid to prevent React duplicate-key warnings
+    const seen = new Set<string>()
+    const unique = vouchers.filter((v) => {
+      if (seen.has(v.voucher_uuid)) return false
+      seen.add(v.voucher_uuid)
+      return true
+    })
 
-    return vouchers.filter((voucher) =>
-      voucher.voucher_code.toLowerCase().includes(keyword)
+    const keyword = searchQuery.trim().toLowerCase()
+    if (!keyword) return unique
+
+    return unique.filter((voucher) =>
+      voucher.voucher_code.toLowerCase().includes(keyword) ||
+      voucher.conference_title?.toLowerCase().includes(keyword)
     )
   }, [searchQuery, vouchers])
 
@@ -78,9 +92,14 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
       return
     }
 
+    if (!createConferenceUuid) {
+      toast.error('Please select a conference')
+      return
+    }
+
     setIsCreating(true)
     try {
-      const result = await createConferenceVoucher(code, projectId)
+      const result = await createConferenceVoucher(code, projectId, createConferenceUuid)
       if (result.success) {
         toast.success('Voucher created')
         setNewVoucherCode('')
@@ -104,12 +123,17 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
       return
     }
 
+    if (!importConferenceUuid) {
+      toast.error('Please select a conference')
+      return
+    }
+
     setIsImporting(true)
     try {
       const formData = new FormData()
       formData.append('file', selectedImportFile)
 
-      const result = await importConferenceVouchers(formData, projectId)
+      const result = await importConferenceVouchers(formData, projectId, importConferenceUuid)
       if (result.success) {
         toast.success('Vouchers imported')
         setSelectedImportFile(null)
@@ -169,6 +193,21 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="create_conference">Conference</Label>
+              <Select value={createConferenceUuid} onValueChange={setCreateConferenceUuid}>
+                <SelectTrigger id="create_conference" className="h-12 bg-white/5 border-white/10 rounded-2xl">
+                  <SelectValue placeholder="Select a conference" />
+                </SelectTrigger>
+                <SelectContent>
+                  {conferences.map((conf) => (
+                    <SelectItem key={conf.conference_uuid} value={conf.conference_uuid}>
+                      {conf.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="voucher_code">Voucher Code</Label>
               <Input
                 id="voucher_code"
@@ -201,7 +240,22 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="import_conference">Conference</Label>
+              <Select value={importConferenceUuid} onValueChange={setImportConferenceUuid}>
+                <SelectTrigger id="import_conference" className="h-12 bg-white/5 border-white/10 rounded-2xl">
+                  <SelectValue placeholder="Select a conference" />
+                </SelectTrigger>
+                <SelectContent>
+                  {conferences.map((conf) => (
+                    <SelectItem key={conf.conference_uuid} value={conf.conference_uuid}>
+                      {conf.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-col lg:flex-row items-center gap-4">
               <Input
                 type="file"
@@ -214,7 +268,7 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
               </div>
             </div>
             {selectedImportFile && (
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-foreground break-all">{selectedImportFile.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -242,7 +296,7 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
               </div>
             )}
             {isImporting && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-primary font-medium">
+              <div className="flex items-center gap-2 text-sm text-primary font-medium">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Uploading vouchers...
               </div>
@@ -296,6 +350,9 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
+                      {voucher.conference_title && (
+                        <p className="text-xs text-muted-foreground mt-1 ml-6">{voucher.conference_title}</p>
+                      )}
                     </div>
                     <Badge className={voucher.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}>
                       {voucher.is_active ? 'Active' : 'Inactive'}
@@ -331,17 +388,18 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
             <Table className="table-fixed">
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="pl-6 w-[34%]">Voucher Code</TableHead>
-                  <TableHead className="w-[16%]">Usage</TableHead>
-                  <TableHead className="w-[16%]">Status</TableHead>
-                  <TableHead className="w-[18%]">Created At</TableHead>
-                  <TableHead className="pr-6 text-right w-[16%]">Actions</TableHead>
+                  <TableHead className="pl-6 w-[26%]">Voucher Code</TableHead>
+                  <TableHead className="w-[22%]">Conference</TableHead>
+                  <TableHead className="w-[12%]">Usage</TableHead>
+                  <TableHead className="w-[12%]">Status</TableHead>
+                  <TableHead className="w-[16%]">Created At</TableHead>
+                  <TableHead className="pr-6 text-right w-[12%]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVouchers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
                       No vouchers found in the current filter window.
                     </TableCell>
                   </TableRow>
@@ -365,6 +423,11 @@ export function ConferenceVouchers({ initialVouchers, projectId }: Readonly<Conf
                             </Button>
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-foreground truncate" title={voucher.conference_title || '-'}>
+                          {voucher.conference_title || '-'}
+                        </p>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-white/5 border-white/10 font-bold">

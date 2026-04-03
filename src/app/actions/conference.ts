@@ -109,6 +109,8 @@ export interface ConferenceLog {
 export interface ConferenceVoucher {
   voucher_uuid: string
   voucher_code: string
+  conference_uuid?: string
+  conference_title?: string
   max_uses: number
   used_count: number
   is_active: boolean
@@ -225,7 +227,7 @@ export async function toggleConferenceActive(conferenceUuid: string, nextIsActiv
   }
 }
 
-export async function importConferenceVouchers(formData: FormData, projectId?: string) {
+export async function importConferenceVouchers(formData: FormData, projectId?: string, conferenceUuid?: string) {
   try {
     const headers = await getAuthHeaders()
     if (projectId) {
@@ -239,6 +241,9 @@ export async function importConferenceVouchers(formData: FormData, projectId?: s
 
     const uploadData = new FormData()
     uploadData.append('file', file)
+    if (conferenceUuid) {
+      uploadData.append('conference_uuid', conferenceUuid)
+    }
 
     await api.post('/v1/admin/project/conferences/vouchers/import', uploadData, {
       headers: {
@@ -255,7 +260,7 @@ export async function importConferenceVouchers(formData: FormData, projectId?: s
   }
 }
 
-export async function createConferenceVoucher(voucherCode: string, projectId?: string) {
+export async function createConferenceVoucher(voucherCode: string, projectId?: string, conferenceUuid?: string) {
   try {
     const headers = await getAuthHeaders()
     if (projectId) {
@@ -264,6 +269,7 @@ export async function createConferenceVoucher(voucherCode: string, projectId?: s
 
     await api.post('/v1/admin/project/conferences/vouchers', {
       voucher_code: voucherCode,
+      ...(conferenceUuid && { conference_uuid: conferenceUuid }),
     }, { headers })
 
     revalidatePath('/admin/conferences')

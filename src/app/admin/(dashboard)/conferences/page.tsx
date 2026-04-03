@@ -71,7 +71,7 @@ export default async function ConferencesPage({
             <ConferenceList conferences={conferences || []} projectId={projectId} userRole={userRole} />
           </TabsContent>
           <TabsContent value="vouchers" className="outline-none">
-            <ConferenceVouchers initialVouchers={vouchers || []} projectId={projectId} />
+            <ConferenceVouchers initialVouchers={vouchers || []} projectId={projectId} conferences={conferences || []} />
           </TabsContent>
         </Tabs>
       )}

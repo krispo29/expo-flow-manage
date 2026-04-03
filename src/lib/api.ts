@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { isTokenExpiredError } from '@/lib/auth-helpers'
-import { clearServerAuthCookies } from '@/lib/server-auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft.co'
 
@@ -66,14 +65,6 @@ api.interceptors.response.use(
     return response
   },
   async (error) => {
-    if (axios.isAxiosError(error) && isTokenExpiredError(error)) {
-      try {
-        await clearServerAuthCookies()
-      } catch {
-        // Ignore cleanup failures and preserve the original API error path.
-      }
-    }
-
     if (process.env.NODE_ENV === 'development') {
       console.log('====== API ERROR ======')
       console.log(`[${error.config?.method?.toUpperCase()}] ${error.config?.url}`)
@@ -82,7 +73,11 @@ api.interceptors.response.use(
       console.log('=======================')
     } else {
       // In production, only log generic message to prevent sensitive data exposure
-      console.error('API Error occurred')
+      if (axios.isAxiosError(error) && isTokenExpiredError(error)) {
+        console.error('API Error occurred: authentication expired')
+      } else {
+        console.error('API Error occurred')
+      }
     }
     return Promise.reject(error)
   }
