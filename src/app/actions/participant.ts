@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { requireProjectContext } from '@/lib/authorization'
+import { getUserRole } from '@/app/actions/auth'
 
 export async function printParticipantBadge(projectId: string, registrationUuid: string) {
   try {
@@ -96,7 +97,12 @@ export async function getParticipants(projectId: string, query?: string, type?: 
   try {
     const headers = await getAuthHeaders(projectId)
  
-    const response = await api.get('/v1/admin/project/participants', { headers })
+    const role = await getUserRole()
+    const basePath = role === 'ORGANIZER' 
+      ? '/v1/organizer/participants' 
+      : '/v1/admin/project/participants'
+
+    const response = await api.get(basePath, { headers })
 
     let participants = (response.data.data as Participant[]) || []
 
@@ -202,11 +208,17 @@ export async function updateParticipant(registrationUuid: string, formData: Form
 
     const headers = await getAuthHeaders()
  
-    await api.put('/v1/admin/project/participants', body, {
+    const role = await getUserRole()
+    const basePath = role === 'ORGANIZER' 
+      ? '/v1/organizer/participants' 
+      : '/v1/admin/project/participants'
+
+    await api.put(basePath, body, {
       headers
     })
 
     revalidatePath('/admin/participants')
+    revalidatePath('/organizer/participants')
     return { success: true }
   } catch (error: unknown) {
     console.error('Error updating participant:', error)
@@ -384,7 +396,13 @@ export async function getMyReservations(registrationUuid: string) {
 export async function reserveConference(conferenceUuid: string, registrationUuid: string) {
   try {
     const headers = await getAuthHeaders()
-    await api.post('/v1/admin/project/participants/reserve', {
+    
+    const role = await getUserRole()
+    const basePath = role === 'ORGANIZER' 
+      ? '/v1/organizer/participants/reserve' 
+      : '/v1/admin/project/participants/reserve'
+
+    await api.post(basePath, {
       conference_uuid: conferenceUuid,
       registration_uuid: registrationUuid
     }, {
@@ -393,6 +411,8 @@ export async function reserveConference(conferenceUuid: string, registrationUuid
 
     revalidatePath('/admin/participants')
     revalidatePath('/admin/conferences')
+    revalidatePath('/organizer/participants')
+    revalidatePath('/organizer/conferences')
     return { success: true }
   } catch (error: unknown) {
     console.error('Error reserving conference:', error)
@@ -404,7 +424,13 @@ export async function reserveConference(conferenceUuid: string, registrationUuid
 export async function cancelConferenceReservation(conferenceUuid: string, registrationUuid: string) {
   try {
     const headers = await getAuthHeaders()
-    await api.post('/v1/admin/project/participants/cancel_reserve', {
+    
+    const role = await getUserRole()
+    const basePath = role === 'ORGANIZER' 
+      ? '/v1/organizer/participants/cancel_reserve' 
+      : '/v1/admin/project/participants/cancel_reserve'
+      
+    await api.post(basePath, {
       conference_uuid: conferenceUuid,
       registration_uuid: registrationUuid
     }, {
@@ -413,6 +439,8 @@ export async function cancelConferenceReservation(conferenceUuid: string, regist
 
     revalidatePath('/admin/participants')
     revalidatePath('/admin/conferences')
+    revalidatePath('/organizer/participants')
+    revalidatePath('/organizer/conferences')
     return { success: true }
   } catch (error: unknown) {
     console.error('Error cancelling conference reservation:', error)
