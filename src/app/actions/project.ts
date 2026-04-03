@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import api from '@/lib/api'
 import { isTokenExpiredError } from '@/lib/auth-helpers'
-import { clearServerAuthCookies } from '@/lib/server-auth'
 
 export interface Project {
   project_uuid: string
@@ -50,9 +49,9 @@ export async function getProjects() {
     console.error('Error fetching projects:', error)
     console.error('Error details:', error.response?.data)
 
-    // If token is expired/invalid, return 'key incorrect' so the layout can redirect
+    // During layout/page render we cannot mutate cookies, so just signal the caller
+    // to redirect to login. The login page will clear stale auth cookies safely.
     if (isTokenExpiredError(error)) {
-      await clearServerAuthCookies()
       return { success: false, error: 'key incorrect', projects: [] as Project[] }
     }
 
