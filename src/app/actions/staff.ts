@@ -34,6 +34,7 @@ export interface Staff {
   companyCountry?: string
   companyTel?: string
   staff_type_code?: string
+  residence_country?: string
 }
 
 // GET /v1/admin/project/exhibitors/staff
@@ -190,6 +191,7 @@ export async function createProjectStaff(projectUuid: string, data: any) {
       last_name: data.last_name,
       company_name: data.company_name,
       staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
+      residence_country: data.residence_country,
     }
 
     const response = await api.post('/v1/admin/project/staff', payload, { headers })
@@ -236,6 +238,7 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
       last_name: data.last_name,
       company_name: data.company_name,
       staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
+      residence_country: data.residence_country,
     }
 
     const response = await api.put(`/v1/admin/project/staff/${staffId}`, payload, { headers })
