@@ -32,11 +32,13 @@ import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRig
 import {
   createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes
 } from '@/app/actions/staff'
+import { countries } from '@/lib/countries'
 import { toast } from 'sonner'
 import { printBadge } from '@/utils/print-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { CountrySelector } from "./CountrySelector"
 
 export interface Staff {
   staff_uuid: string
@@ -49,6 +51,7 @@ export interface Staff {
   is_active: boolean
   created_at: string
   updated_at: string | null
+  residence_country?: string
 }
 
 interface StaffResponse {
@@ -81,6 +84,7 @@ export function StaffList({
 
   const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
+  const [residenceCountry, setResidenceCountry] = useState('TH')
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '')
@@ -161,6 +165,7 @@ export function StaffList({
     setSelectedStaff(null)
     setStaffType('ST')
     setTitle('Mr.')
+    setResidenceCountry('TH')
     setIsDialogOpen(true)
   }
 
@@ -169,6 +174,11 @@ export function StaffList({
     const normalizedType = p.staff_type_code === 'ONSITE' ? 'ST' : p.staff_type_code === 'ORGANIZER' ? 'OR' : (p.staff_type_code || 'ST')
     setStaffType(normalizedType)
     setTitle(p.title || 'Mr.')
+    
+    // Map full name from API to country code for UI
+    const countryCode = countries.find(c => c.name === p.residence_country)?.code || 'TH'
+    setResidenceCountry(countryCode)
+    
     setIsDialogOpen(true)
   }
 
@@ -205,6 +215,8 @@ export function StaffList({
       last_name: formData.get('last_name'),
       company_name: formData.get('company_name'),
       staff_type_code: formData.get('staff_type_code'),
+      // Map country code from UI to full name for API
+      residence_country: countries.find(c => c.code === residenceCountry)?.name || 'Thailand',
     }
 
     let result
@@ -401,6 +413,17 @@ export function StaffList({
                     <span className="truncate">{p.company_name}</span>
                   </div>
 
+                  {p.residence_country && (
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60 font-bold uppercase tracking-wider">
+                      <img 
+                        src={`https://flagcdn.com/${countries.find(c => c.name === p.residence_country)?.code.toLowerCase() || 'th'}.svg`} 
+                        alt={p.residence_country} 
+                        className="w-4 h-auto rounded-sm object-cover shadow-sm opacity-80"
+                      />
+                      <span>{p.residence_country}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-1.5 pt-2">
                     <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10 hover:bg-primary/10 hover:text-primary" onClick={() => onPrintClick(p)} title="Print Badge">
                       <Printer className="h-4 w-4" />
@@ -427,6 +450,7 @@ export function StaffList({
                   <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Name</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Residence</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
@@ -464,6 +488,7 @@ export function StaffList({
                         onChange={e => handleColumnFilterChange('company', e.target.value)}
                       />
                     </TableHead>
+                    <TableHead />
                     <TableHead className="py-2 text-center">
                       <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
                         <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
@@ -510,6 +535,18 @@ export function StaffList({
                       </TableCell>
                       <TableCell>
                         <p className="text-sm font-bold text-foreground/80">{p.company_name}</p>
+                      </TableCell>
+                      <TableCell>
+                        {p.residence_country && (
+                          <div className="flex items-center gap-2">
+                            <img 
+                              src={`https://flagcdn.com/${countries.find(c => c.name === p.residence_country)?.code.toLowerCase() || 'th'}.svg`} 
+                              alt={p.residence_country} 
+                              className="w-5 h-auto rounded-sm object-cover shadow-sm"
+                            />
+                            <span className="text-xs font-medium text-muted-foreground">{p.residence_country}</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge className={cn("rounded-full px-2 py-0 text-[9px] font-bold border", p.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
@@ -644,6 +681,15 @@ export function StaffList({
             <div className="space-y-2.5">
               <Label htmlFor="company_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name <span className="text-red-500">*</span></Label>
               <Input id="company_name" name="company_name" defaultValue={selectedStaff?.company_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+            </div>
+
+            <div className="space-y-2.5">
+              <Label htmlFor="residence_country" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Residence Country <span className="text-red-500">*</span></Label>
+              <CountrySelector
+                value={residenceCountry}
+                onChange={setResidenceCountry}
+                required
+              />
             </div>
 
             <DialogFooter className="mt-8 pt-8 border-t border-white/5 flex sm:flex-row gap-3">
