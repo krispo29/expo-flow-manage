@@ -35,7 +35,6 @@ export const countries: Country[] = [
   { code: 'BO', name: 'Bolivia', phoneCode: '+591', flag: '🇧🇴', nationality: 'Bolivian' },
   { code: 'BA', name: 'Bosnia & Herzegovina', phoneCode: '+387', flag: '🇧🇦', nationality: 'Bosnian / Herzegovinian' },
   { code: 'BW', name: 'Botswana', phoneCode: '+267', flag: '🇧🇼', nationality: 'Motswana' },
- 
   { code: 'BR', name: 'Brazil', phoneCode: '+55', flag: '🇧🇷', nationality: 'Brazilian' },
   { code: 'IO', name: 'British Indian Ocean Territory', phoneCode: '+246', flag: '🇮🇴', nationality: 'British' },
   { code: 'VG', name: 'British Virgin Islands', phoneCode: '+1-284', flag: '🇻🇬', nationality: 'British Virgin Islander' },

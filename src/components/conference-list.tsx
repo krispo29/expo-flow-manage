@@ -401,15 +401,17 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                           </div>
 
                           <div className="flex flex-wrap justify-end gap-2 mt-6 pt-4 border-t border-white/5">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleViewLogs(conference)}
-                              className="rounded-full px-4 h-9 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10"
-                            >
-                              <History className="h-3.5 w-3.5 mr-2" />
-                              Logs
-                            </Button>
+                            {!isOrganizer && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleViewLogs(conference)}
+                                className="rounded-full px-4 h-9 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10"
+                              >
+                                <History className="h-3.5 w-3.5 mr-2" />
+                                Logs
+                              </Button>
+                            )}
                             <Button 
                               variant="ghost" 
                               size="sm" 
