@@ -44,9 +44,13 @@ export function NavUser({
   const router = useRouter()
 
   const handleLogout = async () => {
-    await logoutAction()
-    clearClientAuthState()
-    router.push("/login")
+    try {
+      await logoutAction()
+    } finally {
+      clearClientAuthState()
+      router.replace("/login")
+      router.refresh()
+    }
   }
 
   return (

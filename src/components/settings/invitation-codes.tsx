@@ -25,10 +25,10 @@ import {
 
 interface InvitationCodeSettingsProps {
   projectUuid: string
-  userRole?: string
+  userRole?: string | null
 }
 
-export function InvitationCodeSettings({ projectUuid, userRole = 'ADMIN' }: Readonly<InvitationCodeSettingsProps>) {
+export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<InvitationCodeSettingsProps>) {
   const isReadOnly = userRole === 'ORGANIZER'
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)

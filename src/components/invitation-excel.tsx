@@ -8,7 +8,7 @@ import { exportOrganizerInvitations } from '@/app/actions/organizer-invitation'
 
 interface InvitationExcelOperationsProps {
   projectId: string
-  userRole?: string
+  userRole?: string | null
 }
 
 export function InvitationExcelOperations({ projectId, userRole }: Readonly<InvitationExcelOperationsProps>) {

@@ -8,6 +8,7 @@ jest.mock('@/lib/api', () => ({
   post: jest.fn(),
   put: jest.fn(),
   delete: jest.fn(),
+  getErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Unknown error',
 }))
 
 // Mock next/headers

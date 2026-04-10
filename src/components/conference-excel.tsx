@@ -8,7 +8,7 @@ import { exportOrganizerConferenceReservationSummary } from '@/app/actions/organ
 
 interface ConferenceExcelOperationsProps {
   projectId: string
-  userRole?: string
+  userRole?: string | null
 }
 
 

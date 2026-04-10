@@ -57,7 +57,7 @@ type ExhibitorFormValues = z.infer<typeof exhibitorSchema>
 interface ExhibitorFormProps {
   initialData?: Exhibitor
   projectId: string
-  userRole?: string
+  userRole?: string | null
 }
 
 export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {

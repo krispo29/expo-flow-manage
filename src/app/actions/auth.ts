@@ -4,11 +4,13 @@ import { cookies } from 'next/headers'
 import api from '@/lib/api'
 import { withAuthRateLimit } from '@/lib/rate-limit'
 import { getSessionTiming } from '@/lib/auth-session'
-import { clearServerAuthCookies } from '@/lib/server-auth'
+import { clearServerAuthCookies, getServerAuthContext, type ServerUserRole } from '@/lib/server-auth'
 
-export async function getUserRole(): Promise<string> {
-  const cookieStore = await cookies()
-  return cookieStore.get('user_role')?.value || 'ADMIN'
+export type UserRole = ServerUserRole
+
+export async function getUserRole(): Promise<UserRole | null> {
+  const authContext = await getServerAuthContext()
+  return authContext?.userRole ?? null
 }
 
 export async function loginAction(formData: FormData) {

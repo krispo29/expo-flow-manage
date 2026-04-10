@@ -2,18 +2,11 @@
 
 import api, { getErrorMessage } from '@/lib/api'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
 async function getAuthHeaders() {
-  const cookieStore = await cookies()
-  const projectUuid = cookieStore.get('project_uuid')?.value
-  const token = cookieStore.get('access_token')?.value
-  
-  return {
-    'X-Project-UUID': projectUuid,
-    ...(token && { Authorization: `Bearer ${token}` })
-  }
+  return requireServerAuthHeaders()
 }
 
 function parseSpeakers(raw: string | null): { speaker_name: string; speaker_info?: string; speaker_image?: string }[] {
@@ -358,8 +351,8 @@ export async function uploadConferenceImage(formData: FormData) {
 export async function createConference(formData: FormData) {
   try {
     const headers = await getAuthHeaders()
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const authContext = await requireServerAuthContext()
+    const projectUuid = authContext.projectUuid
 
     const title = formData.get('title') as string
     const eventUuid = formData.get('event_uuid') as string
@@ -411,8 +404,8 @@ export async function createConference(formData: FormData) {
 export async function updateConference(conferenceUuid: string, formData: FormData) {
   try {
     const headers = await getAuthHeaders()
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const authContext = await requireServerAuthContext()
+    const projectUuid = authContext.projectUuid
 
     const title = formData.get('title') as string
     const eventUuid = formData.get('event_uuid') as string

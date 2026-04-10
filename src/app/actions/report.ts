@@ -1,20 +1,15 @@
 'use server'
 
 import api from '@/lib/api'
-import { cookies } from 'next/headers'
+import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuidParam?: string) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  const projectUuid = projectUuidParam || cookieStore.get('project_uuid')?.value
+  const authContext = await requireServerAuthContext({ projectUuid: projectUuidParam })
   
   return {
-    projectUuid,
-    headers: {
-      'X-Project-UUID': projectUuid,
-      ...(token && { Authorization: `Bearer ${token}` })
-    }
+    projectUuid: authContext.projectUuid,
+    headers: await requireServerAuthHeaders({ projectUuid: authContext.projectUuid }),
   }
 }
 

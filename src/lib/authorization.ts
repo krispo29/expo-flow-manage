@@ -1,7 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import api from '@/lib/api'
+import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 export type UserRole = 'ADMIN' | 'ORGANIZER'
 
@@ -17,23 +16,18 @@ export interface AuthUser {
  * Get the current authenticated user from cookies
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const cookieStore = await cookies()
-  
-  const accessToken = cookieStore.get('access_token')?.value
-  const userRole = cookieStore.get('user_role')?.value as UserRole | undefined
-  const projectUuid = cookieStore.get('project_uuid')?.value
-  const comUuid = cookieStore.get('com_uuid')?.value
+  const authContext = await getServerAuthContext()
 
-  if (!accessToken) {
+  if (!authContext?.userRole) {
     return null
   }
 
   return {
     id: '',
     username: '',
-    role: userRole || 'ADMIN',
-    projectUuid,
-    comUuid
+    role: authContext.userRole,
+    projectUuid: authContext.projectUuid,
+    comUuid: undefined,
   }
 }
 
@@ -98,13 +92,7 @@ export async function getAuthorizedHeaders(projectUuid: string) {
     throw new Error(`Unauthorized: Access denied to project ${projectUuid}`)
   }
 
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  
-  return {
-    'X-Project-UUID': projectUuid,
-    ...(token && { Authorization: `Bearer ${token}` })
-  }
+  return requireServerAuthHeaders({ projectUuid })
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import api, { getErrorMessage } from '@/lib/api'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Re-export shared interfaces
 export type { Conference, ConferenceLog, ShowDate, Room } from './conference'
@@ -10,16 +10,11 @@ import type { ShowDate, Room } from './conference'
 
 // Helper function to get headers with auth (includes X-Project-UUID from cookie)
 async function getOrganizerAuthHeaders() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  const projectUuid = cookieStore.get('project_uuid')?.value
-  
+  const authContext = await requireServerAuthContext()
+
   return {
-    projectUuid,
-    headers: {
-      ...(projectUuid && { 'X-Project-UUID': projectUuid }),
-      ...(token && { Authorization: `Bearer ${token}` })
-    }
+    projectUuid: authContext.projectUuid,
+    headers: await requireServerAuthHeaders(),
   }
 }
 

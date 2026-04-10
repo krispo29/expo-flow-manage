@@ -2,9 +2,9 @@
 
 import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
 import { requireProjectContext } from '@/lib/authorization'
 import { getUserRole } from '@/app/actions/auth'
+import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 export async function printParticipantBadge(projectId: string, registrationUuid: string) {
   try {
@@ -43,13 +43,7 @@ export async function printParticipantBadgesBulk(projectId: string, registration
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  
-  return {
-    'X-Project-UUID': projectUuid || cookieStore.get('project_uuid')?.value,
-    ...(token && { Authorization: `Bearer ${token}` })
-  }
+  return requireServerAuthHeaders({ projectUuid })
 }
 
 export interface Participant {
@@ -132,8 +126,8 @@ export async function getParticipants(projectId: string, query?: string, type?: 
 
 export async function getParticipantById(id: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const authContext = await getServerAuthContext()
+    const projectUuid = authContext?.projectUuid
     
     // Verify user has access to this project
     if (projectUuid) {
@@ -229,8 +223,8 @@ export async function updateParticipant(registrationUuid: string, formData: Form
 
 export async function deleteParticipant(registrationUuid: string) {
   try {
-    const cookieStore = await cookies()
-    const projectUuid = cookieStore.get('project_uuid')?.value
+    const authContext = await getServerAuthContext()
+    const projectUuid = authContext?.projectUuid
     
     // Verify user has access to this project before deletion
     if (!projectUuid) {

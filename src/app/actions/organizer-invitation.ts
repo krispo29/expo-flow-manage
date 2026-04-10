@@ -1,20 +1,15 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import api, { getErrorMessage } from '@/lib/api'
 import type { Invitation } from './settings'
+import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 async function getOrganizerAuthHeaders() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  const projectUuid = cookieStore.get('project_uuid')?.value
+  const authContext = await requireServerAuthContext()
 
   return {
-    projectUuid,
-    headers: {
-      ...(projectUuid && { 'X-Project-UUID': projectUuid }),
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
+    projectUuid: authContext.projectUuid,
+    headers: await requireServerAuthHeaders(),
   }
 }
 

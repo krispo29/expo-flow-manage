@@ -36,7 +36,11 @@ describe('auth actions', () => {
   describe('getUserRole', () => {
     it('should return user role from cookie', async () => {
       const mockCookieStore = {
-        get: jest.fn().mockReturnValue({ value: 'ORGANIZER' }),
+        get: jest.fn((name: string) => {
+          if (name === 'access_token') return { value: 'mock-token' }
+          if (name === 'user_role') return { value: 'ORGANIZER' }
+          return undefined
+        }),
       }
       mockCookies.mockResolvedValue(mockCookieStore as any)
 
@@ -45,7 +49,7 @@ describe('auth actions', () => {
       expect(result).toBe('ORGANIZER')
     })
 
-    it('should return ADMIN as default when no cookie', async () => {
+    it('should return null when access token is missing', async () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue(undefined),
       }
@@ -53,7 +57,21 @@ describe('auth actions', () => {
 
       const result = await getUserRole()
 
-      expect(result).toBe('ADMIN')
+      expect(result).toBeNull()
+    })
+
+    it('should return null when role cookie is missing', async () => {
+      const mockCookieStore = {
+        get: jest.fn((name: string) => {
+          if (name === 'access_token') return { value: 'mock-token' }
+          return undefined
+        }),
+      }
+      mockCookies.mockResolvedValue(mockCookieStore as any)
+
+      const result = await getUserRole()
+
+      expect(result).toBeNull()
     })
   })
 

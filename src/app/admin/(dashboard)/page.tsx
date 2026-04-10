@@ -24,6 +24,7 @@ import type { DashboardConference } from "@/app/actions/dashboard"
 import { formatDistanceToNow } from "date-fns"
 import { AttendeeTypeChart } from "@/components/dashboard/attendee-type-chart"
 import { cn } from "@/lib/utils"
+import { redirect } from "next/navigation"
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -38,6 +39,11 @@ export default async function Page(props: Props) {
   }
 
   const result = await getDashboard(projectId)
+
+  if (!result.success && result.error === 'Unauthorized') {
+    redirect('/login')
+  }
+
   const failed = !result.success || !result.data
 
   const summary = result.data?.summary

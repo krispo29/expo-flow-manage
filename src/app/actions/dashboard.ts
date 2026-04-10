@@ -1,17 +1,11 @@
 'use server'
 
 import api from '@/lib/api'
-import { cookies } from 'next/headers'
+import { getServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  
-  return {
-    'X-Project-UUID': projectUuid || cookieStore.get('project_uuid')?.value,
-    ...(token && { Authorization: `Bearer ${token}` })
-  }
+  return getServerAuthHeaders({ projectUuid })
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -61,6 +55,11 @@ export interface DashboardData {
 export async function getDashboard(projectUuid?: string) {
   try {
     const headers = await getAuthHeaders(projectUuid)
+
+    if (!headers) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
     const response = await api.get('/v1/admin/project/dashboard', { headers })
     const rawData = response.data?.data || {}
 
