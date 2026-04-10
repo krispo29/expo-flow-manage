@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { getInvitations, createInvitation, updateInvitation, type Invitation } from "@/app/actions/settings"
+import { getOrganizerInvitations } from "@/app/actions/organizer-invitation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,9 +25,11 @@ import {
 
 interface InvitationCodeSettingsProps {
   projectUuid: string
+  userRole?: string
 }
 
-export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeSettingsProps>) {
+export function InvitationCodeSettings({ projectUuid, userRole = 'ADMIN' }: Readonly<InvitationCodeSettingsProps>) {
+  const isReadOnly = userRole === 'ORGANIZER'
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -50,6 +53,11 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+  const emptyStateMessage = searchQuery
+    ? "No matching results found."
+    : isReadOnly
+      ? "No invitation codes found for this project."
+      : "No invitation codes found. Click \"Add Code\" to create one."
 
   // Filter invitations based on search and column filters
   const filteredInvitations = invitations.filter(invite => {
@@ -106,7 +114,9 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
 
   async function fetchInvitations() {
     setLoading(true)
-    const result = await getInvitations(projectUuid)
+    const result = isReadOnly
+      ? await getOrganizerInvitations()
+      : await getInvitations(projectUuid)
     if (result.success) setInvitations(result.invitations)
     setLoading(false)
   }
@@ -118,6 +128,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
 
 
   async function handleCreate() {
+    if (isReadOnly) return
     if (!newInvite.company_name) {
       toast.error("Please fill in Company Name")
       return
@@ -136,6 +147,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
   }
 
   async function handleUpdate() {
+    if (isReadOnly || !editingInvite) return
     if (!editingInvite) return
     setSaving(true)
     const result = await updateInvitation(projectUuid, {
@@ -180,7 +192,9 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
           <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-display">Invitation Codes</CardTitle>
-              <CardDescription className="font-medium">Manage invitation codes for special access.</CardDescription>
+              <CardDescription className="font-medium">
+                {isReadOnly ? 'View and export invitation codes for your project.' : 'Manage invitation codes for special access.'}
+              </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -214,10 +228,12 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                   </Button>
                 )}
               </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
-                <Plus className="h-5 w-5 mr-2" />
-                Add Code
-              </Button>
+              {!isReadOnly && (
+                <Button onClick={() => setIsCreateOpen(true)} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Code
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -264,7 +280,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
           <div className="md:hidden divide-y divide-white/5">
             {filteredInvitations.length === 0 ? (
               <div className="text-center p-12 text-muted-foreground italic font-medium">
-                {searchQuery ? "No matching results found." : "No invitation codes found. Click \"Add Code\" to create one."}
+                {emptyStateMessage}
               </div>
             ) : (
               paginatedInvitations.map((invite, index) => (
@@ -302,10 +318,12 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                       <Copy className="h-3.5 w-3.5 mr-2" />
                       Copy
                     </Button>
-                    <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 px-4" onClick={() => setEditingInvite(invite)}>
-                      <Edit className="h-3.5 w-3.5 mr-2" />
-                      Edit
-                    </Button>
+                    {!isReadOnly && (
+                      <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 px-4" onClick={() => setEditingInvite(invite)}>
+                        <Edit className="h-3.5 w-3.5 mr-2" />
+                        Edit
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -375,7 +393,7 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                 {filteredInvitations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-24 italic text-muted-foreground font-medium">
-                      {searchQuery ? "No matching results found." : "No invitation codes found. Click \"Add Code\" to create one."}
+                      {emptyStateMessage}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -423,15 +441,17 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-9 w-9 rounded-full hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" 
-                            onClick={() => setEditingInvite(invite)}
-                            title="Edit"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          {!isReadOnly && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 rounded-full hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" 
+                              onClick={() => setEditingInvite(invite)}
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -515,78 +535,82 @@ export function InvitationCodeSettings({ projectUuid }: Readonly<InvitationCodeS
         </CardContent>
       </Card>
 
-      {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
-                <Plus className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-display font-bold">Add Invitation Code</DialogTitle>
-                <DialogDescription className="font-medium italic">Create a new invitation code for a company.</DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="p-8 grid gap-6">
-            <div className="space-y-2.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
-              <Input value={newInvite.company_name} onChange={(e) => setNewInvite({ ...newInvite, company_name: e.target.value })} placeholder="e.g. THE DEFT" className="h-12 bg-white/5 border-white/10 rounded-xl" />
-            </div>
-          </div>
-          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
-            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-              Create Code
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editingInvite} onOpenChange={(open) => !open && setEditingInvite(null)}>
-        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
-                <Edit className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-display font-bold">Edit Invitation Code</DialogTitle>
-                <DialogDescription className="font-medium italic">Update the invitation code details.</DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          {editingInvite && (
-            <div className="p-8 grid gap-6">
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
-                <Input value={editingInvite.company_name} onChange={(e) => setEditingInvite({ ...editingInvite, company_name: e.target.value })} className="h-12 bg-white/5 border-white/10 rounded-xl" />
-              </div>
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Invite Code</Label>
-                <div className="relative">
-                  <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
-                  <Input value={editingInvite.invite_code} onChange={(e) => setEditingInvite({ ...editingInvite, invite_code: e.target.value })} className="h-12 pl-11 bg-white/5 border-white/10 rounded-xl font-mono uppercase" />
+      {!isReadOnly && (
+        <>
+          {/* Create Dialog */}
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+              <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                    <Plus className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-display font-bold">Add Invitation Code</DialogTitle>
+                    <DialogDescription className="font-medium italic">Create a new invitation code for a company.</DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+              <div className="p-8 grid gap-6">
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
+                  <Input value={newInvite.company_name} onChange={(e) => setNewInvite({ ...newInvite, company_name: e.target.value })} placeholder="e.g. THE DEFT" className="h-12 bg-white/5 border-white/10 rounded-xl" />
                 </div>
               </div>
-              <div className="flex items-center justify-between p-4 glass rounded-2xl border-white/5">
-                <Label className="text-xs font-bold uppercase tracking-tight">Active Status</Label>
-                <Switch checked={editingInvite.is_active} onCheckedChange={(v) => setEditingInvite({ ...editingInvite, is_active: v })} />
-              </div>
-            </div>
-          )}
-          <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
-            <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setEditingInvite(null)}>Cancel</Button>
-            <Button onClick={handleUpdate} disabled={saving} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Power className="mr-2 h-4 w-4" />}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+                <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreate} disabled={saving} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                  Create Code
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Dialog */}
+          <Dialog open={!!editingInvite} onOpenChange={(open) => !open && setEditingInvite(null)}>
+            <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+              <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                    <Edit className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-display font-bold">Edit Invitation Code</DialogTitle>
+                    <DialogDescription className="font-medium italic">Update the invitation code details.</DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+              {editingInvite && (
+                <div className="p-8 grid gap-6">
+                  <div className="space-y-2.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
+                    <Input value={editingInvite.company_name} onChange={(e) => setEditingInvite({ ...editingInvite, company_name: e.target.value })} className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                  </div>
+                  <div className="space-y-2.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Invite Code</Label>
+                    <div className="relative">
+                      <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
+                      <Input value={editingInvite.invite_code} onChange={(e) => setEditingInvite({ ...editingInvite, invite_code: e.target.value })} className="h-12 pl-11 bg-white/5 border-white/10 rounded-xl font-mono uppercase" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-4 glass rounded-2xl border-white/5">
+                    <Label className="text-xs font-bold uppercase tracking-tight">Active Status</Label>
+                    <Switch checked={editingInvite.is_active} onCheckedChange={(v) => setEditingInvite({ ...editingInvite, is_active: v })} />
+                  </div>
+                </div>
+              )}
+              <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
+                <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setEditingInvite(null)}>Cancel</Button>
+                <Button onClick={handleUpdate} disabled={saving} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Power className="mr-2 h-4 w-4" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   )
 }
