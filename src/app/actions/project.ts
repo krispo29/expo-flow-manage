@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
 import api from '@/lib/api'
 import { isTokenExpiredError } from '@/lib/auth-helpers'
+import { getServerAuthHeaders, requireServerAuthHeaders } from '@/lib/server-auth'
 
 export interface Project {
   project_uuid: string
@@ -30,12 +30,10 @@ export interface Project {
 // GET /v1/admin/projects (No X-Project-UUID header, but needs Authorization)
 export async function getProjects() {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
+    const headers = await getServerAuthHeaders({ includeProjectUuid: false })
 
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
+    if (!headers) {
+      return { success: false, error: 'Unauthorized', projects: [] as Project[] }
     }
 
     const response = await api.get('/v1/admin/projects', { headers })
@@ -66,15 +64,7 @@ export async function getProjects() {
 // GET /v1/admin/project/detail
 export async function getProjectDetail(uuid: string) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {
-      'X-Project-UUID': uuid,
-    }
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
+    const headers = await requireServerAuthHeaders({ projectUuid: uuid })
 
     const response = await api.get('/v1/admin/project/detail', { headers })
     const result = response.data
@@ -93,15 +83,7 @@ export interface ShowDate {
 // GET /v1/admin/project/detail/show_dates
 export async function getProjectShowDates(uuid: string) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {
-      'X-Project-UUID': uuid,
-    }
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
+    const headers = await requireServerAuthHeaders({ projectUuid: uuid })
 
     const response = await api.get('/v1/admin/project/detail/show_dates', {
       headers,
@@ -127,16 +109,7 @@ export interface Country {
 // GET /v1/admin/project/countries
 export async function getCountries(projectUuid?: string) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-    if (projectUuid) {
-      headers['X-Project-UUID'] = projectUuid
-    }
+    const headers = await requireServerAuthHeaders({ projectUuid })
 
     const response = await api.get('/v1/admin/project/countries', { headers })
     return { success: true, data: (response.data.data || []) as Country[] }
@@ -154,16 +127,7 @@ export interface Nationality {
 // GET /v1/admin/project/nationalities
 export async function getNationalities(projectUuid?: string) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-    if (projectUuid) {
-      headers['X-Project-UUID'] = projectUuid
-    }
+    const headers = await requireServerAuthHeaders({ projectUuid })
 
     const response = await api.get('/v1/admin/project/nationalities', { headers })
     return { success: true, data: (response.data.data || []) as Nationality[] }
@@ -182,16 +146,7 @@ export interface MobilePrefix {
 // GET /v1/admin/project/mobile-prefixes
 export async function getMobilePrefixes(projectUuid?: string) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-    if (projectUuid) {
-      headers['X-Project-UUID'] = projectUuid
-    }
+    const headers = await requireServerAuthHeaders({ projectUuid })
 
     const response = await api.get('/v1/admin/project/mobile-prefixes', { headers })
     return { success: true, data: (response.data.data || []) as MobilePrefix[] }
@@ -209,16 +164,7 @@ export interface Timezone {
 // GET /v1/admin/project/timezones
 export async function getTimezones(projectUuid?: string) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-    if (projectUuid) {
-      headers['X-Project-UUID'] = projectUuid
-    }
+    const headers = await requireServerAuthHeaders({ projectUuid })
 
     const response = await api.get('/v1/admin/project/timezones', { headers })
     return { success: true, data: (response.data.data || []) as Timezone[] }
@@ -233,15 +179,9 @@ export async function updateProject(
   projectData: Partial<Project> & { project_uuid: string }
 ) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-
-    const headers: Record<string, string> = {
-      'X-Project-UUID': projectData.project_uuid,
-    }
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
+    const headers = await requireServerAuthHeaders({
+      projectUuid: projectData.project_uuid,
+    })
 
     const response = await api.put('/v1/admin/project/detail', projectData, {
       headers,

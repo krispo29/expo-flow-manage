@@ -1,18 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
-import api from '@/lib/api'
+import api, { getErrorMessage } from '@/lib/api'
+import { requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid: string) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  
-  return {
-    'X-Project-UUID': projectUuid,
-    ...(token && { Authorization: `Bearer ${token}` })
-  }
+  return requireServerAuthHeaders({ projectUuid })
 }
 
 // ==================== TYPES ====================
@@ -166,6 +160,25 @@ export async function getInvitations(projectUuid: string) {
   }
 }
 
+export async function exportInvitations(projectUuid: string) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get('/v1/admin/project/invitations/export-excel', {
+      headers,
+      responseType: 'arraybuffer',
+    })
+
+    return {
+      success: true,
+      data: new Uint8Array(response.data),
+      contentType: response.headers['content-type'],
+    }
+  } catch (error: unknown) {
+    console.error('Error exporting invitations:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
 export async function createInvitation(projectUuid: string, data: {
   company_name: string
 }) {
@@ -173,6 +186,7 @@ export async function createInvitation(projectUuid: string, data: {
     const headers = await getAuthHeaders(projectUuid)
     await api.post('/v1/admin/project/invitations', data, { headers })
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/invitation-codes')
     return { success: true }
   } catch (error: any) {
     console.error('Error creating invitation:', error)
@@ -191,6 +205,7 @@ export async function updateInvitation(projectUuid: string, data: {
     const headers = await getAuthHeaders(projectUuid)
     await api.put('/v1/admin/project/invitations', data, { headers })
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/invitation-codes')
     return { success: true }
   } catch (error: any) {
     console.error('Error updating invitation:', error)

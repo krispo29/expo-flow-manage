@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { getServerAuthContext } from '@/lib/server-auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft.co'
 
@@ -7,14 +7,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ type: string }> }
 ) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  const projectUuid = cookieStore.get('project_uuid')?.value
-  const userRole = cookieStore.get('user_role')?.value || 'ADMIN'
+  const authContext = await getServerAuthContext()
 
-  if (!token) {
+  if (!authContext || !authContext.userRole) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
+
+  const token = authContext.accessToken
+  const projectUuid = authContext.projectUuid
+  const userRole = authContext.userRole
 
   // Await params if needed in Next.js 15+
   const resolvedParams = await params

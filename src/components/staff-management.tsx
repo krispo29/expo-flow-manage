@@ -39,7 +39,7 @@ interface StaffManagementProps {
   readonly exhibitorId: string
   readonly projectId: string
   readonly exhibitor?: any
-  readonly userRole?: string
+  readonly userRole?: string | null
 }
 
 export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }: StaffManagementProps) {

@@ -2,19 +2,19 @@
 
 import * as React from "react"
 import {
+  BarChart3,
   Calendar,
   Contact,
+  DoorOpen,
+  FileText,
+  FileUp,
   LayoutDashboard,
+  Plus,
   Presentation,
+  Search,
   Settings,
   Users,
-  FileText,
   Wrench,
-  DoorOpen,
-  Search,
-  Plus,
-  BarChart3,
-  FileUp,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -28,12 +28,16 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get("projectId")
+  const { user } = useAuthStore()
+  const isOrganizer = user?.role === "ORGANIZER"
+  const basePath = isOrganizer ? "/organizer" : "/admin"
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -70,75 +74,93 @@ export function CommandPalette() {
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+
           <CommandGroup heading="Navigation">
-            <CommandItem onSelect={() => navigate("/admin")}>
+            <CommandItem onSelect={() => navigate(basePath)}>
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
             </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/exhibitors")}>
+            <CommandItem onSelect={() => navigate(`${basePath}/exhibitors`)}>
               <Users className="mr-2 h-4 w-4" />
               <span>Exhibitors</span>
             </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/participants")}>
+            <CommandItem onSelect={() => navigate(`${basePath}/participants`)}>
               <Contact className="mr-2 h-4 w-4" />
               <span>Participants</span>
             </CommandItem>
-             <CommandItem onSelect={() => navigate("/admin/conferences")}>
+            <CommandItem onSelect={() => navigate(`${basePath}/conferences`)}>
               <Presentation className="mr-2 h-4 w-4" />
               <span>Conferences</span>
             </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/events")}>
-              <Calendar className="mr-2 h-4 w-4" />
-              <span>Events</span>
-            </CommandItem>
-             <CommandItem onSelect={() => navigate("/admin/rooms")}>
-              <DoorOpen className="mr-2 h-4 w-4" />
-              <span>Rooms</span>
-            </CommandItem>
+            {!isOrganizer && (
+              <CommandItem onSelect={() => navigate("/admin/events")}>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Events</span>
+              </CommandItem>
+            )}
+            {!isOrganizer && (
+              <CommandItem onSelect={() => navigate("/admin/rooms")}>
+                <DoorOpen className="mr-2 h-4 w-4" />
+                <span>Rooms</span>
+              </CommandItem>
+            )}
           </CommandGroup>
+
           <CommandSeparator />
+
           <CommandGroup heading="System">
-            <CommandItem onSelect={() => navigate("/admin/invitation-codes")}>
+            <CommandItem onSelect={() => navigate(`${basePath}/invitation-codes`)}>
               <FileText className="mr-2 h-4 w-4" />
               <span>Invitation Codes</span>
             </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/reports")}>
+            <CommandItem onSelect={() => navigate(`${basePath}/reports`)}>
               <FileText className="mr-2 h-4 w-4" />
               <span>Reports</span>
             </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/questionnaires-stats")}>
-              <BarChart3 className="mr-2 h-4 w-4" />
-              <span>Questionnaires Stats</span>
-            </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/imports")}>
-              <FileUp className="mr-2 h-4 w-4" />
-              <span>Imports</span>
-            </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/utilities")}>
-              <Wrench className="mr-2 h-4 w-4" />
-              <span>Utility</span>
-            </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/settings")}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </CommandItem>
+            {!isOrganizer && (
+              <CommandItem onSelect={() => navigate("/admin/questionnaires-stats")}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                <span>Questionnaires Stats</span>
+              </CommandItem>
+            )}
+            {!isOrganizer && (
+              <CommandItem onSelect={() => navigate("/admin/imports")}>
+                <FileUp className="mr-2 h-4 w-4" />
+                <span>Imports</span>
+              </CommandItem>
+            )}
+            {!isOrganizer && (
+              <CommandItem onSelect={() => navigate("/admin/utilities")}>
+                <Wrench className="mr-2 h-4 w-4" />
+                <span>Utility</span>
+              </CommandItem>
+            )}
+            {!isOrganizer && (
+              <CommandItem onSelect={() => navigate("/admin/settings")}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </CommandItem>
+            )}
           </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Actions">
-            <CommandItem onSelect={() => navigate("/admin/exhibitors")}>
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Add New Exhibitor</span>
-              <CommandShortcut>⌘N</CommandShortcut>
-            </CommandItem>
-            <CommandItem onSelect={() => navigate("/admin/rooms")}>
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Add New Room</span>
-            </CommandItem>
-          </CommandGroup>
+
+          {!isOrganizer && (
+            <>
+              <CommandSeparator />
+              <CommandGroup heading="Actions">
+                <CommandItem onSelect={() => navigate("/admin/exhibitors")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Add New Exhibitor</span>
+                  <CommandShortcut>Ctrl+N</CommandShortcut>
+                </CommandItem>
+                <CommandItem onSelect={() => navigate("/admin/rooms")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Add New Room</span>
+                </CommandItem>
+              </CommandGroup>
+            </>
+          )}
         </CommandList>
       </CommandDialog>
     </>
   )
 }
-
-

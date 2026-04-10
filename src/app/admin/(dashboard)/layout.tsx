@@ -16,6 +16,10 @@ export const dynamic = 'force-dynamic'
 
 export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const userRole = await getUserRole()
+
+  if (!userRole) {
+    redirect('/login')
+  }
   
   // Organizers don't need project selection — the backend knows their project from the token
   let sidebarProjects: { name: string; id: string; url: string }[] = []
@@ -24,7 +28,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
     const result = await getProjects()
     
     // If token is expired/invalid, redirect to login
-    if (!result.success && result.error === 'key incorrect') {
+    if (!result.success && (result.error === 'key incorrect' || result.error === 'Unauthorized')) {
       redirect('/login')
     }
     

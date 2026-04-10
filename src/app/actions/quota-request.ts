@@ -1,20 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
 import axios from 'axios'
 import api from '@/lib/api'
 import { requireProjectContext } from '@/lib/authorization'
+import { requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid: string) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  
-  return {
-    'X-Project-UUID': projectUuid,
-    ...(token && { Authorization: `Bearer ${token}` })
-  }
+  return requireServerAuthHeaders({ projectUuid })
 }
 
 export interface QuotaRequest {

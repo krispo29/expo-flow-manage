@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { getServerAuthContext } from '@/lib/server-auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://expoflow-api.thedeft.co'
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  const projectUuid = cookieStore.get('project_uuid')?.value
+  const authContext = await getServerAuthContext()
 
-  if (!token) {
+  if (!authContext) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
 
@@ -27,8 +25,8 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        'X-Project-UUID': projectUuid || '',
+        Authorization: `Bearer ${authContext.accessToken}`,
+        'X-Project-UUID': authContext.projectUuid || '',
       },
       body: JSON.stringify(body),
     })

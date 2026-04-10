@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils'
 interface ConferenceListProps {
   conferences: Conference[]
   projectId: string
-  userRole?: string
+  userRole?: string | null
 }
 
 export function ConferenceList({ conferences: initialConferences, projectId, userRole }: Readonly<ConferenceListProps>) {

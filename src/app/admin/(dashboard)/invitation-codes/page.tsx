@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { InvitationCodeSettings } from '@/components/settings/invitation-codes'
+import { InvitationExcelOperations } from '@/components/invitation-excel'
 import { Suspense } from 'react'
 
 function InvitationCodesContent() {
@@ -21,14 +22,17 @@ function InvitationCodesContent() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Invitation Codes</h1>
-        <p className="text-muted-foreground mt-1 font-sans">
-          Manage invitation codes for your project.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-display font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Invitation Codes</h1>
+          <p className="text-muted-foreground mt-1 font-sans">
+            Manage invitation codes for your project.
+          </p>
+        </div>
+        <InvitationExcelOperations projectId={projectId} userRole="ADMIN" />
       </div>
 
-      <InvitationCodeSettings projectUuid={projectId} />
+      <InvitationCodeSettings projectUuid={projectId} userRole="ADMIN" />
     </div>
   )
 }

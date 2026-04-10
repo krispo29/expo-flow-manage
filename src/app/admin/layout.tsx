@@ -5,6 +5,10 @@ import { redirect } from "next/navigation"
 
 export default async function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   const role = await getUserRole()
+
+  if (!role) {
+    redirect('/login')
+  }
   
   // Prevent ORGANIZER from accessing any /admin paths
   if (role === 'ORGANIZER') {

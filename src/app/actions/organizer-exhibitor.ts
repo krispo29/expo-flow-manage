@@ -2,8 +2,8 @@
 
 import api from '@/lib/api'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
 import { requireOrganizer } from '@/lib/authorization'
+import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Re-export shared interfaces
 export type { Exhibitor } from './exhibitor'
@@ -11,16 +11,11 @@ import type { Exhibitor } from './exhibitor'
 
 // Helper function to get headers with auth (uses cookie-based project_uuid)
 async function getOrganizerAuthHeaders() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-  const projectUuid = cookieStore.get('project_uuid')?.value
-  
+  const authContext = await requireServerAuthContext()
+
   return {
-    projectUuid,
-    headers: {
-      ...(projectUuid && { 'X-Project-UUID': projectUuid }),
-      ...(token && { Authorization: `Bearer ${token}` })
-    }
+    projectUuid: authContext.projectUuid,
+    headers: await requireServerAuthHeaders(),
   }
 }
 

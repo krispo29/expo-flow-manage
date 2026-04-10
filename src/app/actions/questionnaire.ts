@@ -1,16 +1,10 @@
 'use server'
 
 import api from '@/lib/api'
-import { cookies } from 'next/headers'
+import { requireServerAuthHeaders } from '@/lib/server-auth'
 
 async function getAuthHeaders(projectUuid?: string) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('access_token')?.value
-
-  return {
-    'X-Project-UUID': projectUuid || cookieStore.get('project_uuid')?.value,
-    ...(token && { Authorization: `Bearer ${token}` }),
-  }
+  return requireServerAuthHeaders({ projectUuid })
 }
 
 export interface QuestionnaireStatOption {

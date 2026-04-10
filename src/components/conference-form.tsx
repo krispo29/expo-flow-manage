@@ -68,7 +68,7 @@ function TimeSelector({ value, onChange, name, id }: { value: string, onChange: 
 interface ConferenceFormProps {
   projectId: string
   conference?: Conference
-  userRole?: string
+  userRole?: string | null
 }
 
 export function ConferenceForm({ projectId, conference, userRole }: Readonly<ConferenceFormProps>) {
