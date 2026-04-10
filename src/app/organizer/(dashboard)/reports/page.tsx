@@ -74,6 +74,38 @@ export default function ReportsPage() {
   const [conferenceSummary, setConferenceSummary] = useState<ConferenceSummaryResponse[]>([])
   const [conferenceKeyword, setConferenceKeyword] = useState("")
   const [loadingSummary, setLoadingSummary] = useState(false)
+  const [exportingSummary, setExportingSummary] = useState(false)
+
+  const getFilenameFromDisposition = (disposition: string | null) => {
+    if (!disposition) return null
+
+    const utfMatch = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)
+    if (utfMatch?.[1]) {
+      return decodeURIComponent(utfMatch[1])
+    }
+
+    const basicMatch = disposition.match(/filename\s*=\s*"?(?:.+\/)?([^";]+)"?/i)
+    return basicMatch?.[1] ?? null
+  }
+
+  const downloadFileFromUrl = async (url: string, fallbackFilename: string) => {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error('Failed to export report')
+    }
+
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = blobUrl
+    link.download = getFilenameFromDisposition(response.headers.get('content-disposition')) ?? fallbackFilename
+
+    document.body.appendChild(link)
+    link.click()
+    URL.revokeObjectURL(blobUrl)
+    link.remove()
+  }
 
   const fetchConferenceSummary = useCallback(async () => {
     setLoadingSummary(true)
@@ -95,6 +127,21 @@ export default function ReportsPage() {
 
   // ─── Export Advanced Search Logic ────────────────────────────────────────────
   const [exportingAdvanced, setExportingAdvanced] = useState(false)
+
+  const handleExportConferenceSummary = async () => {
+    try {
+      setExportingSummary(true)
+      await downloadFileFromUrl(
+        '/api/export/conference-summary',
+        `conference_summary_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
+      )
+    } catch (error) {
+      console.error('Conference summary export error:', error)
+      toast.error("Failed to export report")
+    } finally {
+      setExportingSummary(false)
+    }
+  }
 
   const handleExportAdvancedSearch = async () => {
     try {
@@ -693,12 +740,12 @@ export default function ReportsPage() {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => window.open('/api/export/conference-summary', '_blank')}
-                    disabled={loadingSummary}
+                    onClick={handleExportConferenceSummary}
+                    disabled={loadingSummary || exportingSummary}
                     className="h-11 rounded-2xl px-5 gap-2 bg-white/5 border-white/10 hover:bg-primary/10 transition-all shrink-0 font-bold text-xs"
                   >
-                    <Download className="h-4 w-4" />
-                    <span>EXPORT</span>
+                    {exportingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    <span>{exportingSummary ? 'EXPORTING' : 'EXPORT'}</span>
                   </Button>
                 </div>
               </div>

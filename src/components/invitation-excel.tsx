@@ -1,6 +1,7 @@
 'use client'
 
-import { Download } from 'lucide-react'
+import { useState } from 'react'
+import { Download, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { exportInvitations } from '@/app/actions/settings'
@@ -12,7 +13,12 @@ interface InvitationExcelOperationsProps {
 }
 
 export function InvitationExcelOperations({ projectId, userRole }: Readonly<InvitationExcelOperationsProps>) {
+  const [isExporting, setIsExporting] = useState(false)
+
   async function handleExport() {
+    if (isExporting) return
+
+    setIsExporting(true)
     try {
       const result = userRole === 'ORGANIZER'
         ? await exportOrganizerInvitations(projectId)
@@ -37,6 +43,8 @@ export function InvitationExcelOperations({ projectId, userRole }: Readonly<Invi
     } catch (error) {
       console.error('Failed to export invitations:', error)
       toast.error('Export failed')
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -44,11 +52,12 @@ export function InvitationExcelOperations({ projectId, userRole }: Readonly<Invi
     <Button
       variant="outline"
       onClick={handleExport}
+      disabled={isExporting}
       title="Export Invitations"
       className="rounded-full px-6 border-white/10 bg-white/5 hover:bg-white/10"
     >
-      <Download className="mr-2 h-4 w-4" />
-      Export Invitations
+      {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+      {isExporting ? 'Exporting...' : 'Export Invitations'}
     </Button>
   )
 }

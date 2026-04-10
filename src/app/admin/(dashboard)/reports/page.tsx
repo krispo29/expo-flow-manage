@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Search, Download, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, X, Building2, Users, FileSpreadsheet, Send, FileText, FileBarChart, Filter } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from "sonner"
 import { advancedSearch, getEventsForReport, getConferenceNoHall, getConferenceSummary, type AdvancedSearchResult, type AdvancedSearchResponse, type Event as ReportEvent, type ConferenceNoHallResponse, type ConferenceSummaryResponse } from "@/app/actions/report"
 import { getAllAttendeeTypes, type AttendeeType } from "@/app/actions/participant"
 import { cn } from "@/lib/utils"
@@ -147,6 +148,61 @@ export default function ReportsPage() {
   const [exportType, setExportType] = useState<string>('')
   const [exportEventUuid, setExportEventUuid] = useState<string>('')
   const [exportDate, setExportDate] = useState<Date>()
+  const [exportingDialog, setExportingDialog] = useState(false)
+  const [exportingHall, setExportingHall] = useState(false)
+  const [exportingSummary, setExportingSummary] = useState(false)
+
+  const getFilenameFromDisposition = (disposition: string | null) => {
+    if (!disposition) return null
+
+    const utfMatch = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)
+    if (utfMatch?.[1]) {
+      return decodeURIComponent(utfMatch[1])
+    }
+
+    const basicMatch = disposition.match(/filename\s*=\s*"?(?:.+\/)?([^";]+)"?/i)
+    return basicMatch?.[1] ?? null
+  }
+
+  const downloadFileFromUrl = async (url: string, fallbackFilename: string) => {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error('Failed to export report')
+    }
+
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = blobUrl
+    link.download = getFilenameFromDisposition(response.headers.get('content-disposition')) ?? fallbackFilename
+
+    document.body.appendChild(link)
+    link.click()
+    window.URL.revokeObjectURL(blobUrl)
+    document.body.removeChild(link)
+  }
+
+  const getDialogExportFallbackFilename = (type: string) => {
+    const timestamp = format(new Date(), 'yyyyMMdd_HHmm')
+
+    switch (type) {
+      case 'registrations-by-country':
+        return `registrations_by_country_${timestamp}.xlsx`
+      case 'questionnaires':
+        return `questionnaires_${timestamp}.xlsx`
+      case 'attendees-summary':
+        return `attendees_summary_${timestamp}.xlsx`
+      case 'attendees-summary-by-questionnaire':
+        return `attendees_summary_by_questionnaire_${timestamp}.xlsx`
+      case 'edm-visitors':
+        return `edm_visitors_${timestamp}.xlsx`
+      case 'participants':
+        return `participants_${timestamp}.xlsx`
+      default:
+        return `report_export_${timestamp}.xlsx`
+    }
+  }
 
   const openExportDialog = (type: string) => {
     setExportType(type)
@@ -155,7 +211,7 @@ export default function ReportsPage() {
     setExportDialogOpen(true)
   }
 
-  const handleConfirmExport = () => {
+  const handleConfirmExport = async () => {
     if (!exportEventUuid) return
     let url = ''
     switch (exportType) {
@@ -178,8 +234,17 @@ export default function ReportsPage() {
         url = `/api/export/participants?event_uuid=${exportEventUuid}&include_questionnaire=true`
         break
     }
-    window.open(url, '_blank')
-    setExportDialogOpen(false)
+
+    try {
+      setExportingDialog(true)
+      await downloadFileFromUrl(url, getDialogExportFallbackFilename(exportType))
+      setExportDialogOpen(false)
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to export report')
+    } finally {
+      setExportingDialog(false)
+    }
   }
 
   const getExportTitle = (type: string) => {
@@ -196,6 +261,38 @@ export default function ReportsPage() {
 
   // ─── Export Advanced Search Logic ──────────────────────────────────────────────
   const [exportingAdvanced, setExportingAdvanced] = useState(false)
+
+  const handleExportConferenceNoHall = async () => {
+    if (!selectedHallEventUuid) return
+
+    try {
+      setExportingHall(true)
+      await downloadFileFromUrl(
+        `/api/export/conference-no-hall?event_uuid=${selectedHallEventUuid}`,
+        `conference_no_hall_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
+      )
+    } catch (error) {
+      console.error('Conference no hall export error:', error)
+      toast.error('Failed to export report')
+    } finally {
+      setExportingHall(false)
+    }
+  }
+
+  const handleExportConferenceSummary = async () => {
+    try {
+      setExportingSummary(true)
+      await downloadFileFromUrl(
+        '/api/export/conference-summary',
+        `conference_summary_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
+      )
+    } catch (error) {
+      console.error('Conference summary export error:', error)
+      toast.error('Failed to export report')
+    } finally {
+      setExportingSummary(false)
+    }
+  }
 
   const handleExportAdvancedSearch = async () => {
     try {
@@ -907,12 +1004,12 @@ export default function ReportsPage() {
                       <Separator orientation="vertical" className="h-8 bg-white/10" />
                       <Button
                         variant="outline"
-                        onClick={() => window.open(`/api/export/conference-no-hall?event_uuid=${selectedHallEventUuid}`, '_blank')}
-                        disabled={!selectedHallEventUuid || loadingHall}
+                        onClick={handleExportConferenceNoHall}
+                        disabled={!selectedHallEventUuid || loadingHall || exportingHall}
                         className="h-10 rounded-xl px-4 gap-2 bg-white/5 border-white/10 hover:bg-primary/10 transition-colors"
                       >
-                        <Download className="h-4 w-4" />
-                        <span className="hidden sm:inline font-bold text-xs">EXPORT</span>
+                        {exportingHall ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        <span className="hidden sm:inline font-bold text-xs">{exportingHall ? 'EXPORTING' : 'EXPORT'}</span>
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1150,12 +1247,12 @@ export default function ReportsPage() {
                     </div>
                     <Button
                       variant="outline"
-                      onClick={() => window.open('/api/export/conference-summary', '_blank')}
-                      disabled={loadingSummary}
+                      onClick={handleExportConferenceSummary}
+                      disabled={loadingSummary || exportingSummary}
                       className="h-11 rounded-2xl px-5 gap-2 bg-white/5 border-white/10 hover:bg-primary/10 transition-all shrink-0 font-bold text-xs"
                     >
-                      <Download className="h-4 w-4" />
-                      <span>EXPORT</span>
+                      {exportingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      <span>{exportingSummary ? 'EXPORTING' : 'EXPORT'}</span>
                     </Button>
                   </div>
                 </div>
@@ -1331,8 +1428,9 @@ export default function ReportsPage() {
           </div>
           <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
             <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setExportDialogOpen(false)}>Cancel</Button>
-            <Button className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20" onClick={handleConfirmExport} disabled={!exportEventUuid}>
-              <Download className="mr-2 h-4 w-4" /> Initialize Download
+            <Button className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20" onClick={handleConfirmExport} disabled={!exportEventUuid || exportingDialog}>
+              {exportingDialog ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {exportingDialog ? 'Preparing...' : 'Initialize Download'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -6,7 +6,6 @@ import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getConferences } from '@/app/actions/conference'
 import { getOrganizerConferences } from '@/app/actions/organizer-conference'
-import { ConferenceExcelOperations } from '@/components/conference-excel'
 import { getUserRole } from '@/app/actions/auth'
 
 export default async function ConferencesPage({
@@ -33,7 +32,6 @@ export default async function ConferencesPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <ConferenceExcelOperations projectId={projectId} userRole={userRole} />
           <Link href={`/organizer/conferences/new?projectId=${projectId}`}>
             <Button className="btn-aurora rounded-full px-6 font-semibold">
               <Plus className="mr-2 h-5 w-5" />

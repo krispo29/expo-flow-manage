@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download } from 'lucide-react'
+import { Download, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { exportConferenceReservationSummary } from '@/app/actions/conference'
 import { exportOrganizerConferenceReservationSummary } from '@/app/actions/organizer-conference'
@@ -13,7 +14,12 @@ interface ConferenceExcelOperationsProps {
 
 
 export function ConferenceExcelOperations({ projectId, userRole }: Readonly<ConferenceExcelOperationsProps>) {
+  const [isExporting, setIsExporting] = useState(false)
+
   async function handleExport() {
+    if (isExporting) return
+
+    setIsExporting(true)
     try {
       const result = userRole === 'ORGANIZER'
         ? await exportOrganizerConferenceReservationSummary(projectId)
@@ -36,6 +42,8 @@ export function ConferenceExcelOperations({ projectId, userRole }: Readonly<Conf
     } catch (error) {
       console.error(error)
       toast.error('Export failed')
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -44,11 +52,12 @@ export function ConferenceExcelOperations({ projectId, userRole }: Readonly<Conf
     <Button
       variant="outline"
       onClick={handleExport}
+      disabled={isExporting}
       title="Export Conferences"
       className="rounded-full px-6 border-white/10 bg-white/5 hover:bg-white/10"
     >
-      <Download className="h-4 w-4 mr-2" />
-      Export Conferences
+      {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+      {isExporting ? 'Exporting...' : 'Export Conferences'}
     </Button>
   )
 }

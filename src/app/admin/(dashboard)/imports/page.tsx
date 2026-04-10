@@ -88,6 +88,7 @@ function ImportsContent() {
   const [viewPage, setViewPage] = useState(1)
   const [viewCodesData, setViewCodesData] = useState<{ first_name: string; last_name: string; email: string; code: string }[]>([])
   const [viewLoading, setViewLoading] = useState(false)
+  const [exportingCodesUuid, setExportingCodesUuid] = useState<string | null>(null)
 
   // View Details Dialog State
   const [viewDetailUuid, setViewDetailUuid] = useState<string | null>(null)
@@ -194,6 +195,52 @@ function ImportsContent() {
 
   const setFile = (kind: ImportKind, file: File | null) => {
     setFiles((prev) => ({ ...prev, [kind]: file }))
+  }
+
+  const getFilenameFromDisposition = (disposition: string | null) => {
+    if (!disposition) return null
+
+    const utfMatch = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)
+    if (utfMatch?.[1]) {
+      return decodeURIComponent(utfMatch[1])
+    }
+
+    const basicMatch = disposition.match(/filename\s*=\s*"?(?:.+\/)?([^";]+)"?/i)
+    return basicMatch?.[1] ?? null
+  }
+
+  const downloadFileFromUrl = async (url: string, fallbackFilename: string) => {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error('Failed to export codes')
+    }
+
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = blobUrl
+    link.download = getFilenameFromDisposition(response.headers.get('content-disposition')) ?? fallbackFilename
+
+    document.body.appendChild(link)
+    link.click()
+    URL.revokeObjectURL(blobUrl)
+    link.remove()
+  }
+
+  const handleExportCodes = async (importUuid: string) => {
+    try {
+      setExportingCodesUuid(importUuid)
+      await downloadFileFromUrl(
+        `/api/export/import-history-codes?uuid=${importUuid}`,
+        `import_history_codes_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
+      )
+    } catch (error) {
+      console.error('Import history export error:', error)
+      toast.error('Failed to export codes')
+    } finally {
+      setExportingCodesUuid((current) => (current === importUuid ? null : current))
+    }
   }
 
   const runImport = async (kind: ImportKind) => {
@@ -604,12 +651,11 @@ function ImportsContent() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold transition-all"
-                                onClick={() => {
-                                  window.open(`/api/export/import-history-codes?uuid=${h.import_uuid}`, '_blank')
-                                }}
+                                onClick={() => void handleExportCodes(h.import_uuid)}
+                                disabled={exportingCodesUuid === h.import_uuid}
                                 title="Export Codes"
                               >
-                                <FileDown className="h-4 w-4" />
+                                {exportingCodesUuid === h.import_uuid ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                               </Button>
                             </>
                           )}
@@ -752,11 +798,11 @@ function ImportsContent() {
                 <Button 
                   size="sm"
                   className="btn-aurora rounded-xl h-10 px-5 font-bold text-xs shadow-lg shadow-primary/20"
-                  onClick={() => {
-                    window.open(`/api/export/import-history-codes?uuid=${viewCodesUuid}`, '_blank')
-                  }}
+                  onClick={() => void handleExportCodes(viewCodesUuid)}
+                  disabled={exportingCodesUuid === viewCodesUuid}
                 >
-                  <FileDown className="mr-2 h-4 w-4" /> Export All
+                  {exportingCodesUuid === viewCodesUuid ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                  {exportingCodesUuid === viewCodesUuid ? 'Exporting...' : 'Export All'}
                 </Button>
               )}
             </div>
