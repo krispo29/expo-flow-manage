@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import api from '@/lib/api'
 import { requireProjectContext } from '@/lib/authorization'
+import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
@@ -64,7 +65,7 @@ export async function createStaff(projectUuid: string, data: any) {
       mobile_number: data.mobile,
       email: data.email,
       company_name: data.companyName || "",
-      company_country: data.companyCountry || "TH",
+      company_country: getCountryNameFromValue(data.companyCountry),
       company_tel: data.companyTel || "",
       staff_type_code: data.staffTypeCode
     }
@@ -95,7 +96,7 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
       mobile_number: data.mobile,
       email: data.email,
       company_name: data.companyName || "",
-      company_country: data.companyCountry || "TH",
+      company_country: getCountryNameFromValue(data.companyCountry),
       company_tel: data.companyTel || "",
       staff_type_code: data.staffTypeCode
     }

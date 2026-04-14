@@ -249,3 +249,43 @@ export const countries: Country[] = [
   { code: 'RE', name: 'Reunion', phoneCode: '+262', flag: '🇷🇪', nationality: 'Réunionnais' },
 ];
 export const getCountryByCode = (code: string) => countries.find(c => c.code === code);
+
+export const findCountryByCodeOrName = (value?: string | null) => {
+  if (!value) return undefined;
+
+  const normalizedValue = value.trim().toLowerCase();
+  if (!normalizedValue) return undefined;
+
+  return countries.find((country) =>
+    country.code.toLowerCase() === normalizedValue ||
+    country.name.toLowerCase() === normalizedValue
+  );
+};
+
+export const getCountryNameFromValue = (
+  value?: string | null,
+  fallbackCode = 'TH'
+) => {
+  const country = findCountryByCodeOrName(value);
+  if (country) return country.name;
+
+  const trimmedValue = value?.trim();
+  if (trimmedValue) return trimmedValue;
+
+  return getCountryByCode(fallbackCode)?.name || fallbackCode;
+};
+
+export const getCountryCodeFromValue = (
+  value?: string | null,
+  fallbackCode = 'TH'
+) => {
+  const country = findCountryByCodeOrName(value);
+  if (country) return country.code;
+
+  const trimmedValue = value?.trim();
+  if (trimmedValue && trimmedValue.length === 2) {
+    return trimmedValue.toUpperCase();
+  }
+
+  return getCountryByCode(fallbackCode)?.code || fallbackCode;
+};

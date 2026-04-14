@@ -1,6 +1,7 @@
 'use server'
 
 import api from '@/lib/api'
+import { getCountryNameFromValue } from '@/lib/countries'
 import { revalidatePath } from 'next/cache'
 import { requireOrganizer } from '@/lib/authorization'
 import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
@@ -255,7 +256,7 @@ export async function createOrganizerMember(data: any) {
       mobile_number: data.mobile,
       email: data.email,
       company_name: data.companyName || "",
-      company_country: data.companyCountry || "TH",
+      company_country: getCountryNameFromValue(data.companyCountry),
       company_tel: data.companyTel || ""
     }
 
@@ -285,7 +286,7 @@ export async function updateOrganizerMember(memberUuid: string, data: any) {
       mobile_number: data.mobile,
       email: data.email,
       company_name: data.companyName || "",
-      company_country: data.companyCountry || "TH",
+      company_country: getCountryNameFromValue(data.companyCountry),
       company_tel: data.companyTel || ""
     }
 

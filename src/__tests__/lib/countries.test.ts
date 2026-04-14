@@ -1,4 +1,10 @@
-import { countries, getCountryByCode } from '@/lib/countries'
+import {
+  countries,
+  findCountryByCodeOrName,
+  getCountryByCode,
+  getCountryCodeFromValue,
+  getCountryNameFromValue,
+} from '@/lib/countries'
 
 describe('countries', () => {
   it('should have at least 50 countries', () => {
@@ -108,5 +114,30 @@ describe('getCountryByCode', () => {
   it('should return undefined for empty string', () => {
     const country = getCountryByCode('')
     expect(country).toBeUndefined()
+  })
+})
+
+describe('country value helpers', () => {
+  it('should find countries by code or name', () => {
+    expect(findCountryByCodeOrName('TH')?.name).toBe('Thailand')
+    expect(findCountryByCodeOrName('Thailand')?.code).toBe('TH')
+    expect(findCountryByCodeOrName('vietnam')?.code).toBe('VN')
+  })
+
+  it('should resolve country names from codes', () => {
+    expect(getCountryNameFromValue('TH')).toBe('Thailand')
+    expect(getCountryNameFromValue('Thailand')).toBe('Thailand')
+  })
+
+  it('should resolve country codes from names', () => {
+    expect(getCountryCodeFromValue('Thailand')).toBe('TH')
+    expect(getCountryCodeFromValue('TH')).toBe('TH')
+  })
+
+  it('should fall back safely when values are empty or unknown', () => {
+    expect(getCountryNameFromValue('')).toBe('Thailand')
+    expect(getCountryCodeFromValue('')).toBe('TH')
+    expect(getCountryNameFromValue('Neverland')).toBe('Neverland')
+    expect(getCountryCodeFromValue('Neverland')).toBe('TH')
   })
 })

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getExhibitorById } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitorById } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useBreadcrumbStore } from '@/store/useBreadcrumbStore'
 import { ExhibitorForm } from '@/components/exhibitor-form'
 import { StaffManagement } from '@/components/staff-management'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ export default function EditExhibitorPage() {
   const id = params?.id as string
   const { user, isAuthenticated, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
+  const { setLabel, clearLabel } = useBreadcrumbStore()
   
   const [exhibitor, setExhibitor] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -34,13 +36,18 @@ export default function EditExhibitorPage() {
         result = await getExhibitorById(projectId!, id)
       }
       
-      if (result.success) {
+      if (result.success && result.exhibitor) {
         setExhibitor(result.exhibitor)
+        setLabel(id, result.exhibitor.companyName)
       }
       setLoading(false)
     }
     fetchExhibitor()
-  }, [id, projectId, isOrganizer])
+
+    return () => {
+      if (id) clearLabel(id)
+    }
+  }, [id, projectId, isOrganizer, setLabel, clearLabel])
 
   if (!isHydrated || !isAuthenticated || !user) {
     return (

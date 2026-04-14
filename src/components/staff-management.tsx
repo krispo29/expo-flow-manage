@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
 import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
-import { countries } from '@/lib/countries'
+import { getCountryCodeFromValue } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,15 +58,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
   // but for production consistency, RHF + Zod is better. 
   // I'll stick to controlled inputs for now to save setup time unless complex validation is needed.
-  // Resolve exhibitor country name to code if possible
-  const getInitialCountry = () => {
-    if (!exhibitor?.country) return 'TH'
-    const country = countries.find(
-      c => c.code.toLowerCase() === exhibitor.country.toLowerCase() || 
-           c.name.toLowerCase() === exhibitor.country.toLowerCase()
-    )
-    return country ? country.code : 'TH'
-  }
+  // Resolve country values from the API into selector-friendly ISO codes.
+  const initialCountry = getCountryCodeFromValue(exhibitor?.country)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -112,7 +105,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         isActive: m.is_active !== undefined ? m.is_active : true,
         createdAt: new Date().toISOString(),
         companyName: m.company_name || '',
-        companyCountry: m.company_country || 'TH',
+        companyCountry: getCountryCodeFromValue(m.company_country, initialCountry),
         companyTel: m.company_tel || '',
         staff_type_code: m.staff_type_code || 'EXHIBITOR'
       }))
@@ -121,7 +114,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
       setStaffList([])
     }
     setLoading(false)
-  }, [exhibitorId, projectId, isOrganizer])
+  }, [exhibitorId, projectId, isOrganizer, initialCountry])
 
   useEffect(() => {
     fetchStaff()
@@ -147,7 +140,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         email: staff.email || '',
         mobile: staff.mobile || '',
         companyName: staff.companyName || exhibitor?.companyName || '',
-        companyCountry: staff.companyCountry || getInitialCountry(),
+        companyCountry: staff.companyCountry || initialCountry,
         companyTel: staff.companyTel || exhibitor?.phone || '',
         staffTypeCode: staff.staff_type_code || 'EXHIBITOR'
       })
@@ -169,7 +162,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         email: '',
         mobile: '',
         companyName: exhibitor?.companyName || '',
-        companyCountry: getInitialCountry(),
+        companyCountry: initialCountry,
         companyTel: exhibitor?.phone || '',
         staffTypeCode: 'EXHIBITOR'
       })
