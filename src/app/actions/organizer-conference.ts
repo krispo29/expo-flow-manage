@@ -181,6 +181,7 @@ export async function createOrganizerConference(formData: FormData) {
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const chargeType = (formData.get('charge_type') as string) || 'free'
     const isActive = parseIsActive(formData.get('is_active'))
     const detail = formData.get('detail') as string
 
@@ -198,6 +199,7 @@ export async function createOrganizerConference(formData: FormData) {
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
+      charge_type: chargeType,
       is_active: isActive,
       detail: detail || undefined,
     }
@@ -231,6 +233,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
     const location = formData.get('location') as string
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
+    const chargeType = (formData.get('charge_type') as string) || 'free'
     const isActive = parseIsActive(formData.get('is_active'))
     const detail = formData.get('detail') as string
 
@@ -249,6 +252,7 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
       location,
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
+      charge_type: chargeType,
       is_active: isActive,
       detail: detail || undefined,
     }
