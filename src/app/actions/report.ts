@@ -15,6 +15,7 @@ async function getAuthHeaders(projectUuidParam?: string) {
 
 // ... Types
 export interface AdvancedSearchParams {
+  event_uuid?: string
   start_date?: string
   end_date?: string
   attendee_type_codes?: string[]
@@ -52,6 +53,7 @@ export async function advancedSearch(params: AdvancedSearchParams) {
     // Map params to API expected body if necessary
     const payload = {
       project_uuid: projectUuid,
+      event_uuid: params.event_uuid,
       start_date: params.start_date,
       end_date: params.end_date,
       attendee_type_codes: params.attendee_type_codes,
@@ -80,6 +82,7 @@ export async function organizerAdvancedSearch(params: AdvancedSearchParams) {
 
     const payload = {
       project_uuid: projectUuid,
+      event_uuid: params.event_uuid,
       start_date: params.start_date,
       end_date: params.end_date,
       attendee_type_codes: params.attendee_type_codes,
@@ -108,6 +111,7 @@ export async function exportOrganizerAdvancedSearch(params: AdvancedSearchParams
 
     const payload = {
       project_uuid: projectUuid,
+      event_uuid: params.event_uuid,
       start_date: params.start_date,
       end_date: params.end_date,
       attendee_type_codes: params.attendee_type_codes,

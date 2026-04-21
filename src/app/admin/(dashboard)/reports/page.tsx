@@ -28,6 +28,7 @@ export default function ReportsPage() {
 
   // ─── Filter state ────────────────────────────────────────────────────────────
   const [keyword, setKeyword] = useState("")
+  const [selectedEventUuid, setSelectedEventUuid] = useState("all")
   const [country, setCountry] = useState("")
   const [dateStart, setDateStart] = useState<Date>()
   const [dateEnd, setDateEnd] = useState<Date>()
@@ -298,6 +299,7 @@ export default function ReportsPage() {
     try {
       setExportingAdvanced(true)
       const payload = {
+        event_uuid: selectedEventUuid !== "all" ? selectedEventUuid : undefined,
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
@@ -340,6 +342,7 @@ export default function ReportsPage() {
 
     try {
       const res = await advancedSearch({
+        event_uuid: selectedEventUuid !== "all" ? selectedEventUuid : undefined,
         start_date: dateStart ? format(dateStart, "yyyy-MM-dd") : undefined,
         end_date: dateEnd ? format(dateEnd, "yyyy-MM-dd") : undefined,
         attendee_type_codes: selectedTypeCodes.length > 0 ? selectedTypeCodes : undefined,
@@ -365,10 +368,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeQuestionnaire, includeStaff])
+  }, [selectedEventUuid, dateStart, dateEnd, selectedTypeCodes, country, keyword, limit, includeQuestionnaire, includeStaff])
 
   const handleReset = () => {
     setKeyword("")
+    setSelectedEventUuid("all")
     setCountry("")
     setDateStart(undefined)
     setDateEnd(undefined)
@@ -639,6 +643,31 @@ export default function ReportsPage() {
 
                   {/* Secondary Filters Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6 rounded-3xl bg-white/5 border border-white/10">
+                    {/* Event Filter */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="event-filter" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event</Label>
+                        {selectedEventUuid !== "all" && (
+                          <button onClick={() => setSelectedEventUuid("all")} className="text-[10px] font-bold text-muted-foreground hover:text-destructive flex items-center transition-colors">
+                            CLEAR <X className="h-3 w-3 ml-1" />
+                          </button>
+                        )}
+                      </div>
+                      <Select value={selectedEventUuid} onValueChange={setSelectedEventUuid}>
+                        <SelectTrigger id="event-filter" className="w-full bg-white/5 border-white/10 h-12 rounded-xl">
+                          <SelectValue placeholder="All Events" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10">
+                          <SelectItem value="all">All Events</SelectItem>
+                          {events.map((event) => (
+                            <SelectItem key={event.event_uuid} value={event.event_uuid}>
+                              {event.event_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {/* Country Filter */}
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">

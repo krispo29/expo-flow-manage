@@ -48,12 +48,12 @@ type ImportKind =
   | 'invite-codes'
 
 const TEMPLATE_LINKS = {
-  conferences: 'http://static.expoflow.co/template/Conference_Template.xlsx',
-  exhibitors: 'http://static.expoflow.co/template/Exhibitor_Company_Template.xlsx',
-  exhibitorMembers: 'http://static.expoflow.co/template/Exhibitor_Member_Template.xlsx',
-  inviteCodes: 'http://static.expoflow.co/template/Invite_Code_Template.xlsx',
-  registrations: 'http://static.expoflow.co/template/Registration_Template.xlsx',
-  staff: 'http://static.expoflow.co/template/Staff_Template.xlsx',
+  conferences: 'https://static.expoflow.co/template/Conference_Template.xlsx',
+  exhibitors: 'https://static.expoflow.co/template/Exhibitor_Company_Template.xlsx',
+  exhibitorMembers: 'https://static.expoflow.co/template/Exhibitor_Member_Template.xlsx',
+  inviteCodes: 'https://static.expoflow.co/template/Invite_Code_Template.xlsx',
+  registrations: 'https://static.expoflow.co/template/Registration_Template.xlsx',
+  staff: 'https://static.expoflow.co/template/Staff_Template.xlsx',
 }
 
 function ImportsContent() {
