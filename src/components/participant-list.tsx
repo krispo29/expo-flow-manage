@@ -802,8 +802,8 @@ export function ParticipantList({
 
       {/* Main Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="glass sm:max-w-5xl border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+        <DialogContent className="glass max-h-[calc(100dvh-1rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-5xl border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="shrink-0 p-4 pr-12 sm:p-8 bg-white/5 border-b border-white/10">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
                 {selectedParticipant ? <Pencil className="h-6 w-6 text-primary" /> : <Plus className="h-6 w-6 text-primary" />}
@@ -816,10 +816,10 @@ export function ParticipantList({
               </div>
             </div>
           </DialogHeader>
-          <form ref={formRef} onSubmit={handleSubmit} className="p-8">
+          <form ref={formRef} onSubmit={handleSubmit} className="min-h-0 flex flex-1 flex-col overflow-hidden">
             <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 px-1">
+            <div className="min-h-0 flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-8">
               <div className="space-y-2.5">
                 <Label htmlFor="attendee_type_code" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Profile Category</Label>
                 <Select name="attendee_type_code" value={attendeeType} onValueChange={setAttendeeType} required>
@@ -915,8 +915,8 @@ export function ParticipantList({
                 />
               </div>
             </div>
-            <DialogFooter className="mt-8 pt-8 border-t border-white/5 flex sm:flex-row gap-3">
-              <Button type="button" variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>Abort</Button>
+            <DialogFooter className="shrink-0 border-t border-white/5 bg-background/90 p-4 backdrop-blur sm:p-6 sm:px-8 flex sm:flex-row gap-3">
+              <Button type="button" variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={loading} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                 {selectedParticipant ? 'Save Changes' : 'Initialize Profile'}

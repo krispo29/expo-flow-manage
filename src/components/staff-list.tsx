@@ -616,8 +616,8 @@ export function StaffList({
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="glass sm:max-w-[540px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+        <DialogContent className="glass max-h-[calc(100dvh-1rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-[540px] border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="shrink-0 p-4 pr-12 sm:p-8 bg-white/5 border-b border-white/10">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
                 {selectedStaff ? <Pencil className="h-6 w-6 text-primary" /> : <Plus className="h-6 w-6 text-primary" />}
@@ -630,69 +630,71 @@ export function StaffList({
               </div>
             </div>
           </DialogHeader>
-          <form ref={formRef} onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="space-y-2.5">
-              <Label htmlFor="staff_type_code" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Staff Type <span className="text-red-500">*</span></Label>
-              <Select name="staff_type_code" value={staffType} onValueChange={setStaffType} required disabled={!!selectedStaff}>
-                <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="glass border-white/10">
-                  {staffTypes.length > 0 ? (
-                    staffTypes.map((t) => (
-                      <SelectItem key={t.type_code} value={t.type_code} className="text-xs font-bold uppercase">
-                        {t.type_name} ({t.type_code})
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <>
-                      <SelectItem value="ST" className="text-xs font-bold uppercase">Onsite (ST)</SelectItem>
-                      <SelectItem value="OR" className="text-xs font-bold uppercase">Organizer (OR)</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2.5 sm:col-span-2">
-                <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title <span className="text-red-500">*</span></Label>
-                <Select name="title" value={title} onValueChange={setTitle} required>
+          <form ref={formRef} onSubmit={handleSubmit} className="min-h-0 flex flex-1 flex-col overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-y-auto space-y-5 sm:space-y-6 p-4 sm:p-8">
+              <div className="space-y-2.5">
+                <Label htmlFor="staff_type_code" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Staff Type <span className="text-red-500">*</span></Label>
+                <Select name="staff_type_code" value={staffType} onValueChange={setStaffType} required disabled={!!selectedStaff}>
                   <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="glass border-white/10">
-                    {Array.from(new Set(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', title])).filter(Boolean).map(t => (
-                      <SelectItem key={t} value={t} className="text-xs font-bold">{t}</SelectItem>
-                    ))}
+                    {staffTypes.length > 0 ? (
+                      staffTypes.map((t) => (
+                        <SelectItem key={t.type_code} value={t.type_code} className="text-xs font-bold uppercase">
+                          {t.type_name} ({t.type_code})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="ST" className="text-xs font-bold uppercase">Onsite (ST)</SelectItem>
+                        <SelectItem value="OR" className="text-xs font-bold uppercase">Organizer (OR)</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2.5">
-                <Label htmlFor="first_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">First Name <span className="text-red-500">*</span></Label>
-                <Input id="first_name" name="first_name" defaultValue={selectedStaff?.first_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2.5 sm:col-span-2">
+                  <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title <span className="text-red-500">*</span></Label>
+                  <Select name="title" value={title} onValueChange={setTitle} required>
+                    <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10">
+                      {Array.from(new Set(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', title])).filter(Boolean).map(t => (
+                        <SelectItem key={t} value={t} className="text-xs font-bold">{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor="first_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">First Name <span className="text-red-500">*</span></Label>
+                  <Input id="first_name" name="first_name" defaultValue={selectedStaff?.first_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor="last_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Last Name <span className="text-red-500">*</span></Label>
+                  <Input id="last_name" name="last_name" defaultValue={selectedStaff?.last_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                </div>
               </div>
+
               <div className="space-y-2.5">
-                <Label htmlFor="last_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Last Name <span className="text-red-500">*</span></Label>
-                <Input id="last_name" name="last_name" defaultValue={selectedStaff?.last_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                <Label htmlFor="company_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name <span className="text-red-500">*</span></Label>
+                <Input id="company_name" name="company_name" defaultValue={selectedStaff?.company_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+              </div>
+
+              <div className="space-y-2.5">
+                <Label htmlFor="residence_country" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Residence Country <span className="text-red-500">*</span></Label>
+                <CountrySelector
+                  value={residenceCountry}
+                  onChange={setResidenceCountry}
+                  required
+                />
               </div>
             </div>
 
-            <div className="space-y-2.5">
-              <Label htmlFor="company_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name <span className="text-red-500">*</span></Label>
-              <Input id="company_name" name="company_name" defaultValue={selectedStaff?.company_name || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
-            </div>
-
-            <div className="space-y-2.5">
-              <Label htmlFor="residence_country" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Residence Country <span className="text-red-500">*</span></Label>
-              <CountrySelector
-                value={residenceCountry}
-                onChange={setResidenceCountry}
-                required
-              />
-            </div>
-
-            <DialogFooter className="mt-8 pt-8 border-t border-white/5 flex sm:flex-row gap-3">
+            <DialogFooter className="shrink-0 border-t border-white/5 bg-background/90 p-4 backdrop-blur sm:p-6 sm:px-8 flex sm:flex-row gap-3">
               <Button type="button" variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={loading} className="btn-aurora rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
