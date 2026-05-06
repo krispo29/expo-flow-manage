@@ -52,7 +52,7 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
     const template = [
       {
         EventUUID: '6109decb-d4e4-44e2-bb16-22eb0548e414',
-        Title: 'Mr',
+        Title: 'Mr.',
         FirstName: 'John',
         LastName: 'Doe',
         Email: 'john@example.com',
@@ -90,7 +90,7 @@ export function ParticipantExcelOperations({ projectId }: ParticipantImportProps
         // Transform data
         const transformedData = data.map((row: any) => ({
           event_uuid: row.EventUUID || '6109decb-d4e4-44e2-bb16-22eb0548e414',
-          title: row.Title || 'Mr',
+          title: row.Title || 'Mr.',
           title_other: row.TitleOther || '',
           first_name: row.FirstName,
           last_name: row.LastName,

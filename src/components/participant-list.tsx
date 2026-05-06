@@ -61,6 +61,7 @@ export function ParticipantList({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set())
 
   const copyToClipboard = async (text: string, id: string) => {
     if (!text) return
@@ -74,6 +75,53 @@ export function ParticipantList({
       console.error('Failed to copy participant code:', error)
       toast.error('Failed to copy code')
     }
+  }
+
+  const copySelectedCodes = async () => {
+    const codes = selectedParticipants.map(p => p.registration_code).filter(Boolean)
+
+    if (codes.length === 0) {
+      toast.error('Select at least one participant code')
+      return
+    }
+
+    try {
+      await copyTextToClipboard(codes.join('\n'))
+      toast.success(`Copied ${codes.length} participant code${codes.length === 1 ? '' : 's'}`)
+    } catch (error) {
+      console.error('Failed to copy selected participant codes:', error)
+      toast.error('Failed to copy selected codes')
+    }
+  }
+
+  const toggleParticipantSelection = (registrationUuid: string, checked: boolean | string) => {
+    setSelectedParticipantIds(prev => {
+      const next = new Set(prev)
+      if (checked === true) {
+        next.add(registrationUuid)
+      } else {
+        next.delete(registrationUuid)
+      }
+      return next
+    })
+  }
+
+  const toggleCurrentPageSelection = (checked: boolean | string) => {
+    setSelectedParticipantIds(prev => {
+      const next = new Set(prev)
+      currentPageParticipantIds.forEach(id => {
+        if (checked === true) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      })
+      return next
+    })
+  }
+
+  const clearSelection = () => {
+    setSelectedParticipantIds(new Set())
   }
   
 
@@ -92,7 +140,7 @@ export function ParticipantList({
   
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
-  const [title, setTitle] = useState('Mr')
+  const [title, setTitle] = useState('Mr.')
   const [residenceCountry, setResidenceCountry] = useState('VN')
   const [mobileCountryCode, setMobileCountryCode] = useState('VN')
   
@@ -205,6 +253,20 @@ export function ParticipantList({
   const startIndex = (currentPage - 1) * PAGE_SIZE
   const endIndex = startIndex + PAGE_SIZE
   const currentParticipants = filteredParticipants.slice(startIndex, endIndex)
+  const selectedParticipants = useMemo(
+    () => participants.filter(p => selectedParticipantIds.has(p.registration_uuid) && p.registration_code),
+    [participants, selectedParticipantIds]
+  )
+  const currentPageParticipantIds = currentParticipants
+    .filter(p => p.registration_code)
+    .map(p => p.registration_uuid)
+  const currentPageSelectedCount = currentPageParticipantIds.filter(id => selectedParticipantIds.has(id)).length
+  const currentPageSelectionState =
+    currentPageParticipantIds.length > 0 && currentPageSelectedCount === currentPageParticipantIds.length
+      ? true
+      : currentPageSelectedCount > 0
+        ? 'indeterminate'
+        : false
 
 
   function handleTypeFilter(type: string) {
@@ -234,7 +296,7 @@ export function ParticipantList({
   function openCreate() {
     setSelectedParticipant(null)
     setAttendeeType('VI')
-    setTitle('Mr')
+    setTitle('Mr.')
     setResidenceCountry('VN')
     setMobileCountryCode('VN')
     setIsDialogOpen(true)
@@ -248,7 +310,7 @@ export function ParticipantList({
     if (result.success && result.data) {
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
-      setTitle(result.data.title || 'Mr')
+      setTitle(result.data.title || 'Mr.')
       const resCountryRaw = result.data.residence_country || 'Thailand'
       const found = countries.find(c =>
         c.name.toLowerCase() === resCountryRaw.toLowerCase() ||
@@ -263,7 +325,7 @@ export function ParticipantList({
     } else {
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
-      setTitle(p.title || 'Mr')
+      setTitle(p.title || 'Mr.')
       setResidenceCountry('VN')
       setMobileCountryCode('VN')
     }
@@ -457,6 +519,55 @@ export function ParticipantList({
               </div>
             </div>
           </div>
+          <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="select-current-participants"
+                  checked={currentPageSelectionState}
+                  onCheckedChange={toggleCurrentPageSelection}
+                  aria-label="Select participants on this page"
+                  disabled={currentPageParticipantIds.length === 0}
+                />
+                <Label htmlFor="select-current-participants" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Select page
+                </Label>
+              </div>
+              <Badge variant="outline" className="border-white/10 bg-background/40 text-[10px] font-black uppercase tracking-widest">
+                {selectedParticipants.length} selected
+              </Badge>
+              {currentPageSelectedCount > 0 && (
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
+                  {currentPageSelectedCount}/{currentPageParticipantIds.length} on page
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedParticipants.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-xl bg-white/5 px-3 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500"
+                  onClick={clearSelection}
+                >
+                  <X className="mr-2 h-3.5 w-3.5" />
+                  Clear
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl border-white/10 bg-white/5 px-3 text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary"
+                onClick={() => void copySelectedCodes()}
+                disabled={selectedParticipants.length === 0}
+              >
+                <Copy className="mr-2 h-3.5 w-3.5" />
+                Copy Codes
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {showFilters && (
@@ -534,24 +645,32 @@ export function ParticipantList({
               currentParticipants.map((p, i) => (
                 <div key={p.registration_uuid || i} className="p-6 space-y-4 hover:bg-white/5 transition-colors">
                   <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-bold text-lg text-foreground line-clamp-1">{p.first_name} {p.last_name}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
-                        {p.registration_code && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 rounded-md hover:bg-white/10" 
-                            onClick={() => void copyToClipboard(p.registration_code, p.registration_uuid)}
-                          >
-                            {copiedId === p.registration_uuid ? (
-                              <Check className="h-3 w-3 text-emerald-500" />
-                            ) : (
-                              <Copy className="h-3 w-3 text-muted-foreground/60" />
-                            )}
-                          </Button>
-                        )}
+                    <div className="flex min-w-0 items-start gap-3">
+                      <Checkbox
+                        className="mt-1 shrink-0"
+                        checked={selectedParticipantIds.has(p.registration_uuid)}
+                        onCheckedChange={checked => toggleParticipantSelection(p.registration_uuid, checked)}
+                        aria-label={`Select participant code ${p.registration_code}`}
+                      />
+                      <div className="min-w-0 space-y-1">
+                        <p className="font-bold text-lg text-foreground line-clamp-1">{p.first_name} {p.last_name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">{p.registration_code}</code>
+                          {p.registration_code && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-md hover:bg-white/10"
+                              onClick={() => void copyToClipboard(p.registration_code, p.registration_uuid)}
+                            >
+                              {copiedId === p.registration_uuid ? (
+                                <Check className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3 w-3 text-muted-foreground/60" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.attendee_type_code}</Badge>
@@ -606,7 +725,15 @@ export function ParticipantList({
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest pl-6">Type</TableHead>
+                  <TableHead className="w-[52px] pl-6">
+                    <Checkbox
+                      checked={currentPageSelectionState}
+                      onCheckedChange={toggleCurrentPageSelection}
+                      aria-label="Select participants on this page"
+                      disabled={currentPageParticipantIds.length === 0}
+                    />
+                  </TableHead>
+                  <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
                   <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Participant Information</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company / Org</TableHead>
@@ -615,7 +742,8 @@ export function ParticipantList({
                 </TableRow>
                 {showFilters && (
                   <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
-                    <TableHead className="pl-6 py-2">
+                    <TableHead className="pl-6 py-2" />
+                    <TableHead className="py-2">
                       <Select value={columnFilters.type} onValueChange={v => handleColumnFilterChange('type', v)}>
                         <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-lg text-xs">
                           <SelectValue placeholder="Type" />
@@ -684,7 +812,7 @@ export function ParticipantList({
               <TableBody>
                 {currentParticipants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={7} className="text-center py-24 italic text-muted-foreground font-medium">
                       No participants found matching your matrix.
                     </TableCell>
                   </TableRow>
@@ -692,6 +820,13 @@ export function ParticipantList({
                   currentParticipants.map((p, i) => (
                     <TableRow key={p.registration_uuid || i} className="border-white/5 hover:bg-white/5 transition-colors group">
                       <TableCell className="pl-6">
+                        <Checkbox
+                          checked={selectedParticipantIds.has(p.registration_uuid)}
+                          onCheckedChange={checked => toggleParticipantSelection(p.registration_uuid, checked)}
+                          aria-label={`Select participant code ${p.registration_code}`}
+                        />
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.attendee_type_code}</Badge>
                       </TableCell>
                       <TableCell>
@@ -844,7 +979,7 @@ export function ParticipantList({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="glass border-white/10">
-                    {Array.from(new Set(['Mr', 'Mr.', 'Mrs', 'Mrs.', 'Ms', 'Ms.', 'Dr', 'Dr.', 'Prof', 'Prof.', title])).filter(Boolean).map(t => (
+                    {Array.from(new Set(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', title])).filter(Boolean).map(t => (
                       <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>

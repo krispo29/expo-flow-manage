@@ -318,7 +318,21 @@ export async function searchParticipantsByCodes(projectId: string, codes: string
     })
 
     const participants = response.data.data as Participant[]
-    const foundParticipants = participants.filter(p => codes.includes(p.registration_code))
+    const participantsByCode = new Map(
+      participants
+        .filter(p => p.registration_code)
+        .map(p => [p.registration_code.toLowerCase(), p])
+    )
+    const seenCodes = new Set<string>()
+    const foundParticipants = codes
+      .map(code => code.trim().toLowerCase())
+      .filter(code => {
+        if (!code || seenCodes.has(code)) return false
+        seenCodes.add(code)
+        return true
+      })
+      .map(code => participantsByCode.get(code))
+      .filter((participant): participant is Participant => Boolean(participant))
 
     return { success: true, data: foundParticipants }
   } catch (error: unknown) {

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Printer, Loader2, Search, UserCheck, ZoomIn, ZoomOut, Trash2, Cpu, Ticket } from "lucide-react"
-import { useState, Suspense } from "react"
+import { useMemo, useState, Suspense } from "react"
 import { searchParticipantsByCodes, printParticipantBadgesBulk, Participant as RealParticipant } from "@/app/actions/participant"
 import { toast } from "sonner"
 import { BadgePrint } from "@/components/badge-print"
@@ -14,6 +14,22 @@ import { useSearchParams } from "next/navigation"
 import { printBadges } from "@/utils/print-badge"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
+
+function parseParticipantCodes(value: string) {
+  const seen = new Set<string>()
+
+  return value
+    .split(/[\s,;]+/)
+    .map(code => code.trim())
+    .filter(Boolean)
+    .filter(code => {
+      const normalized = code.toUpperCase()
+      if (normalized === "CODE" || normalized === "REGISTRATION_CODE") return false
+      if (seen.has(normalized)) return false
+      seen.add(normalized)
+      return true
+    })
+}
 
 function UtilitiesContent() {
   const searchParams = useSearchParams()
@@ -27,6 +43,7 @@ function UtilitiesContent() {
   const [resultSearch, setResultSearch] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false)
+  const parsedPrintCodes = useMemo(() => parseParticipantCodes(printSearch), [printSearch])
 
   function handleRemoveParticipant(id: string) {
     setParticipants(prev => prev.filter(p => p.registration_uuid !== id))
@@ -47,18 +64,27 @@ function UtilitiesContent() {
     setSelectedIds(new Set())
     
     try {
-      const codes = printSearch.split(/[\n,]/).map(c => c.trim()).filter(Boolean)
+      const codes = parsedPrintCodes
+      if (codes.length === 0) {
+        toast.error("No participant codes found")
+        return
+      }
+
       const result = await searchParticipantsByCodes(projectId, codes)
       
       if (result.success && result.data) {
         const foundParticipants = result.data as RealParticipant[]
+        const missingCount = Math.max(codes.length - foundParticipants.length, 0)
         setParticipants(foundParticipants)
         if (foundParticipants.length > 0) {
           setSelectedParticipantId(foundParticipants[0].registration_uuid)
           setSelectedIds(new Set(foundParticipants.map(p => p.registration_uuid)))
-          toast.success(`Found ${foundParticipants.length} participant(s)`)
+          toast.success(`Found ${foundParticipants.length} of ${codes.length} participant code(s)`)
+          if (missingCount > 0) {
+            toast.warning(`${missingCount} code(s) were not found`)
+          }
         } else {
-          toast.error("No participants found")
+          toast.error(`No participants found from ${codes.length} code(s)`)
         }
       } else {
         toast.error(result.error || "Search failed")
@@ -153,6 +179,11 @@ function UtilitiesContent() {
                                 onChange={(e) => setPrintSearch(e.target.value)}
                                 className="min-h-[120px] font-mono text-sm bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all focus-visible:ring-primary/30"
                             />
+                            {parsedPrintCodes.length > 0 && (
+                                <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">
+                                    {parsedPrintCodes.length} unique code{parsedPrintCodes.length === 1 ? "" : "s"} ready
+                                </p>
+                            )}
                         </div>
                         <Button 
                             type="button" 
@@ -384,18 +415,7 @@ function UtilitiesContent() {
                                                     </div>
                                                 </Button>
                                                 
-                                                <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
-                                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] opacity-40 px-1 mb-3">
-                                                        <span className="flex items-center gap-2"><Cpu className="size-3" /> Matrix Workload</span>
-                                                        <span>{Math.round((selectedIds.size / Math.max(participants.length, 1)) * 100)}%</span>
-                                                    </div>
-                                                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className="h-full bg-primary transition-all duration-1000 ease-out shadow-glow-sm"
-                                                            style={{ width: `${(selectedIds.size / Math.max(participants.length, 1)) * 100}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                             
                                             </div>
                                         </div>
                                     </div>
