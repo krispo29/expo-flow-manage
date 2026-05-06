@@ -1,5 +1,7 @@
 // utils/print-badge.ts
 
+import { getAttendeeTypeLabel } from "@/lib/attendee-types"
+
 export interface PrintBadgeData {
   firstName: string
   lastName: string
@@ -25,7 +27,7 @@ function escapeHtml(value: string) {
 }
 
 function getBadgeType(data: PrintBadgeData) {
-  return data.badgeType || data.category || "VISITOR"
+  return getAttendeeTypeLabel(data.badgeType || data.category) || "VISITOR"
 }
 
 function getQrCodeUrl(registrationCode: string) {
@@ -214,7 +216,6 @@ const getBadgeStyles = () => `
     letter-spacing: 2px;
     line-height: 1;
     text-align: center;
-    text-transform: uppercase;
     transform: translateY(0.45cm);
   }
 

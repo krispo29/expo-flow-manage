@@ -15,7 +15,7 @@ import { printBadges } from "@/utils/print-badge"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 
-function parseParticipantCodes(value: string) {
+function parseParticipantSearchTerms(value: string) {
   const seen = new Set<string>()
 
   return value
@@ -24,7 +24,7 @@ function parseParticipantCodes(value: string) {
     .filter(Boolean)
     .filter(code => {
       const normalized = code.toUpperCase()
-      if (normalized === "CODE" || normalized === "REGISTRATION_CODE") return false
+      if (normalized === "CODE" || normalized === "KEYWORD" || normalized === "REGISTRATION_CODE") return false
       if (seen.has(normalized)) return false
       seen.add(normalized)
       return true
@@ -43,7 +43,7 @@ function UtilitiesContent() {
   const [resultSearch, setResultSearch] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false)
-  const parsedPrintCodes = useMemo(() => parseParticipantCodes(printSearch), [printSearch])
+  const parsedSearchTerms = useMemo(() => parseParticipantSearchTerms(printSearch), [printSearch])
 
   function handleRemoveParticipant(id: string) {
     setParticipants(prev => prev.filter(p => p.registration_uuid !== id))
@@ -64,27 +64,23 @@ function UtilitiesContent() {
     setSelectedIds(new Set())
     
     try {
-      const codes = parsedPrintCodes
-      if (codes.length === 0) {
-        toast.error("No participant codes found")
+      const keywords = parsedSearchTerms
+      if (keywords.length === 0) {
+        toast.error("No participant search terms found")
         return
       }
 
-      const result = await searchParticipantsByCodes(projectId, codes)
+      const result = await searchParticipantsByCodes(projectId, keywords)
       
       if (result.success && result.data) {
         const foundParticipants = result.data as RealParticipant[]
-        const missingCount = Math.max(codes.length - foundParticipants.length, 0)
         setParticipants(foundParticipants)
         if (foundParticipants.length > 0) {
           setSelectedParticipantId(foundParticipants[0].registration_uuid)
           setSelectedIds(new Set(foundParticipants.map(p => p.registration_uuid)))
-          toast.success(`Found ${foundParticipants.length} of ${codes.length} participant code(s)`)
-          if (missingCount > 0) {
-            toast.warning(`${missingCount} code(s) were not found`)
-          }
+          toast.success(`Found ${foundParticipants.length} participant(s) from ${keywords.length} search term(s)`)
         } else {
-          toast.error(`No participants found from ${codes.length} code(s)`)
+          toast.error(`No participants found from ${keywords.length} search term(s)`)
         }
       } else {
         toast.error(result.error || "Search failed")
@@ -172,16 +168,16 @@ function UtilitiesContent() {
                 <div className="p-8 space-y-8">
                     <div className="flex flex-col md:flex-row gap-6 items-end">
                         <div className="flex-1 space-y-2.5 w-full">
-                            <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Participant Code(s)</Label>
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Participant Code(s) or Keyword(s)</Label>
                             <Textarea 
-                                placeholder="Enter Code(s) separated by comma or new line" 
+                                placeholder="Enter code(s), name, company, or keyword separated by comma or new line" 
                                 value={printSearch}
                                 onChange={(e) => setPrintSearch(e.target.value)}
                                 className="min-h-[120px] font-mono text-sm bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all focus-visible:ring-primary/30"
                             />
-                            {parsedPrintCodes.length > 0 && (
+                            {parsedSearchTerms.length > 0 && (
                                 <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">
-                                    {parsedPrintCodes.length} unique code{parsedPrintCodes.length === 1 ? "" : "s"} ready
+                                    {parsedSearchTerms.length} unique search term{parsedSearchTerms.length === 1 ? "" : "s"} ready
                                 </p>
                             )}
                         </div>

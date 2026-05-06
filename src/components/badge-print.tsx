@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Participant, ParticipantDetail } from '@/app/actions/participant'
+import { getAttendeeTypeLabel } from '@/lib/attendee-types'
 import { QRCodeSVG } from 'qrcode.react'
 
 interface BadgePrintProps {
@@ -31,10 +32,10 @@ function calculateFitFontSizePt(element: HTMLElement) {
 }
 
 export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
-  const p = participant as ParticipantDetail
+  const p = participant as ParticipantDetail & { attendee_type_name?: string }
   const nameRef = useRef<HTMLDivElement>(null)
   const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ').trim()
-  const badgeType = p.attendee_type_code || 'VISITOR'
+  const badgeType = p.attendee_type_name || getAttendeeTypeLabel(p.attendee_type_code) || 'VISITOR'
   const position = p.job_position || ''
   const country = p.residence_country || 'THAILAND'
   const registrationCode = p.registration_code || p.registration_uuid
@@ -247,7 +248,6 @@ export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
           letter-spacing: 2px;
           line-height: 1;
           text-align: center;
-          text-transform: uppercase;
           transform: translateY(0.45cm);
         }
 

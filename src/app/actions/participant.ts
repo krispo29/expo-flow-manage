@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { requireProjectContext } from '@/lib/authorization'
 import { getUserRole } from '@/app/actions/auth'
 import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
+import { getAttendeeTypeLabel } from '@/lib/attendee-types'
 
 export async function printParticipantBadge(projectId: string, registrationUuid: string) {
   try {
@@ -82,6 +83,92 @@ export interface ParticipantDetail extends Participant {
   exhibitor_uuid: string
   email_sent_at: string
   company_tel: string
+}
+
+interface ParticipantSearchItem {
+  registration_uuid?: string
+  registration_code?: string
+  full_name?: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  company_name?: string
+  job_position?: string
+  country?: string
+  residence_country?: string
+  attendee_type?: string
+  attendee_type_code?: string
+  attendee_type_name?: string
+  is_staff?: boolean
+  registered_at?: string
+  is_active?: boolean
+  conference_count?: number
+  is_email_sent?: boolean
+  title?: string
+}
+
+interface ParticipantSearchResponse {
+  code?: number
+  data?: ParticipantSearchItem[] | { items?: ParticipantSearchItem[] }
+  message?: string
+}
+
+function getParticipantSearchItems(responseData: unknown): ParticipantSearchItem[] {
+  const result = responseData as ParticipantSearchResponse
+
+  if (Array.isArray(result.data)) {
+    return result.data
+  }
+
+  if (result.data && typeof result.data === 'object' && Array.isArray(result.data.items)) {
+    return result.data.items
+  }
+
+  return []
+}
+
+function splitFullName(fullName?: string) {
+  const parts = (fullName || '').trim().split(/\s+/).filter(Boolean)
+
+  if (parts.length === 0) {
+    return { firstName: '', lastName: '' }
+  }
+
+  const [firstName, ...lastNameParts] = parts
+  return { firstName, lastName: lastNameParts.join(' ') }
+}
+
+function normalizeParticipantSearchItem(item: ParticipantSearchItem): Participant & {
+  country?: string
+  full_name?: string
+  is_staff?: boolean
+  residence_country?: string
+  attendee_type_name?: string
+} {
+  const { firstName, lastName } = splitFullName(item.full_name)
+  const country = item.residence_country || item.country || ''
+  const attendeeTypeCode = item.attendee_type_code || item.attendee_type || ''
+
+  return {
+    registration_uuid: item.registration_uuid || '',
+    registration_code: item.registration_code || '',
+    first_name: item.first_name || firstName,
+    last_name: item.last_name || lastName,
+    email: item.email || '',
+    company_name: item.company_name || '',
+    job_position: item.job_position || '',
+    attendee_type_code: attendeeTypeCode,
+    registered_at: item.registered_at || '',
+    is_active: item.is_active ?? true,
+    conference_count: item.conference_count || 0,
+    is_email_sent: item.is_email_sent ?? false,
+    title: item.title,
+    country,
+    full_name: item.full_name,
+    is_staff: item.is_staff,
+    residence_country: country,
+    attendee_type_name: item.attendee_type_name || getAttendeeTypeLabel(attendeeTypeCode),
+  }
 }
 
 export async function getParticipants(projectId: string, query?: string, type?: string) {
@@ -313,26 +400,37 @@ export async function processScannerData(formData: FormData) {
 export async function searchParticipantsByCodes(projectId: string, codes: string[]) {
   try {
     const headers = await getAuthHeaders(projectId)
-    const response = await api.get('/v1/admin/project/participants', {
-      headers
-    })
-
-    const participants = response.data.data as Participant[]
-    const participantsByCode = new Map(
-      participants
-        .filter(p => p.registration_code)
-        .map(p => [p.registration_code.toLowerCase(), p])
+    const uniqueKeywords = Array.from(
+      new Set(codes.map(code => code.trim()).filter(Boolean))
     )
-    const seenCodes = new Set<string>()
-    const foundParticipants = codes
-      .map(code => code.trim().toLowerCase())
-      .filter(code => {
-        if (!code || seenCodes.has(code)) return false
-        seenCodes.add(code)
+
+    const searchResults = await Promise.all(
+      uniqueKeywords.map(async keyword => {
+        const params = new URLSearchParams({ keyword })
+        const response = await api.get(`/v1/admin/project/participants/search?${params.toString()}`, {
+          headers
+        })
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Participant search raw response:', {
+            keyword,
+            response: response.data,
+          })
+        }
+
+        return getParticipantSearchItems(response.data).map(normalizeParticipantSearchItem)
+      })
+    )
+
+    const seenParticipants = new Set<string>()
+    const foundParticipants = searchResults
+      .flat()
+      .filter(participant => {
+        const participantKey = participant.registration_uuid || participant.registration_code
+        if (!participantKey || seenParticipants.has(participantKey)) return false
+        seenParticipants.add(participantKey)
         return true
       })
-      .map(code => participantsByCode.get(code))
-      .filter((participant): participant is Participant => Boolean(participant))
 
     return { success: true, data: foundParticipants }
   } catch (error: unknown) {
