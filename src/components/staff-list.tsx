@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   Table,
@@ -11,6 +11,7 @@ import {
   TableRow
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -28,7 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Building2, ShieldCheck, Power, Filter, X } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Building2, ShieldCheck, Power, Filter, X, Copy, Check } from 'lucide-react'
 import {
   createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes
 } from '@/app/actions/staff'
@@ -39,6 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { CountrySelector } from "./CountrySelector"
+import { copyTextToClipboard } from '@/lib/clipboard'
 
 export interface Staff {
   staff_uuid: string
@@ -79,6 +81,8 @@ export function StaffList({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null)
+  const [copiedStaffId, setCopiedStaffId] = useState<string | null>(null)
+  const [selectedStaffIds, setSelectedStaffIds] = useState<Set<string>>(new Set())
 
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -110,6 +114,66 @@ export function StaffList({
     })
   }, [projectId])
 
+  const copyStaffCode = async (text: string, id: string) => {
+    if (!text) return
+
+    try {
+      await copyTextToClipboard(text)
+      setCopiedStaffId(id)
+      toast.success('Code copied to clipboard')
+      setTimeout(() => setCopiedStaffId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy staff code:', error)
+      toast.error('Failed to copy code')
+    }
+  }
+
+  const copySelectedCodes = async () => {
+    const codes = selectedStaffMembers.map(staff => staff.staff_code).filter(Boolean)
+
+    if (codes.length === 0) {
+      toast.error('Select at least one staff code')
+      return
+    }
+
+    try {
+      await copyTextToClipboard(codes.join('\n'))
+      toast.success(`Copied ${codes.length} staff code${codes.length === 1 ? '' : 's'}`)
+    } catch (error) {
+      console.error('Failed to copy selected staff codes:', error)
+      toast.error('Failed to copy selected codes')
+    }
+  }
+
+  const toggleStaffSelection = (staffUuid: string, checked: boolean | string) => {
+    setSelectedStaffIds(prev => {
+      const next = new Set(prev)
+      if (checked === true) {
+        next.add(staffUuid)
+      } else {
+        next.delete(staffUuid)
+      }
+      return next
+    })
+  }
+
+  const toggleCurrentPageSelection = (checked: boolean | string) => {
+    setSelectedStaffIds(prev => {
+      const next = new Set(prev)
+      currentPageStaffIds.forEach(id => {
+        if (checked === true) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      })
+      return next
+    })
+  }
+
+  const clearSelection = () => {
+    setSelectedStaffIds(new Set())
+  }
 
   const onPrintClick = async (p: Staff) => {
     toast.promise(printProjectStaffBadge(projectId, p.staff_uuid), {
@@ -241,7 +305,7 @@ export function StaffList({
   }
 
   // Filter staff based on column filters
-  const filteredStaff = initialData.items.filter(staff => {
+  const filteredStaff = useMemo(() => initialData.items.filter(staff => {
     const matchesCode = !columnFilters.staffCode ||
       (staff.staff_code && staff.staff_code.toLowerCase().includes(columnFilters.staffCode.toLowerCase()))
 
@@ -261,7 +325,21 @@ export function StaffList({
       (columnFilters.isActive === 'inactive' && !staff.is_active)
 
     return matchesCode && matchesType && matchesName && matchesCompany && matchesStatus
-  })
+  }), [initialData.items, columnFilters])
+  const selectedStaffMembers = useMemo(
+    () => initialData.items.filter(staff => selectedStaffIds.has(staff.staff_uuid) && staff.staff_code),
+    [initialData.items, selectedStaffIds]
+  )
+  const currentPageStaffIds = filteredStaff
+    .filter(staff => staff.staff_code)
+    .map(staff => staff.staff_uuid)
+  const currentPageSelectedCount = currentPageStaffIds.filter(id => selectedStaffIds.has(id)).length
+  const currentPageSelectionState =
+    currentPageStaffIds.length > 0 && currentPageSelectedCount === currentPageStaffIds.length
+      ? true
+      : currentPageSelectedCount > 0
+        ? 'indeterminate'
+        : false
 
   const handleColumnFilterChange = (key: string, value: string) => {
     setColumnFilters(prev => ({ ...prev, [key]: value }))
@@ -323,6 +401,55 @@ export function StaffList({
               <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 Add Staff
+              </Button>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="select-current-staff"
+                  checked={currentPageSelectionState}
+                  onCheckedChange={toggleCurrentPageSelection}
+                  aria-label="Select staff on this page"
+                  disabled={currentPageStaffIds.length === 0}
+                />
+                <Label htmlFor="select-current-staff" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Select page
+                </Label>
+              </div>
+              <Badge variant="outline" className="border-white/10 bg-background/40 text-[10px] font-black uppercase tracking-widest">
+                {selectedStaffMembers.length} selected
+              </Badge>
+              {currentPageSelectedCount > 0 && (
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
+                  {currentPageSelectedCount}/{currentPageStaffIds.length} on page
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedStaffMembers.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-xl bg-white/5 px-3 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500"
+                  onClick={clearSelection}
+                >
+                  <X className="mr-2 h-3.5 w-3.5" />
+                  Clear
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl border-white/10 bg-white/5 px-3 text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary"
+                onClick={() => void copySelectedCodes()}
+                disabled={selectedStaffMembers.length === 0}
+              >
+                <Copy className="mr-2 h-3.5 w-3.5" />
+                Copy Codes
               </Button>
             </div>
           </div>
@@ -394,13 +521,35 @@ export function StaffList({
               filteredStaff.map((p) => (
                 <div key={p.staff_uuid} className="p-6 space-y-4 hover:bg-white/5 transition-colors group">
                   <div className="flex justify-between items-start">
-                    <div className="space-y-1.5">
-                      <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
-                        {p.title} {p.first_name} {p.last_name}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <code className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
-                        <Badge variant="secondary" className="bg-white/5 border-white/5 text-[9px] font-bold py-0">{p.staff_type_code}</Badge>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <Checkbox
+                        className="mt-1 shrink-0"
+                        checked={selectedStaffIds.has(p.staff_uuid)}
+                        onCheckedChange={checked => toggleStaffSelection(p.staff_uuid, checked)}
+                        aria-label={`Select staff code ${p.staff_code}`}
+                      />
+                      <div className="min-w-0 space-y-1.5">
+                        <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
+                          {p.title} {p.first_name} {p.last_name}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <code className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
+                          {p.staff_code && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-md hover:bg-white/10"
+                              onClick={() => void copyStaffCode(p.staff_code, p.staff_uuid)}
+                            >
+                              {copiedStaffId === p.staff_uuid ? (
+                                <Check className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3 w-3 text-muted-foreground/60" />
+                              )}
+                            </Button>
+                          )}
+                          <Badge variant="secondary" className="bg-white/5 border-white/5 text-[9px] font-bold py-0">{p.staff_type_code}</Badge>
+                        </div>
                       </div>
                     </div>
                     <Badge className={cn("rounded-full px-3 text-[10px] font-bold", p.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
@@ -446,7 +595,15 @@ export function StaffList({
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest pl-6">Code</TableHead>
+                  <TableHead className="w-[52px] pl-6">
+                    <Checkbox
+                      checked={currentPageSelectionState}
+                      onCheckedChange={toggleCurrentPageSelection}
+                      aria-label="Select staff on this page"
+                      disabled={currentPageStaffIds.length === 0}
+                    />
+                  </TableHead>
+                  <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
                   <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-widest">Type</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Name</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company</TableHead>
@@ -456,7 +613,8 @@ export function StaffList({
                 </TableRow>
                 {showFilters && (
                   <TableRow className="hover:bg-transparent border-white/5 bg-primary/5 animate-in fade-in duration-500">
-                    <TableHead className="pl-6 py-2">
+                    <TableHead className="pl-6 py-2" />
+                    <TableHead className="py-2">
                       <Input
                         placeholder="Filter code..."
                         className="h-9 bg-white/5 border-white/10 rounded-lg text-xs"
@@ -517,7 +675,7 @@ export function StaffList({
               <TableBody>
                 {filteredStaff.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={8} className="text-center py-24 italic text-muted-foreground font-medium">
                       No staff members found.
                     </TableCell>
                   </TableRow>
@@ -525,7 +683,30 @@ export function StaffList({
                   filteredStaff.map((p) => (
                     <TableRow key={p.staff_uuid} className="border-white/5 hover:bg-white/5 transition-colors group">
                       <TableCell className="pl-6">
-                        <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
+                        <Checkbox
+                          checked={selectedStaffIds.has(p.staff_uuid)}
+                          onCheckedChange={checked => toggleStaffSelection(p.staff_uuid, checked)}
+                          aria-label={`Select staff code ${p.staff_code}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
+                          {p.staff_code && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 rounded-full hover:bg-primary/10 group/copy"
+                              onClick={() => void copyStaffCode(p.staff_code, p.staff_uuid)}
+                            >
+                              {copiedStaffId === p.staff_uuid ? (
+                                <Check className="h-3.5 w-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5 text-muted-foreground/40 group-hover/copy:text-primary transition-colors" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.staff_type_code}</Badge>
