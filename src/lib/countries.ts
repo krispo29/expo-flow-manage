@@ -258,6 +258,12 @@ const countryValueAliases: Record<string, string> = {
 };
 
 const normalizeCountryValue = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
+const normalizePhoneCodeValue = (value: string) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return '';
+
+  return trimmedValue.startsWith('+') ? trimmedValue : `+${trimmedValue}`;
+};
 
 export const getCountryByCode = (code: string) => countries.find(c => c.code === code);
 
@@ -274,6 +280,18 @@ export const findCountryByCodeOrName = (value?: string | null) => {
     country.code.toLowerCase() === normalizedValue ||
     normalizeCountryValue(country.name) === normalizedValue
   );
+};
+
+export const findCountryByPhoneCodeOrValue = (value?: string | null) => {
+  if (!value) return undefined;
+
+  const country = findCountryByCodeOrName(value);
+  if (country) return country;
+
+  const normalizedPhoneCode = normalizePhoneCodeValue(value);
+  if (!normalizedPhoneCode) return undefined;
+
+  return countries.find((countryItem) => countryItem.phoneCode === normalizedPhoneCode);
 };
 
 export const getCountryNameFromValue = (
@@ -300,6 +318,16 @@ export const getCountryCodeFromValue = (
   if (trimmedValue && trimmedValue.length === 2) {
     return trimmedValue.toUpperCase();
   }
+
+  return getCountryByCode(fallbackCode)?.code || fallbackCode;
+};
+
+export const getCountryCodeFromPhoneCodeOrValue = (
+  value?: string | null,
+  fallbackCode = 'TH'
+) => {
+  const country = findCountryByPhoneCodeOrValue(value);
+  if (country) return country.code;
 
   return getCountryByCode(fallbackCode)?.code || fallbackCode;
 };

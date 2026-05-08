@@ -1,7 +1,9 @@
 import {
   countries,
+  findCountryByPhoneCodeOrValue,
   findCountryByCodeOrName,
   getCountryByCode,
+  getCountryCodeFromPhoneCodeOrValue,
   getCountryCodeFromValue,
   getCountryNameFromValue,
 } from '@/lib/countries'
@@ -128,6 +130,15 @@ describe('country value helpers', () => {
     expect(findCountryByCodeOrName('Korea')?.code).toBe('KR')
     expect(getCountryCodeFromValue('Korea')).toBe('KR')
     expect(getCountryNameFromValue('Korea')).toBe('South Korea')
+  })
+
+  it('should resolve phone country codes from API variants', () => {
+    expect(findCountryByPhoneCodeOrValue('82')?.code).toBe('KR')
+    expect(findCountryByPhoneCodeOrValue('+82')?.code).toBe('KR')
+    expect(findCountryByPhoneCodeOrValue('KR')?.phoneCode).toBe('+82')
+    expect(findCountryByPhoneCodeOrValue('Korea')?.phoneCode).toBe('+82')
+    expect(getCountryCodeFromPhoneCodeOrValue('Korea')).toBe('KR')
+    expect(getCountryCodeFromPhoneCodeOrValue('', 'KR')).toBe('KR')
   })
 
   it('should resolve country names from codes', () => {

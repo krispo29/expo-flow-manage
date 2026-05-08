@@ -39,7 +39,7 @@ import {
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
-import { countries, getCountryCodeFromValue } from '@/lib/countries'
+import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue } from '@/lib/countries'
 import { printBadge } from '@/utils/print-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -311,12 +311,12 @@ export function ParticipantList({
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
       setTitle(result.data.title || 'Mr.')
-      setResidenceCountry(getCountryCodeFromValue(result.data.residence_country, 'VN'))
+      const residenceCountryCode = getCountryCodeFromValue(result.data.residence_country, 'VN')
+      setResidenceCountry(residenceCountryCode)
 
-      const mccRaw = result.data.mobile_country_code || '84'
-      const mccClean = mccRaw.startsWith('+') ? mccRaw : `+${mccRaw}`
-      const foundMcc = countries.find(c => c.phoneCode === mccClean || c.phoneCode === mccRaw)
-      setMobileCountryCode(foundMcc ? foundMcc.code : 'VN')
+      setMobileCountryCode(
+        getCountryCodeFromPhoneCodeOrValue(result.data.mobile_country_code, residenceCountryCode)
+      )
     } else {
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
