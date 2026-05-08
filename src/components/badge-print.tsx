@@ -32,10 +32,10 @@ function calculateFitFontSizePt(element: HTMLElement) {
 }
 
 export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
-  const p = participant as ParticipantDetail & { attendee_type_name?: string }
+  const p = participant as ParticipantDetail & { attendee_type_name?: string; badge_name?: string }
   const nameRef = useRef<HTMLDivElement>(null)
   const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ').trim()
-  const badgeType = p.attendee_type_name || getAttendeeTypeLabel(p.attendee_type_code) || 'VISITOR'
+  const badgeType = p.badge_name || p.attendee_type_name || getAttendeeTypeLabel(p.attendee_type_code) || 'VISITOR'
   const position = p.job_position || ''
   const country = p.residence_country || 'THAILAND'
   const registrationCode = p.registration_code || p.registration_uuid

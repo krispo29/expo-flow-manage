@@ -39,7 +39,7 @@ import {
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
-import { countries } from '@/lib/countries'
+import { countries, getCountryCodeFromValue } from '@/lib/countries'
 import { printBadge } from '@/utils/print-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -311,12 +311,7 @@ export function ParticipantList({
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
       setTitle(result.data.title || 'Mr.')
-      const resCountryRaw = result.data.residence_country || 'Thailand'
-      const found = countries.find(c =>
-        c.name.toLowerCase() === resCountryRaw.toLowerCase() ||
-        c.code.toLowerCase() === resCountryRaw.toLowerCase()
-      )
-      setResidenceCountry(found ? found.code : 'VN')
+      setResidenceCountry(getCountryCodeFromValue(result.data.residence_country, 'VN'))
 
       const mccRaw = result.data.mobile_country_code || '84'
       const mccClean = mccRaw.startsWith('+') ? mccRaw : `+${mccRaw}`

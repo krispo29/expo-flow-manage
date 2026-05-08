@@ -114,7 +114,12 @@ function UtilitiesContent() {
         toast.success(`Successfully submitted ${codes.length} badge(s) to print queue`)
         
         const badgeData = selectedParticipants.map(p => {
-          const participantFull = p as any
+          const participantFull = p as RealParticipant & {
+            attendee_type_name?: string
+            badge_name?: string
+            residence_country?: string
+          }
+
           return {
             firstName: p.first_name || '',
             lastName: p.last_name || '',
@@ -122,6 +127,7 @@ function UtilitiesContent() {
             country: participantFull.residence_country || 'THAILAND',
             registrationCode: p.registration_code,
             category: p.attendee_type_code || 'VISITOR',
+            badgeType: participantFull.badge_name || participantFull.attendee_type_name || p.attendee_type_code || 'VISITOR',
             position: p.job_position || '',
           }
         })

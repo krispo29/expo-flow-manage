@@ -124,6 +124,12 @@ describe('country value helpers', () => {
     expect(findCountryByCodeOrName('vietnam')?.code).toBe('VN')
   })
 
+  it('should resolve API country aliases', () => {
+    expect(findCountryByCodeOrName('Korea')?.code).toBe('KR')
+    expect(getCountryCodeFromValue('Korea')).toBe('KR')
+    expect(getCountryNameFromValue('Korea')).toBe('South Korea')
+  })
+
   it('should resolve country names from codes', () => {
     expect(getCountryNameFromValue('TH')).toBe('Thailand')
     expect(getCountryNameFromValue('Thailand')).toBe('Thailand')

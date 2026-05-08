@@ -61,6 +61,7 @@ export interface Participant {
   conference_count: number
   is_email_sent: boolean
   title?: string
+  badge_name?: string
 }
 
 export interface ParticipantDetail extends Participant {
@@ -99,6 +100,7 @@ interface ParticipantSearchItem {
   attendee_type?: string
   attendee_type_code?: string
   attendee_type_name?: string
+  badge_name?: string
   is_staff?: boolean
   registered_at?: string
   is_active?: boolean
@@ -144,6 +146,7 @@ function normalizeParticipantSearchItem(item: ParticipantSearchItem): Participan
   is_staff?: boolean
   residence_country?: string
   attendee_type_name?: string
+  badge_name?: string
 } {
   const { firstName, lastName } = splitFullName(item.full_name)
   const country = item.residence_country || item.country || ''
@@ -168,6 +171,7 @@ function normalizeParticipantSearchItem(item: ParticipantSearchItem): Participan
     is_staff: item.is_staff,
     residence_country: country,
     attendee_type_name: item.attendee_type_name || getAttendeeTypeLabel(attendeeTypeCode),
+    badge_name: item.badge_name,
   }
 }
 

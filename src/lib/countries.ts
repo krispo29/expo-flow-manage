@@ -248,17 +248,31 @@ export const countries: Country[] = [
   { code: 'NF', name: 'Norfolk Island', phoneCode: '+672', flag: '🇳🇫', nationality: 'Norfolk Islander' },
   { code: 'RE', name: 'Reunion', phoneCode: '+262', flag: '🇷🇪', nationality: 'Réunionnais' },
 ];
+
+const countryValueAliases: Record<string, string> = {
+  korea: 'KR',
+  'korea, republic of': 'KR',
+  'republic of korea': 'KR',
+  'south korea': 'KR',
+  'viet nam': 'VN',
+};
+
+const normalizeCountryValue = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
+
 export const getCountryByCode = (code: string) => countries.find(c => c.code === code);
 
 export const findCountryByCodeOrName = (value?: string | null) => {
   if (!value) return undefined;
 
-  const normalizedValue = value.trim().toLowerCase();
+  const normalizedValue = normalizeCountryValue(value);
   if (!normalizedValue) return undefined;
+
+  const aliasCode = countryValueAliases[normalizedValue];
+  if (aliasCode) return getCountryByCode(aliasCode);
 
   return countries.find((country) =>
     country.code.toLowerCase() === normalizedValue ||
-    country.name.toLowerCase() === normalizedValue
+    normalizeCountryValue(country.name) === normalizedValue
   );
 };
 
