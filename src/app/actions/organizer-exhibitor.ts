@@ -319,7 +319,7 @@ export async function toggleStatusOrganizerMember(exhibitorUuid: string, memberU
 }
 
 // POST /v1/organizer/exhibitors/members/resend_email_comfirmation
-export async function resendEmailOrganizerMember(data: { member_uuid: string, email?: string }[]) {
+export async function resendEmailOrganizerMember(data: { registration_uuid: string, email?: string }[]) {
   try {
     const { headers } = await getOrganizerAuthHeaders()
     await api.post('/v1/organizer/exhibitors/members/resend_email_comfirmation', data, { headers })

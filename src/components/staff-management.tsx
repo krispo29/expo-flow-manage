@@ -93,6 +93,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
       // Map members to Staff format
       const mappedStaff: Staff[] = result.members.map((m: any) => ({
         id: m.member_uuid,
+        registrationUuid: m.registration_uuid,
         registrationCode: m.registration_code,
         exhibitorId: exhibitorId,
         title: m.title || '',
@@ -263,7 +264,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     let result
     if (isOrganizer) {
       result = await resendEmailOrganizerMember([{
-        member_uuid: selectedStaff.id,
+        registration_uuid: selectedStaff.registrationUuid || selectedStaff.id,
         email: targetEmail
       }])
     } else {

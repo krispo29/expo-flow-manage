@@ -14,6 +14,7 @@ async function getAuthHeaders(projectUuid: string) {
 export interface Staff {
   id: string
   exhibitorId: string
+  registrationUuid?: string
   registrationCode?: string
   title?: string
   firstName: string
