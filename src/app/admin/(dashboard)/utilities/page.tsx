@@ -10,6 +10,7 @@ import { useMemo, useState, Suspense } from "react"
 import { searchParticipantsByCodes, printParticipantBadgesBulk, Participant as RealParticipant } from "@/app/actions/participant"
 import { toast } from "sonner"
 import { BadgePrint } from "@/components/badge-print"
+import { QRCodeSVG } from "qrcode.react"
 import { useSearchParams } from "next/navigation"
 import { printBadges } from "@/utils/print-badge"
 import { cn } from "@/lib/utils"
@@ -39,7 +40,7 @@ function UtilitiesContent() {
   const [participants, setParticipants] = useState<RealParticipant[]>([])
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [zoom, setZoom] = useState(0.2)
+  const [zoom, setZoom] = useState(1)
   const [resultSearch, setResultSearch] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false)
@@ -238,9 +239,9 @@ function UtilitiesContent() {
                                                 <ZoomOut className="h-3.5 w-3.5 text-muted-foreground/60" />
                                                 <input 
                                                     type="range" 
-                                                    min="0.1" 
-                                                    max="0.4" 
-                                                    step="0.05" 
+                                                    min="0.6" 
+                                                    max="1.5" 
+                                                    step="0.1" 
                                                     value={zoom}
                                                     onChange={(e) => setZoom(Number.parseFloat(e.target.value))}
                                                     className="w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
@@ -270,51 +271,82 @@ function UtilitiesContent() {
                                     </div>
 
                                     <div 
-                                        className="grid gap-6 max-h-[750px] overflow-y-auto p-8 rounded-[2rem] bg-white/5 border border-white/10 custom-scrollbar shadow-inner"
+                                        className="grid gap-6 max-h-[750px] overflow-y-auto p-6 rounded-[2rem] bg-white/5 border border-white/10 custom-scrollbar shadow-inner"
                                         style={{ 
-                                            gridTemplateColumns: `repeat(auto-fill, minmax(${zoom * 500 + 40}px, 1fr))` 
+                                            gridTemplateColumns: `repeat(auto-fill, minmax(${zoom * 260}px, 1fr))` 
                                         }}
                                     >
-                                        {filteredResults.map((p, idx) => (
+                                        {filteredResults.map((p, idx) => {
+                                            const participantFull = p as RealParticipant & {
+                                                attendee_type_name?: string
+                                                badge_name?: string
+                                            }
+                                            const badgeType = participantFull.badge_name || participantFull.attendee_type_name || p.attendee_type_code || 'VISITOR'
+                                            
+                                            return (
                                             <div 
                                                 key={p.registration_uuid}
                                                 role="button"
                                                 tabIndex={0}
                                                 className={cn(
-                                                    "relative group cursor-pointer rounded-2xl border-2 transition-all duration-500 outline-none overflow-hidden",
+                                                    "relative group cursor-pointer rounded-[1.5rem] border-2 transition-all duration-300 outline-none overflow-hidden flex flex-col bg-background/50 backdrop-blur-sm",
                                                     selectedParticipantId === p.registration_uuid 
                                                         ? 'border-primary shadow-glow-sm scale-[1.02] z-10' 
-                                                        : 'border-white/5 hover:border-primary/20 hover:bg-white/5'
+                                                        : 'border-white/5 hover:border-primary/40 hover:bg-white/5'
                                                 )}
                                                 onClick={() => setSelectedParticipantId(p.registration_uuid)}
                                             >
                                                 {/* Sequence Node */}
-                                                <div className="absolute top-2 left-2 h-5 min-w-[20px] px-1 bg-primary text-white text-[9px] font-black rounded-md flex items-center justify-center shadow-lg z-20 border border-white/20">
-                                                    {idx + 1}
+                                                <div className="absolute top-3 left-3 h-6 min-w-[24px] px-2 bg-primary/20 text-primary text-[10px] font-black rounded-lg flex items-center justify-center shadow-lg z-20 border border-primary/20 backdrop-blur-md">
+                                                    #{idx + 1}
                                                 </div>
 
-                                                {/* Thumbnail Matrix */}
-                                                <div className="relative overflow-hidden m-1.5 bg-white rounded-xl shadow-sm flex items-center justify-center p-2 group-hover:scale-[0.98] transition-transform duration-500" style={{ aspectRatio: '500/700' }}>
-                                                    <div 
-                                                        className="transition-transform duration-700 origin-center pointer-events-none flex-shrink-0"
-                                                        style={{ 
-                                                            transform: `scale(${zoom})`,
-                                                            width: '500px',
-                                                            height: '700px'
-                                                        }}
-                                                    >
-                                                        <BadgePrint participant={p as RealParticipant & { title_other?: string }} />
+                                                {/* Digital Card Inner */}
+                                                <div className="relative flex flex-col p-5 pt-12 h-full justify-between">
+                                                    
+                                                    {/* Top Section */}
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-start gap-4">
+                                                            <div className="space-y-1.5 flex-1 min-w-0">
+                                                                <h4 className="font-display font-bold text-lg leading-tight truncate text-foreground">
+                                                                    {p.first_name} {p.last_name}
+                                                                </h4>
+                                                                <p className="text-xs font-medium text-primary/80 truncate">
+                                                                    {p.job_position || ' '}
+                                                                </p>
+                                                            </div>
+                                                            <div className="shrink-0 bg-white p-1.5 rounded-xl shadow-sm border border-black/5 ring-1 ring-black/5 group-hover:scale-105 transition-transform duration-300">
+                                                                <QRCodeSVG value={p.registration_code || ''} size={42} />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="space-y-0.5">
+                                                            <p className="text-sm font-medium text-foreground/80 truncate">{p.company_name}</p>
+                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">{p.residence_country || 'THAILAND'}</p>
+                                                        </div>
                                                     </div>
                                                     
+                                                    {/* Bottom Section */}
+                                                    <div className="mt-6 pt-4 border-t border-white/10 flex items-end justify-between gap-2">
+                                                        <div className="space-y-1.5 min-w-0">
+                                                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] px-2 py-0.5">
+                                                                {badgeType}
+                                                            </Badge>
+                                                            <p className="text-[11px] font-mono font-bold text-muted-foreground uppercase tracking-widest truncate">
+                                                                {p.registration_code}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
                                                     {/* Interactive Overlay */}
-                                                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/[0.03] transition-colors duration-500" />
+                                                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/[0.03] transition-colors duration-500 pointer-events-none" />
                                                     
                                                     {/* Binary Selector */}
                                                     <div 
                                                         role="checkbox"
                                                         aria-checked={selectedIds.has(p.registration_uuid)}
                                                         className={cn(
-                                                            "absolute top-3 right-3 h-8 w-8 rounded-xl border-2 flex items-center justify-center transition-all duration-300 shadow-xl z-30",
+                                                            "absolute top-3 right-3 h-7 w-7 rounded-lg border-2 flex items-center justify-center transition-all duration-300 shadow-sm z-30 cursor-pointer",
                                                             selectedIds.has(p.registration_uuid) 
                                                                 ? 'bg-primary border-primary scale-110 shadow-[0_0_15px_-3px_var(--color-primary)]' 
                                                                 : 'bg-background/80 border-primary/20 backdrop-blur-md hover:border-primary/50'
@@ -331,7 +363,7 @@ function UtilitiesContent() {
                                                         }}
                                                     >
                                                         {selectedIds.has(p.registration_uuid) && (
-                                                            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                                                            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                             </svg>
                                                         )}
@@ -339,7 +371,7 @@ function UtilitiesContent() {
 
                                                     {/* Purge Button */}
                                                     <button
-                                                        className="absolute bottom-3 right-3 h-8 w-8 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-red-500 hover:text-white hover:scale-110"
+                                                        className="absolute bottom-3 right-3 h-8 w-8 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-destructive hover:text-white hover:scale-110 z-30"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleRemoveParticipant(p.registration_uuid);
@@ -349,19 +381,8 @@ function UtilitiesContent() {
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </div>
-                                                
-                                                {zoom > 0.15 && (
-                                                    <div className="px-3 py-2.5 border-t border-white/5 bg-white/5">
-                                                        <p className="text-[11px] font-bold truncate text-foreground leading-none">
-                                                            {p.first_name} {p.last_name}
-                                                        </p>
-                                                        <p className="text-[9px] text-primary/60 truncate font-mono font-bold mt-1.5 uppercase tracking-tighter">
-                                                            {p.registration_code}
-                                                        </p>
-                                                    </div>
-                                                )}
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 </div>
 

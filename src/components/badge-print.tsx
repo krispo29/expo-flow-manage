@@ -111,9 +111,9 @@ export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
                 <QRCodeSVG
                   value={registrationCode}
                   level="M"
+                  marginSize={0}
                   size={100}
                   style={{ height: '100%', width: '100%' }}
-                  viewBox="0 0 256 256"
                 />
               </div>
             </div>
