@@ -25,13 +25,6 @@ import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
   const [logs, setLogs] = useState<AttendanceLog[]>([])
@@ -166,7 +159,7 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
               <Upload className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl font-display">Import Attendance Log</CardTitle>
+              <CardTitle className="text-xl font-display">Import Scanner</CardTitle>
               <CardDescription className="font-medium italic">Upload external attendance.</CardDescription>
             </div>
           </div>
@@ -197,7 +190,7 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
         <CardHeader className="bg-white/5 border-b border-white/10 pb-6">
           <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-display">Attendance Log</CardTitle>
+              <CardTitle className="text-2xl font-display">Import Scanner</CardTitle>
               <CardDescription className="font-medium">Monitoring real-time check-in events across all active zones.</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto">

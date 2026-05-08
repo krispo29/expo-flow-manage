@@ -41,7 +41,7 @@ export default async function ParticipantsPage({
             value="attendance-logs" 
             className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
           >
-            Attendance Logs
+            Import Scanner
           </TabsTrigger>
           <TabsTrigger 
             value="print-logs" 

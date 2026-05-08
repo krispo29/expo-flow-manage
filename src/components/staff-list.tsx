@@ -186,7 +186,7 @@ export function StaffList({
                firstName: data.first_name || '',
                lastName: data.last_name || '',
                companyName: data.company_name || '',
-               country: 'THAILAND',
+               country: data.residence_country || p.residence_country || 'THAILAND',
                registrationCode: data.staff_code || '',
                category: data.staff_type_code || 'STAFF',
                position: '',
@@ -326,10 +326,7 @@ export function StaffList({
 
     return matchesCode && matchesType && matchesName && matchesCompany && matchesStatus
   }), [initialData.items, columnFilters])
-  const selectedStaffMembers = useMemo(
-    () => initialData.items.filter(staff => selectedStaffIds.has(staff.staff_uuid) && staff.staff_code),
-    [initialData.items, selectedStaffIds]
-  )
+  const selectedStaffMembers = initialData.items.filter(staff => selectedStaffIds.has(staff.staff_uuid) && staff.staff_code)
   const currentPageStaffIds = filteredStaff
     .filter(staff => staff.staff_code)
     .map(staff => staff.staff_uuid)
