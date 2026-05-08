@@ -27,7 +27,7 @@ export async function printParticipantBadgesBulk(projectId: string, registration
   try {
     const headers = await getAuthHeaders(projectId)
     await api.post('/v1/admin/project/participants/print-bulk', {
-      registration_codes: registrationCodes
+      codes: registrationCodes
     }, {
       headers
     })
