@@ -280,6 +280,7 @@ function UtilitiesContent() {
                                             const participantFull = p as RealParticipant & {
                                                 attendee_type_name?: string
                                                 badge_name?: string
+                                                residence_country?: string
                                             }
                                             const badgeType = participantFull.badge_name || participantFull.attendee_type_name || p.attendee_type_code || 'VISITOR'
                                             
@@ -322,7 +323,7 @@ function UtilitiesContent() {
                                                         
                                                         <div className="space-y-0.5">
                                                             <p className="text-sm font-medium text-foreground/80 truncate">{p.company_name}</p>
-                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">{p.residence_country || 'THAILAND'}</p>
+                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">{participantFull.residence_country || 'THAILAND'}</p>
                                                         </div>
                                                     </div>
                                                     
