@@ -16,8 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { countries } from "@/lib/countries"; 
+import { countries, findCountryByPhoneCodeOrValue } from "@/lib/countries"; 
 
 interface CountrySelectorProps {
   value: string;
@@ -52,7 +51,7 @@ export function CountrySelector({
     });
   }, [displayProperty]);
 
-  const selectedCountry = countries.find((c) => c.code === value);
+  const selectedCountry = findCountryByPhoneCodeOrValue(value);
 
   return (
     <>
@@ -62,6 +61,8 @@ export function CountrySelector({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-label={label}
+            aria-required={required}
             className="w-full justify-between font-normal bg-background h-10"
           >
             {selectedCountry ? (
@@ -102,7 +103,7 @@ export function CountrySelector({
                       />
                       <span>{country[displayProperty]}</span>
                     </span>
-                    {value === country.code && <Check className="ml-auto h-4 w-4" />}
+                    {selectedCountry?.code === country.code && <Check className="ml-auto h-4 w-4" />}
                   </CommandItem>
                 ))}
               </CommandGroup>

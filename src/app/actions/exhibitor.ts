@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import api from '@/lib/api'
 import { requireProjectContext } from '@/lib/authorization'
+import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
@@ -91,7 +92,7 @@ export async function createExhibitor(projectUuid: string, data: any) {
       address: data.address,
       city: data.city,
       province: data.province,
-      country: data.country,
+      country: data.country ? getCountryNameFromValue(data.country) : data.country,
       postal_code: data.postalCode,
       tel: data.phone,
       fax: data.fax,
@@ -123,7 +124,7 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       address: data.address,
       city: data.city,
       province: data.province,
-      country: data.country,
+      country: data.country ? getCountryNameFromValue(data.country) : data.country,
       postal_code: data.postalCode,
       tel: data.phone,
       fax: data.fax,
