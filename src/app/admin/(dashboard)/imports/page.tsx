@@ -645,7 +645,7 @@ function ImportsContent() {
                                   setViewLoading(false)
                                 }}
                               >
-                                Codes
+                                Registration Codes
                               </Button>
                               <Button
                                 variant="ghost"
@@ -653,7 +653,7 @@ function ImportsContent() {
                                 className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold transition-all"
                                 onClick={() => void handleExportCodes(h.import_uuid)}
                                 disabled={exportingCodesUuid === h.import_uuid}
-                                title="Export Codes"
+                                title="Export Registration Codes"
                               >
                                 {exportingCodesUuid === h.import_uuid ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                               </Button>
@@ -769,9 +769,9 @@ function ImportsContent() {
                 <Ticket className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-display font-bold">Imported</DialogTitle>
+                <DialogTitle className="text-2xl font-display font-bold">Imported Registration Codes</DialogTitle>
                 <DialogDescription className="font-medium italic">
-                  Showing <span className="text-foreground font-bold">{filteredCodes.length} Codes.</span>
+                  Showing <span className="text-foreground font-bold">{filteredCodes.length} registration codes.</span>
                 </DialogDescription>
               </div>
             </div>
