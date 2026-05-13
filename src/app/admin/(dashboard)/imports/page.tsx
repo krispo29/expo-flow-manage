@@ -94,9 +94,9 @@ function ImportsContent() {
   const [viewDetailUuid, setViewDetailUuid] = useState<string | null>(null)
   const [detailData, setDetailData] = useState<ImportHistory | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
-  
+
   const filteredCodes = useMemo(() => {
-    return viewCodesData.filter(d => 
+    return viewCodesData.filter(d =>
       d.first_name.toLowerCase().includes(viewSearch.toLowerCase()) ||
       d.last_name.toLowerCase().includes(viewSearch.toLowerCase()) ||
       d.email.toLowerCase().includes(viewSearch.toLowerCase()) ||
@@ -126,7 +126,7 @@ function ImportsContent() {
   useEffect(() => {
     const run = async () => {
       const [eventsRes, exhibitorsRes, historiesRes, typesRes] = await Promise.all([
-        getImportEvents(), 
+        getImportEvents(),
         getImportExhibitors(),
         getImportHistories(),
         getAllAttendeeTypes()
@@ -560,7 +560,7 @@ function ImportsContent() {
             </div>
             <div>
               <CardTitle className="text-2xl font-display">Import History</CardTitle>
-              <CardDescription className="font-medium italic">Tracking system-wide data ingestion events.</CardDescription>
+              <CardDescription className="font-medium italic">Tracking system data ingestion events.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -628,9 +628,9 @@ function ImportsContent() {
 
                           {h.import_type === 'registrations' && (
                             <>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-9 px-4 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold text-[10px] uppercase tracking-widest"
                                 onClick={async () => {
                                   setViewCodesUuid(h.import_uuid)
@@ -647,9 +647,9 @@ function ImportsContent() {
                               >
                                 Codes
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold transition-all"
                                 onClick={() => void handleExportCodes(h.import_uuid)}
                                 disabled={exportingCodesUuid === h.import_uuid}
@@ -661,7 +661,7 @@ function ImportsContent() {
                           )}
                         </div>
                         <div className="group-hover:hidden flex justify-end">
-                           <Badge variant="outline" className="text-[8px] font-black tracking-widest opacity-20 border-white/10">ANALYSIS</Badge>
+                          <Badge variant="outline" className="text-[8px] font-black tracking-widest opacity-20 border-white/10">ANALYSIS</Badge>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -769,25 +769,25 @@ function ImportsContent() {
                 <Ticket className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-display font-bold">Imported Intelligence</DialogTitle>
+                <DialogTitle className="text-2xl font-display font-bold">Imported</DialogTitle>
                 <DialogDescription className="font-medium italic">
-                  Showing <span className="text-foreground font-bold">{filteredCodes.length} nodes</span> synthesized in this operation.
+                  Showing <span className="text-foreground font-bold">{filteredCodes.length} Codes.</span>
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
-          
+
           <div className="px-8 py-4 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
             <div className="relative flex-1 w-full sm:max-w-md group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="Search Matrix: Name, Email, Code..." 
+              <Input
+                placeholder="Search: Name, Email, Code..."
                 className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-sm"
-                value={viewSearch} 
+                value={viewSearch}
                 onChange={(e) => setViewSearch(e.target.value)}
               />
             </div>
-            
+
             <div className="flex items-center gap-3">
               <div className="px-4 py-2 glass rounded-xl border-white/10 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 <span className="text-foreground">
@@ -795,7 +795,7 @@ function ImportsContent() {
                 </span> / {filteredCodes.length}
               </div>
               {viewCodesUuid && (
-                <Button 
+                <Button
                   size="sm"
                   className="btn-aurora rounded-xl h-10 px-5 font-bold text-xs shadow-lg shadow-primary/20"
                   onClick={() => void handleExportCodes(viewCodesUuid)}
@@ -813,9 +813,9 @@ function ImportsContent() {
               <Table>
                 <TableHeader className="sticky top-0 bg-background/50 backdrop-blur-md z-10 border-b border-white/10">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">Participant Identity</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Communication Channel</TableHead>
-                    <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest pr-8">Synthesized Code</TableHead>
+                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">Participant</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Email</TableHead>
+                    <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest pr-8">Code</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -857,7 +857,7 @@ function ImportsContent() {
                       <TableCell colSpan={3} className="h-64 text-center py-24">
                         <div className="flex flex-col items-center justify-center gap-4 glass m-8 rounded-3xl border-dashed">
                           <Search className="h-10 w-10 text-primary/20" />
-                          <p className="font-display font-bold opacity-40">No records found in current matrix.</p>
+                          <p className="font-display font-bold opacity-40">No records found.</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -865,23 +865,23 @@ function ImportsContent() {
                 </TableBody>
               </Table>
             </div>
-            
+
             {/* Pagination UI */}
             <div className="p-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between bg-white/5 gap-4 shrink-0">
               <div className="flex items-center gap-1.5">
-                <Button 
-                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
+                <Button
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10"
                   onClick={() => setViewPage(1)} disabled={viewPage === 1}
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
+                <Button
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10"
                   onClick={() => setViewPage(p => Math.max(1, p - 1))} disabled={viewPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                
+
                 <div className="flex items-center gap-2 mx-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">Page</span>
                   <span className="text-sm font-black text-foreground">
@@ -890,14 +890,14 @@ function ImportsContent() {
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">of {totalPages || 1}</span>
                 </div>
 
-                <Button 
-                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
+                <Button
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10"
                   onClick={() => setViewPage(p => Math.min(totalPages, p + 1))} disabled={viewPage === totalPages || totalPages === 0}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10" 
+                <Button
+                  variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10"
                   onClick={() => setViewPage(totalPages)} disabled={viewPage === totalPages || totalPages === 0}
                 >
                   <ChevronsRight className="h-4 w-4" />
@@ -905,7 +905,7 @@ function ImportsContent() {
               </div>
 
               <Button variant="ghost" className="rounded-xl h-10 px-8 font-bold text-xs uppercase tracking-widest" onClick={() => setViewCodesUuid(null)}>
-                Close Matrix
+                Close
               </Button>
             </div>
           </div>
