@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
-import { Upload, Loader2, FileDown, Eye, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Info, Users, User, Building2, Ticket, ShieldCheck, Mail, FileText, CalendarDays, AlertCircle } from 'lucide-react'
+import { Combobox } from '@/components/ui/combobox'
+import { Upload, Loader2, FileDown, Eye, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Info, Users, User, Building2, Ticket, ShieldCheck, Mail, CalendarDays, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getImportEvents,
@@ -23,6 +23,7 @@ import {
   type ImportEvent,
   type ImportExhibitor,
   type ImportHistory,
+  type ImportHistoryCode,
 } from '@/app/actions/import'
 import { getAllAttendeeTypes, type AttendeeType } from '@/app/actions/participant'
 import { format } from 'date-fns'
@@ -56,6 +57,24 @@ const TEMPLATE_LINKS = {
   staff: 'https://static.expoflow.co/template/Staff_Template.xlsx',
 }
 
+const CODE_IMPORT_TYPE_LABELS: Record<string, string> = {
+  registrations: 'Registration Codes',
+  staff: 'Staff Codes',
+  'exhibitor-members': 'Exhibitor Member Codes',
+}
+
+const normalizeImportType = (importType?: string | null) => (importType || '').replace(/_/g, '-')
+
+const getCodeImportLabel = (importType?: string | null) => {
+  const normalizedType = normalizeImportType(importType)
+  return CODE_IMPORT_TYPE_LABELS[normalizedType] || 'Imported Codes'
+}
+
+const canViewImportCodes = (importType: string) => {
+  const normalizedType = normalizeImportType(importType)
+  return Object.prototype.hasOwnProperty.call(CODE_IMPORT_TYPE_LABELS, normalizedType)
+}
+
 function ImportsContent() {
   const [events, setEvents] = useState<ImportEvent[]>([])
   const [exhibitors, setExhibitors] = useState<ImportExhibitor[]>([])
@@ -84,9 +103,10 @@ function ImportsContent() {
 
   // View Codes Dialog State
   const [viewCodesUuid, setViewCodesUuid] = useState<string | null>(null)
+  const [viewCodesImportType, setViewCodesImportType] = useState<string | null>(null)
   const [viewSearch, setViewSearch] = useState('')
   const [viewPage, setViewPage] = useState(1)
-  const [viewCodesData, setViewCodesData] = useState<{ first_name: string; last_name: string; email: string; code: string }[]>([])
+  const [viewCodesData, setViewCodesData] = useState<ImportHistoryCode[]>([])
   const [viewLoading, setViewLoading] = useState(false)
   const [exportingCodesUuid, setExportingCodesUuid] = useState<string | null>(null)
 
@@ -96,12 +116,14 @@ function ImportsContent() {
   const [detailLoading, setDetailLoading] = useState(false)
 
   const filteredCodes = useMemo(() => {
-    return viewCodesData.filter(d =>
-      d.first_name.toLowerCase().includes(viewSearch.toLowerCase()) ||
-      d.last_name.toLowerCase().includes(viewSearch.toLowerCase()) ||
-      d.email.toLowerCase().includes(viewSearch.toLowerCase()) ||
-      d.code.toLowerCase().includes(viewSearch.toLowerCase())
-    )
+    const search = viewSearch.toLowerCase()
+    return viewCodesData.filter(d => {
+      const searchableText = [d.first_name, d.last_name, d.email, d.company_name, d.code]
+        .join(' ')
+        .toLowerCase()
+
+      return searchableText.includes(search)
+    })
   }, [viewCodesData, viewSearch])
 
   const viewLimit = 50
@@ -311,7 +333,7 @@ function ImportsContent() {
       } else {
         toast.error(result.error || 'Import failed')
       }
-    } catch (error) {
+    } catch {
       toast.error('Import failed')
     } finally {
       setLoading((prev) => ({ ...prev, [kind]: false }))
@@ -626,7 +648,7 @@ function ImportsContent() {
                             <Eye className="h-4 w-4" />
                           </Button>
 
-                          {h.import_type === 'registrations' && (
+                          {canViewImportCodes(h.import_type) && (
                             <>
                               <Button
                                 variant="ghost"
@@ -634,18 +656,21 @@ function ImportsContent() {
                                 className="h-9 px-4 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold text-[10px] uppercase tracking-widest"
                                 onClick={async () => {
                                   setViewCodesUuid(h.import_uuid)
+                                  setViewCodesImportType(h.import_type)
                                   setViewSearch('')
+                                  setViewCodesData([])
                                   setViewLoading(true)
                                   const codesRes = await getImportHistoryCodes(h.import_uuid)
                                   if (codesRes.success) {
                                     setViewCodesData(codesRes.data)
                                   } else {
+                                    setViewCodesData([])
                                     toast.error(codesRes.error || 'Failed to fetch codes')
                                   }
                                   setViewLoading(false)
                                 }}
                               >
-                                Registration Codes
+                                {getCodeImportLabel(h.import_type)}
                               </Button>
                               <Button
                                 variant="ghost"
@@ -653,7 +678,7 @@ function ImportsContent() {
                                 className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-bold transition-all"
                                 onClick={() => void handleExportCodes(h.import_uuid)}
                                 disabled={exportingCodesUuid === h.import_uuid}
-                                title="Export Registration Codes"
+                                title={`Export ${getCodeImportLabel(h.import_type)}`}
                               >
                                 {exportingCodesUuid === h.import_uuid ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                               </Button>
@@ -761,7 +786,15 @@ function ImportsContent() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!viewCodesUuid} onOpenChange={(open) => !open && setViewCodesUuid(null)}>
+      <Dialog
+        open={!!viewCodesUuid}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewCodesUuid(null)
+            setViewCodesImportType(null)
+          }
+        }}
+      >
         <DialogContent className="glass sm:max-w-5xl border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden flex flex-col h-[85vh]">
           <DialogHeader className="p-8 bg-white/5 border-b border-white/10 shrink-0">
             <div className="flex items-center gap-4">
@@ -769,9 +802,9 @@ function ImportsContent() {
                 <Ticket className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-display font-bold">Imported Registration Codes</DialogTitle>
+                <DialogTitle className="text-2xl font-display font-bold">Imported {getCodeImportLabel(viewCodesImportType)}</DialogTitle>
                 <DialogDescription className="font-medium italic">
-                  Showing <span className="text-foreground font-bold">{filteredCodes.length} registration codes.</span>
+                  Showing <span className="text-foreground font-bold">{filteredCodes.length} {getCodeImportLabel(viewCodesImportType).toLowerCase()}.</span>
                 </DialogDescription>
               </div>
             </div>
@@ -781,7 +814,7 @@ function ImportsContent() {
             <div className="relative flex-1 w-full sm:max-w-md group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
               <Input
-                placeholder="Search: Name, Email, Code..."
+                placeholder="Search: Name, Email, Company, Code..."
                 className="pl-11 h-11 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-sm"
                 value={viewSearch}
                 onChange={(e) => setViewSearch(e.target.value)}
@@ -813,8 +846,8 @@ function ImportsContent() {
               <Table>
                 <TableHeader className="sticky top-0 bg-background/50 backdrop-blur-md z-10 border-b border-white/10">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">Participant</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Email</TableHead>
+                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">Name</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Contact / Company</TableHead>
                     <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest pr-8">Code</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -829,20 +862,22 @@ function ImportsContent() {
                       </TableCell>
                     </TableRow>
                   ) : paginatedCodes.length > 0 ? (
-                    paginatedCodes.map((d) => (
-                      <TableRow key={d.code} className="group border-white/5 hover:bg-white/5 transition-colors">
+                    paginatedCodes.map((d, index) => (
+                      <TableRow key={`${d.code || 'code'}-${viewPage}-${index}`} className="group border-white/5 hover:bg-white/5 transition-colors">
                         <TableCell className="pl-8 py-4">
                           <div className="flex items-center gap-3">
                             <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">
-                              {d.first_name[0]}{d.last_name[0]}
+                              {(d.first_name[0] || d.code[0] || '?')}{d.last_name[0] || ''}
                             </div>
-                            <span className="font-bold text-sm group-hover:text-primary transition-colors">{d.first_name} {d.last_name}</span>
+                            <span className="font-bold text-sm group-hover:text-primary transition-colors">
+                              {[d.first_name, d.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm font-medium italic">
                           <div className="flex items-center gap-2">
                             <Mail className="h-3 w-3 opacity-40" />
-                            {d.email}
+                            {d.email || d.company_name || '-'}
                           </div>
                         </TableCell>
                         <TableCell className="pr-8">
@@ -904,7 +939,14 @@ function ImportsContent() {
                 </Button>
               </div>
 
-              <Button variant="ghost" className="rounded-xl h-10 px-8 font-bold text-xs uppercase tracking-widest" onClick={() => setViewCodesUuid(null)}>
+              <Button
+                variant="ghost"
+                className="rounded-xl h-10 px-8 font-bold text-xs uppercase tracking-widest"
+                onClick={() => {
+                  setViewCodesUuid(null)
+                  setViewCodesImportType(null)
+                }}
+              >
                 Close
               </Button>
             </div>

@@ -35,6 +35,49 @@ export interface ImportExhibitor {
   company_name: string
 }
 
+export interface ImportHistoryCode {
+  first_name: string
+  last_name: string
+  email: string
+  code: string
+  company_name: string
+}
+
+type RawImportHistoryCode = Partial<Record<
+  | 'first_name'
+  | 'firstName'
+  | 'last_name'
+  | 'lastName'
+  | 'full_name'
+  | 'name'
+  | 'email'
+  | 'contact_email'
+  | 'code'
+  | 'registration_code'
+  | 'staff_code'
+  | 'member_code'
+  | 'company_name'
+  | 'companyName',
+  unknown
+>>
+
+function textValue(value: unknown) {
+  return typeof value === 'string' || typeof value === 'number' ? String(value) : ''
+}
+
+function normalizeImportHistoryCode(item: RawImportHistoryCode): ImportHistoryCode {
+  const fullName = textValue(item.full_name ?? item.name).trim()
+  const [fallbackFirstName = '', ...fallbackLastNameParts] = fullName.split(/\s+/).filter(Boolean)
+
+  return {
+    first_name: textValue(item.first_name ?? item.firstName) || fallbackFirstName,
+    last_name: textValue(item.last_name ?? item.lastName) || fallbackLastNameParts.join(' '),
+    email: textValue(item.email ?? item.contact_email),
+    code: textValue(item.code ?? item.registration_code ?? item.staff_code ?? item.member_code),
+    company_name: textValue(item.company_name ?? item.companyName),
+  }
+}
+
 export async function getImportEvents() {
   try {
     const headers = await getAuthHeaders()
@@ -108,11 +151,12 @@ export async function getImportHistoryCodes(uuid: string, attendeeTypeCode?: str
       url += `?attendee_type_code=${attendeeTypeCode}`
     }
     const response = await api.get(url, { headers })
-    return { success: true, data: (response.data?.data || []) as { first_name: string; last_name: string; email: string; code: string }[] }
+    const data = ((response.data?.data || []) as RawImportHistoryCode[]).map(normalizeImportHistoryCode)
+    return { success: true, data }
   } catch (error: unknown) {
     console.error('Error fetching import history codes:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch import history codes'
-    return { success: false, error: errorMessage, data: [] }
+    return { success: false, error: errorMessage, data: [] as ImportHistoryCode[] }
   }
 }
 
