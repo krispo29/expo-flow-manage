@@ -6,13 +6,14 @@ import { getProjectDetail, updateProject, getTimezones, getCountries, type Proje
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Globe, Settings2, CalendarDays, Image, Loader2, Check, ChevronsUpDown, ShieldCheck, Copyright } from "lucide-react"
+import { Globe, Settings2, CalendarDays, Image as ImageIcon, Loader2, Check, ChevronsUpDown, ShieldCheck, Copyright } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
+import { getCountryCodeFromValue, getCountryNameFromValue } from "@/lib/countries"
 
 interface ProjectSettingsProps {
   projectUuid: string
@@ -34,7 +35,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
     const result = await getProjectDetail(projectUuid)
     if (result.success && result.project) {
       setProject(result.project)
-      setCountryCode(result.project.country_code || "VN")
+      setCountryCode(getCountryCodeFromValue(result.project.country_code, "VN"))
       setSelectedTimezone(result.project.timezone || "")
       
       const [tzResult, countryResult] = await Promise.all([
@@ -57,6 +58,10 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectUuid])
 
+  const selectedCountryName =
+    countries.find((country) => country.code === countryCode)?.name ||
+    getCountryNameFromValue(countryCode)
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!project) return
@@ -76,7 +81,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       banner_url: formData.get('banner_url') as string,
       banner_2_url: formData.get('banner_2_url') as string,
       copy_right: formData.get('copy_right') as string,
-      country_code: formData.get('country_code') as string,
+      country_code: selectedCountryName,
       exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
       conference_booking_url: formData.get('conference_booking_url') as string,
       timezone: formData.get('timezone') as string,
@@ -249,7 +254,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                           </Command>
                         </PopoverContent>
                       </Popover>
-                      <input type="hidden" name="country_code" value={countryCode} />
+                      <input type="hidden" name="country_code" value={selectedCountryName} />
                     </div>
                   </div>
                 </div>
@@ -283,7 +288,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                 {/* Brand Assets */}
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 mb-2">
-                    <Image className="h-4 w-4 text-primary/60" />
+                    <ImageIcon className="h-4 w-4 text-primary/60" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Brand Assets</h3>
                   </div>
                   

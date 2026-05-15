@@ -68,6 +68,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
+import { getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
 
 export default function ProjectsPage() {
   const router = useRouter()
@@ -129,6 +130,9 @@ export default function ProjectsPage() {
     setSaving(true)
 
     const formData = new FormData(event.currentTarget)
+    const selectedCountryName =
+      countries.find((country) => country.code === selectedCountry)?.name ||
+      getCountryNameFromValue(selectedCountry || 'VN')
 
     const projectData = {
       project_uuid: editingProject.project_uuid,
@@ -147,7 +151,7 @@ export default function ProjectsPage() {
       exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
       conference_booking_url: formData.get('conference_booking_url') as string,
       timezone: selectedTimezone,
-      country_code: selectedCountry || 'VN', // Defaulting to VN if empty based on user request indication
+      country_code: selectedCountryName,
     }
 
     const result = await updateProject(projectData)
@@ -177,7 +181,7 @@ export default function ProjectsPage() {
     e.stopPropagation()
     setEditingProject(project)
     setSelectedTimezone(project.timezone || '')
-    setSelectedCountry(project.country_code || 'VN')
+    setSelectedCountry(getCountryCodeFromValue(project.country_code, 'VN'))
     setIsEditOpen(true)
   }
 
