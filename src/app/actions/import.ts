@@ -27,6 +27,12 @@ export interface ImportHistory {
   failed_count: number
   created_by: string
   created_at: string
+  error_messages?: ImportErrorMessage[]
+}
+
+export interface ImportErrorMessage {
+  row: number
+  detail: string
 }
 
 export interface ImportExhibitor {

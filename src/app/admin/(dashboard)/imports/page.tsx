@@ -115,6 +115,12 @@ function ImportsContent() {
   const [detailData, setDetailData] = useState<ImportHistory | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
+  // View Error Messages Dialog State
+  const [viewErrorUuid, setViewErrorUuid] = useState<string | null>(null)
+  const [errorData, setErrorData] = useState<ImportHistory | null>(null)
+  const [errorLoading, setErrorLoading] = useState(false)
+  const errorMessages = errorData?.error_messages ?? []
+
   const filteredCodes = useMemo(() => {
     const search = viewSearch.toLowerCase()
     return viewCodesData.filter(d => {
@@ -262,6 +268,28 @@ function ImportsContent() {
       toast.error('Failed to export codes')
     } finally {
       setExportingCodesUuid((current) => (current === importUuid ? null : current))
+    }
+  }
+
+  const openErrorMessages = async (history: ImportHistory) => {
+    setViewErrorUuid(history.import_uuid)
+    setErrorData(history)
+    setErrorLoading(false)
+
+    if ((history.error_messages ?? []).length > 0) {
+      return
+    }
+
+    setErrorLoading(true)
+    try {
+      const res = await getImportHistory(history.import_uuid)
+      if (res.success) {
+        setErrorData(res.data!)
+      } else {
+        toast.error(res.error || 'Failed to fetch error messages')
+      }
+    } finally {
+      setErrorLoading(false)
     }
   }
 
@@ -628,6 +656,19 @@ function ImportsContent() {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          {h.failed_count > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-3 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 font-bold text-[10px] uppercase tracking-widest"
+                              title="View Error Messages"
+                              onClick={() => void openErrorMessages(h)}
+                            >
+                              <AlertCircle className="mr-1.5 h-4 w-4" />
+                              Errors
+                            </Button>
+                          )}
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -782,6 +823,85 @@ function ImportsContent() {
           </div>
           <DialogFooter className="p-6 bg-white/5 border-t border-white/10">
             <Button variant="ghost" className="rounded-2xl h-11 w-full font-bold text-xs uppercase tracking-widest" onClick={() => setViewDetailUuid(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!viewErrorUuid}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewErrorUuid(null)
+            setErrorData(null)
+            setErrorLoading(false)
+          }
+        }}
+      >
+        <DialogContent className="glass sm:max-w-2xl border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20">
+                <AlertCircle className="h-6 w-6 text-rose-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold">Import Error Messages</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  {errorData ? (
+                    <>
+                      {errorMessages.length} error{errorMessages.length === 1 ? '' : 's'} from <span className="text-foreground font-bold">{errorData.original_file_name}</span>.
+                    </>
+                  ) : (
+                    'Review row-level import failures.'
+                  )}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto p-8">
+            {errorLoading ? (
+              <div className="flex flex-col items-center justify-center h-48 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
+                <span className="text-xs font-bold tracking-widest uppercase opacity-40">Loading error messages...</span>
+              </div>
+            ) : errorMessages.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {errorMessages.map((error, index) => (
+                  <div
+                    key={`${error.row}-${index}`}
+                    className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4"
+                  >
+                    <div className="mb-2 flex items-center gap-2">
+                      <Badge variant="outline" className="border-rose-500/20 bg-rose-500/10 text-[9px] font-black uppercase tracking-widest text-rose-500">
+                        Row {error.row}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed text-foreground/80 break-words">
+                      {error.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <AlertCircle className="h-10 w-10 text-muted-foreground/20" />
+                <p className="text-sm font-bold text-muted-foreground">No error messages were returned for this import.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="p-6 bg-white/5 border-t border-white/10">
+            <Button
+              variant="ghost"
+              className="rounded-2xl h-11 w-full font-bold text-xs uppercase tracking-widest"
+              onClick={() => {
+                setViewErrorUuid(null)
+                setErrorData(null)
+                setErrorLoading(false)
+              }}
+            >
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
