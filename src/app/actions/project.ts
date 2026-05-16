@@ -1,7 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import api from '@/lib/api'
+import axios from 'axios'
+import api, { getErrorMessage } from '@/lib/api'
 import { isTokenExpiredError } from '@/lib/auth-helpers'
 import { getServerAuthHeaders, requireServerAuthHeaders } from '@/lib/server-auth'
 
@@ -12,6 +13,8 @@ export interface Project {
   project_name: string
   project_site_url: string
   is_open_registration: boolean
+  is_individual_registration_open?: boolean
+  is_group_registration_open?: boolean
   start_date: string
   end_date: string
   cutoff_date_exhibitor_edit: string
@@ -23,8 +26,15 @@ export interface Project {
   timezone?: string
   conference_booking_url?: string
   exhibitor_portal_url?: string
+  status?: string
+  attendance_marker_code?: string
+  settings?: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+function isProjectTokenExpiredError(error: unknown) {
+  return axios.isAxiosError<{ message?: string }>(error) && isTokenExpiredError(error)
 }
 
 // GET /v1/admin/projects (No X-Project-UUID header, but needs Authorization)
@@ -43,20 +53,17 @@ export async function getProjects() {
     const projects = (result.data || []) as Project[]
     
     return { success: true, projects }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching projects:', error)
-    console.error('Error details:', error.response?.data)
+    console.error('Error details:', axios.isAxiosError(error) ? error.response?.data : undefined)
 
     // During layout/page render we cannot mutate cookies, so just signal the caller
     // to redirect to login. The login page will clear stale auth cookies safely.
-    if (isTokenExpiredError(error)) {
+    if (isProjectTokenExpiredError(error)) {
       return { success: false, error: 'key incorrect', projects: [] as Project[] }
     }
 
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      'Failed to fetch projects'
+    const errorMessage = getErrorMessage(error) || 'Failed to fetch projects'
     return { success: false, error: errorMessage, projects: [] as Project[] }
   }
 }
@@ -69,7 +76,7 @@ export async function getProjectDetail(uuid: string) {
     const response = await api.get('/v1/admin/project/detail', { headers })
     const result = response.data
     return { success: true, project: result.data as Project }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching project detail:', error)
     return { success: false, error: 'Failed to fetch project detail' }
   }
@@ -90,7 +97,7 @@ export async function getProjectShowDates(uuid: string) {
     })
     const result = response.data
     return { success: true, showDates: (result.data || []) as ShowDate[] }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching project show dates:', error)
     return {
       success: false,
@@ -113,7 +120,7 @@ export async function getCountries(projectUuid?: string) {
 
     const response = await api.get('/v1/admin/project/countries', { headers })
     return { success: true, data: (response.data.data || []) as Country[] }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching countries:', error)
     return { success: false, error: 'Failed to fetch countries', data: [] }
   }
@@ -131,7 +138,7 @@ export async function getNationalities(projectUuid?: string) {
 
     const response = await api.get('/v1/admin/project/nationalities', { headers })
     return { success: true, data: (response.data.data || []) as Nationality[] }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching nationalities:', error)
     return { success: false, error: 'Failed to fetch nationalities', data: [] }
   }
@@ -150,7 +157,7 @@ export async function getMobilePrefixes(projectUuid?: string) {
 
     const response = await api.get('/v1/admin/project/mobile-prefixes', { headers })
     return { success: true, data: (response.data.data || []) as MobilePrefix[] }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching mobile prefixes:', error)
     return { success: false, error: 'Failed to fetch mobile prefixes', data: [] }
   }
@@ -168,7 +175,7 @@ export async function getTimezones(projectUuid?: string) {
 
     const response = await api.get('/v1/admin/project/timezones', { headers })
     return { success: true, data: (response.data.data || []) as Timezone[] }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching timezones:', error)
     return { success: false, error: 'Failed to fetch timezones', data: [] }
   }
@@ -183,15 +190,15 @@ export async function updateProject(
       projectUuid: projectData.project_uuid,
     })
 
-    const response = await api.put('/v1/admin/project/detail', projectData, {
+    await api.put('/v1/admin/project/detail', projectData, {
       headers,
     })
 
     revalidatePath('/admin/projects')
     return { success: true, project: projectData }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating project:', error)
-    const errMsg = error.response?.data?.message || 'Failed to update project'
+    const errMsg = getErrorMessage(error) || 'Failed to update project'
     return { success: false, error: errMsg }
   }
 }

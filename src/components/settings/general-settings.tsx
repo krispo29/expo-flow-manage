@@ -27,6 +27,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
   const [timezones, setTimezones] = useState<Timezone[]>([])
   const [countries, setCountries] = useState<Country[]>([])
   const [selectedTimezone, setSelectedTimezone] = useState<string>('')
+  const [isStatusActive, setIsStatusActive] = useState(false)
   const [timezoneOpen, setTimezoneOpen] = useState(false)
   const [countryOpen, setCountryOpen] = useState(false)
 
@@ -37,6 +38,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       setProject(result.project)
       setCountryCode(getCountryCodeFromValue(result.project.country_code, "VN"))
       setSelectedTimezone(result.project.timezone || "")
+      setIsStatusActive(result.project.status === 'active')
       
       const [tzResult, countryResult] = await Promise.all([
         getTimezones(projectUuid),
@@ -73,7 +75,8 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       project_uuid: project.project_uuid,
       project_name: formData.get('project_name') as string,
       project_site_url: formData.get('project_site_url') as string,
-      is_open_registration: (formData.get('is_open_registration') as string) === 'on',
+      is_individual_registration_open: (formData.get('is_individual_registration_open') as string) === 'on',
+      is_group_registration_open: (formData.get('is_group_registration_open') as string) === 'on',
       start_date: new Date(formData.get('start_date') as string).toISOString(),
       end_date: new Date(formData.get('end_date') as string).toISOString(),
       cutoff_date_exhibitor_edit: new Date(formData.get('cutoff_date_exhibitor_edit') as string).toISOString(),
@@ -85,6 +88,8 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       exhibitor_portal_url: formData.get('exhibitor_portal_url') as string,
       conference_booking_url: formData.get('conference_booking_url') as string,
       timezone: formData.get('timezone') as string,
+      status: isStatusActive ? 'active' : 'closed',
+      attendance_marker_code: (formData.get('attendance_marker_code') as string).trim(),
     }
 
     const result = await updateProject(projectData)
@@ -148,12 +153,23 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
 
           <div className="p-8 space-y-10">
             {/* Registration Status Section */}
-            <div className="glass p-6 rounded-2xl border-white/5 bg-primary/5 flex items-center justify-between transition-all hover:bg-primary/10 group">
-              <div className="space-y-1">
-                <Label className="text-lg font-display font-bold group-hover:text-primary transition-colors">Registration Status</Label>
-                <p className="text-sm text-muted-foreground font-medium">Enable or disable new registration pipelines across the platform.</p>
+            <div className="glass p-6 rounded-2xl border-white/5 bg-primary/5 transition-all hover:bg-primary/10 group">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-1">
+                  <Label className="text-lg font-display font-bold group-hover:text-primary transition-colors">Registration Status</Label>
+                  <p className="text-sm text-muted-foreground font-medium">Enable or disable new registration pipelines across the platform.</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:min-w-[360px]">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <Label htmlFor="is_individual_registration_open" className="text-[10px] font-bold uppercase tracking-widest opacity-70">Individual</Label>
+                    <Switch id="is_individual_registration_open" name="is_individual_registration_open" defaultChecked={project.is_individual_registration_open} className="data-[state=checked]:bg-primary" />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <Label htmlFor="is_group_registration_open" className="text-[10px] font-bold uppercase tracking-widest opacity-70">Group</Label>
+                    <Switch id="is_group_registration_open" name="is_group_registration_open" defaultChecked={project.is_group_registration_open} className="data-[state=checked]:bg-primary" />
+                  </div>
+                </div>
               </div>
-              <Switch name="is_open_registration" defaultChecked={project.is_open_registration} className="data-[state=checked]:bg-primary" />
             </div>
 
             <div className="grid gap-10 lg:grid-cols-2">
@@ -168,6 +184,16 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                   <div className="space-y-2.5">
                     <Label htmlFor="project_name" className="text-[10px] font-bold uppercase tracking-widest opacity-60">Project Name</Label>
                     <Input id="project_name" name="project_name" defaultValue={project.project_name} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <Label htmlFor="status" className="text-[10px] font-bold uppercase tracking-widest opacity-60">Status</Label>
+                    <div className="flex h-12 items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 px-4">
+                      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        {isStatusActive ? 'Active' : 'Closed'}
+                      </span>
+                      <Switch id="status" name="status" checked={isStatusActive} onCheckedChange={setIsStatusActive} className="data-[state=checked]:bg-primary" />
+                    </div>
                   </div>
 
                   <div className="space-y-2.5">
@@ -315,14 +341,22 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
             <Separator className="bg-white/5" />
 
             {/* Legal Matrix */}
-            <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <div className="flex items-center gap-3 mb-2">
                 <Copyright className="h-4 w-4 text-primary/60" />
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Legal Matrix</h3>
               </div>
-              <div className="space-y-2.5">
+              <div className="flex items-center gap-3 mb-2 lg:col-start-2">
+                <ShieldCheck className="h-4 w-4 text-primary/60" />
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Attendance Matrix</h3>
+              </div>
+              <div className="space-y-2.5 lg:row-start-2">
                 <Label htmlFor="copy_right" className="text-[10px] font-bold uppercase tracking-widest opacity-60">Copyright Text</Label>
                 <Input id="copy_right" name="copy_right" defaultValue={project.copy_right} className="h-12 bg-white/5 border-white/10 rounded-xl" />
+              </div>
+              <div className="space-y-2.5 lg:row-start-2">
+                <Label htmlFor="attendance_marker_code" className="text-[10px] font-bold uppercase tracking-widest opacity-60">Attendance Marker Code</Label>
+                <Input id="attendance_marker_code" name="attendance_marker_code" defaultValue={project.attendance_marker_code ?? ""} placeholder="88888888" className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
             </div>
           </div>
