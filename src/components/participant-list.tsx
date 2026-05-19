@@ -34,7 +34,7 @@ import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRig
 import { 
   Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
   resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
-  printParticipantBadge
+  printParticipantBadge, remindEmailConfirmation
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
@@ -80,6 +80,7 @@ export function ParticipantList({
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set())
+  const [remindingEmail, setRemindingEmail] = useState(false)
 
   const copyToClipboard = async (text: string, id: string) => {
     if (!text) return
@@ -109,6 +110,33 @@ export function ParticipantList({
     } catch (error) {
       console.error('Failed to copy selected participant codes:', error)
       toast.error('Failed to copy selected codes')
+    }
+  }
+
+  const handleRemindEmailConfirmation = async () => {
+    const codes = selectedParticipants.map(p => p.registration_code).filter(Boolean)
+
+    if (codes.length === 0) {
+      toast.error('Select at least one participant code')
+      return
+    }
+
+    setRemindingEmail(true)
+
+    try {
+      const result = await remindEmailConfirmation(projectId, codes)
+
+      if (result.success) {
+        toast.success(`Reminder email sent to ${codes.length} participant${codes.length === 1 ? '' : 's'}`)
+        clearSelection()
+      } else {
+        toast.error(result.error || 'Failed to send reminder email')
+      }
+    } catch (error) {
+      console.error('Failed to send reminder email:', error)
+      toast.error('Failed to send reminder email')
+    } finally {
+      setRemindingEmail(false)
     }
   }
 
@@ -580,6 +608,21 @@ export function ParticipantList({
               >
                 <Copy className="mr-2 h-3.5 w-3.5" />
                 Copy Codes
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl border-white/10 bg-white/5 px-3 text-[10px] font-black uppercase tracking-widest hover:bg-purple-500/10 hover:text-purple-500"
+                onClick={() => void handleRemindEmailConfirmation()}
+                disabled={selectedParticipants.length === 0 || remindingEmail}
+              >
+                {remindingEmail ? (
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Mail className="mr-2 h-3.5 w-3.5" />
+                )}
+                Remind Email
               </Button>
             </div>
           </div>

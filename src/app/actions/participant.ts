@@ -492,6 +492,29 @@ export async function resendEmailConfirmation(data: { registration_uuid: string,
   }
 }
 
+export async function remindEmailConfirmation(projectId: string, registrationCodes: string[]) {
+  try {
+    const codes = registrationCodes.map(code => code.trim()).filter(Boolean)
+
+    if (codes.length === 0) {
+      return { success: false, error: 'Select at least one participant code' }
+    }
+
+    const headers = await getAuthHeaders(projectId)
+    await api.post('/v1/admin/project/participants/remind_email_confirmation', {
+      registration_codes: codes.join(',')
+    }, {
+      headers
+    })
+
+    return { success: true }
+  } catch (error: unknown) {
+    console.error('Error sending email confirmation reminders:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to send email confirmation reminders'
+    return { success: false, error: errorMessage }
+  }
+}
+
 export async function getMyReservations(registrationUuid: string) {
   try {
     const headers = await getAuthHeaders()
