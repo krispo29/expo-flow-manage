@@ -27,7 +27,7 @@ function escapeHtml(value: string) {
 }
 
 function getBadgeType(data: PrintBadgeData) {
-  return getAttendeeTypeLabel(data.badgeType || data.category) || "VISITOR"
+  return (getAttendeeTypeLabel(data.badgeType || data.category) || "VISITOR").toUpperCase()
 }
 
 function getQrCodeUrl(registrationCode: string) {
@@ -216,6 +216,7 @@ const getBadgeStyles = () => `
     letter-spacing: 2px;
     line-height: 1;
     text-align: center;
+    text-transform: uppercase;
     transform: translateY(0.45cm);
   }
 

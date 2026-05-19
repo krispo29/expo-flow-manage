@@ -62,6 +62,10 @@ export interface Participant {
   is_email_sent: boolean
   title?: string
   badge_name?: string
+  country?: string
+  residence_country?: string
+  attendee_type?: string
+  attendee_type_name?: string
 }
 
 export interface ParticipantDetail extends Participant {

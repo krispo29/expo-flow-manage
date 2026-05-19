@@ -39,7 +39,7 @@ import {
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
-import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue } from '@/lib/countries'
+import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
 import { printBadge } from '@/utils/print-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -48,6 +48,24 @@ import { copyTextToClipboard } from '@/lib/clipboard'
 
 const PAGE_SIZE = 10
 const CONF_PAGE_SIZE = 9
+
+type ParticipantPrintSource = (Participant | ParticipantDetail) & {
+  attendee_type?: string
+  attendee_type_name?: string
+  country?: string
+}
+
+function getParticipantPrintData(participant: ParticipantPrintSource) {
+  return {
+    firstName: participant.first_name || '',
+    lastName: participant.last_name || '',
+    companyName: participant.company_name || '',
+    country: getCountryNameFromValue(participant.residence_country || participant.country, ''),
+    registrationCode: participant.registration_code || '',
+    badgeType: participant.badge_name || participant.attendee_type_name || participant.attendee_type_code || participant.attendee_type || 'VISITOR',
+    position: participant.job_position || '',
+  }
+}
 
 interface ParticipantListProps {
   participants: Participant[]
@@ -145,27 +163,29 @@ export function ParticipantList({
   const [mobileCountryCode, setMobileCountryCode] = useState('VN')
   
   const onPrintClick = async (p: Participant) => {
-    toast.promise(printParticipantBadge(projectId, p.registration_uuid), {
+    const printPromise = (async () => {
+      const [printResult, detailResult] = await Promise.all([
+        printParticipantBadge(projectId, p.registration_uuid),
+        getParticipantById(p.registration_uuid),
+      ])
+
+      if (!printResult.success) {
+        throw new Error(printResult.error || 'Failed to print badge')
+      }
+
+      const participantForBadge =
+        detailResult.success && detailResult.data
+          ? detailResult.data
+          : p
+
+      printBadge(getParticipantPrintData(participantForBadge))
+
+      return 'Badge print triggered'
+    })()
+
+    toast.promise(printPromise, {
       loading: 'Printing badge...',
-      success: (res) => {
-        if (!res.success) {
-          throw new Error(res.error || 'Failed to print badge')
-        }
-        try {
-          printBadge({
-            firstName: p.first_name || '',
-            lastName: p.last_name || '',
-            companyName: p.company_name || '',
-            country: (p as ParticipantDetail).residence_country || 'THAILAND',
-            registrationCode: p.registration_code || '',
-            category: p.attendee_type_code || 'VISITOR',
-            position: (p as ParticipantDetail).job_position || '',
-          })
-        } catch (e) {
-          console.error("Local print failed", e)
-        }
-        return 'Badge print triggered'
-      },
+      success: (message) => message,
       error: 'Failed to print badge'
     })
   }

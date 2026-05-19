@@ -15,6 +15,7 @@ import { useSearchParams } from "next/navigation"
 import { printBadges } from "@/utils/print-badge"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
+import { getCountryNameFromValue } from "@/lib/countries"
 
 function parseParticipantSearchTerms(value: string) {
   const seen = new Set<string>()
@@ -125,7 +126,7 @@ function UtilitiesContent() {
             firstName: p.first_name || '',
             lastName: p.last_name || '',
             companyName: p.company_name || '',
-            country: participantFull.residence_country || 'THAILAND',
+            country: getCountryNameFromValue(participantFull.residence_country, ''),
             registrationCode: p.registration_code,
             category: p.attendee_type_code || 'VISITOR',
             badgeType: participantFull.badge_name || participantFull.attendee_type_name || p.attendee_type_code || 'VISITOR',
@@ -323,7 +324,7 @@ function UtilitiesContent() {
                                                         
                                                         <div className="space-y-0.5">
                                                             <p className="text-sm font-medium text-foreground/80 truncate">{p.company_name}</p>
-                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">{participantFull.residence_country || 'THAILAND'}</p>
+                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">{getCountryNameFromValue(participantFull.residence_country, '') || '---'}</p>
                                                         </div>
                                                     </div>
                                                     

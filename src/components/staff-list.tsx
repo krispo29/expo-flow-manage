@@ -33,7 +33,7 @@ import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRig
 import {
   createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes
 } from '@/app/actions/staff'
-import { countries } from '@/lib/countries'
+import { countries, getCountryNameFromValue } from '@/lib/countries'
 import { toast } from 'sonner'
 import { printBadge } from '@/utils/print-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -186,7 +186,7 @@ export function StaffList({
                firstName: data.first_name || '',
                lastName: data.last_name || '',
                companyName: data.company_name || '',
-               country: data.residence_country || p.residence_country || 'THAILAND',
+               country: getCountryNameFromValue(data.residence_country || p.residence_country, ''),
                registrationCode: data.staff_code || '',
                category: data.staff_type_code || 'STAFF',
                position: '',
