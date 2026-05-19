@@ -43,6 +43,13 @@ export interface Exhibitor {
   createdAt?: string
 }
 
+function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number; total_quota?: number }) {
+  const usedQuota = Number(item.used_quota || 0)
+  const totalQuota = Number(item.total_quota || 0)
+
+  return Boolean(item.is_quota_full || (totalQuota > 0 && usedQuota >= totalQuota))
+}
+
 // GET /v1/admin/project/exhibitors
 export async function getExhibitors(projectUuid: string) {
   // Verify user has access to this project
@@ -70,6 +77,7 @@ export async function getExhibitors(projectUuid: string) {
       totalQuota: item.total_quota || 0,
       quota: 0, // Not provided in list
       overQuota: 0, // Not provided in list
+      isQuotaFull: getQuotaFullState(item),
       passwordNote: item.password_note
     }))
 

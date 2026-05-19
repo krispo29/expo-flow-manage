@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, type Exhibitor } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Button } from '@/components/ui/button'
@@ -39,18 +39,38 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+type ExhibitorQuotaStatus = Pick<Exhibitor, 'usedQuota' | 'totalQuota' | 'isQuotaFull'> & {
+  is_quota_full?: boolean
+}
+
+function getQuotaUsagePercent(item: ExhibitorQuotaStatus) {
+  const usedQuota = Number(item.usedQuota || 0)
+  const totalQuota = Number(item.totalQuota || 0)
+
+  if (totalQuota <= 0) return 0
+
+  return Math.min(100, (usedQuota / totalQuota) * 100)
+}
+
+function isQuotaFull(item: ExhibitorQuotaStatus) {
+  const usedQuota = Number(item.usedQuota || 0)
+  const totalQuota = Number(item.totalQuota || 0)
+
+  return Boolean(item.is_quota_full || item.isQuotaFull || (totalQuota > 0 && usedQuota >= totalQuota))
+}
+
 export default function ExhibitorsPage() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const { user, isAuthenticated, isHydrated } = useAuthStore()
   const isOrganizer = user?.role === 'ORGANIZER'
   
-  const [exhibitors, setExhibitors] = useState<any[]>([])
+  const [exhibitors, setExhibitors] = useState<Exhibitor[]>([])
   const [loading, setLoading] = useState(true)
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [selectedExhibitor, setSelectedExhibitor] = useState<any>(null)
+  const [selectedExhibitor, setSelectedExhibitor] = useState<Exhibitor | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
@@ -194,21 +214,21 @@ export default function ExhibitorsPage() {
     }
   }
 
-  function handleOpenPasswordDialog(exhibitor: any) {
+  function handleOpenPasswordDialog(exhibitor: Exhibitor) {
     setSelectedExhibitor(exhibitor)
     setNewPassword(exhibitor.passwordNote || '')
     setShowPassword(false)
     setPasswordDialogOpen(true)
   }
 
-  function handleOpenTestLoginDialog(exhibitor: any) {
+  function handleOpenTestLoginDialog(exhibitor: Exhibitor) {
     setSelectedExhibitor(exhibitor)
     setTestLoginPassword('')
     setShowPassword(false)
     setTestLoginDialogOpen(true)
   }
 
-  function handleOpenEmailDialog(exhibitor: any) {
+  function handleOpenEmailDialog(exhibitor: Exhibitor) {
     setSelectedExhibitor(exhibitor)
     setTargetEmail(exhibitor.email || exhibitor.username || '')
     setEmailDialogOpen(true)
@@ -475,7 +495,10 @@ export default function ExhibitorsPage() {
                     {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
                   </div>
                 ) : (
-                  paginatedExhibitors.map((item, index) => (
+                  paginatedExhibitors.map((item, index) => {
+                    const quotaFull = isQuotaFull(item)
+
+                    return (
                     <div key={`${item.id}-${index}`} className="p-6 space-y-4 hover:bg-white/5 transition-colors">
                       <div className="flex justify-between items-start">
                         <div>
@@ -516,7 +539,7 @@ export default function ExhibitorsPage() {
                           <p className="text-muted-foreground text-[10px] uppercase font-semibold">Quota</p>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{item.usedQuota} / {item.totalQuota || 0}</span>
-                            {item.is_quota_full || item.isQuotaFull ? (
+                            {quotaFull ? (
                               <Badge variant="destructive" className="h-4 w-4 p-0 flex items-center justify-center rounded-full"><XCircle className="w-2.5 h-2.5" /></Badge>
                             ) : (
                               <Badge variant="outline" className="h-4 w-4 p-0 flex items-center justify-center rounded-full bg-green-500/10 text-green-500 border-green-500/20"><CheckCircle2 className="w-2.5 h-2.5" /></Badge>
@@ -550,7 +573,8 @@ export default function ExhibitorsPage() {
                         </Button>
                       </div>
                     </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
 
@@ -628,7 +652,11 @@ export default function ExhibitorsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      paginatedExhibitors.map((item, index) => (
+                      paginatedExhibitors.map((item, index) => {
+                        const quotaFull = isQuotaFull(item)
+                        const quotaUsagePercent = getQuotaUsagePercent(item)
+
+                        return (
                         <TableRow key={`${item.id}-${index}`} className="group hover:bg-white/5 border-white/5 transition-colors">
                           <TableCell className="pl-6">
                             <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.companyName}</div>
@@ -667,11 +695,13 @@ export default function ExhibitorsPage() {
                           <TableCell>
                             <div className="flex flex-col items-center justify-center gap-1">
                               <span className="font-bold">{item.usedQuota} <span className="text-muted-foreground/40 font-normal">/</span> {item.totalQuota || 0}</span>
-                              {item.is_quota_full || item.isQuotaFull ? (
-                                <Badge variant="destructive" className="h-1.5 w-10 p-0 rounded-full animate-pulse" />
+                              {quotaFull ? (
+                                <div className="w-10 h-1.5 bg-red-500/20 rounded-full overflow-hidden">
+                                  <div className="h-full bg-red-500" style={{ width: `${quotaUsagePercent || 100}%` }} />
+                                </div>
                               ) : (
                                 <div className="w-10 h-1.5 bg-green-500/20 rounded-full overflow-hidden">
-                                  <div className="h-full bg-green-500" style={{ width: `${Math.min(100, (item.usedQuota / (item.totalQuota || 1)) * 100)}%` }} />
+                                  <div className="h-full bg-green-500" style={{ width: `${quotaUsagePercent}%` }} />
                                 </div>
                               )}
                             </div>
@@ -731,7 +761,8 @@ export default function ExhibitorsPage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))
+                        )
+                      })
                     )}
                   </TableBody>
                 </Table>

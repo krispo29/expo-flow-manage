@@ -10,6 +10,13 @@ import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server
 export type { Exhibitor } from './exhibitor'
 import type { Exhibitor } from './exhibitor'
 
+function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number; total_quota?: number }) {
+  const usedQuota = Number(item.used_quota || 0)
+  const totalQuota = Number(item.total_quota || 0)
+
+  return Boolean(item.is_quota_full || (totalQuota > 0 && usedQuota >= totalQuota))
+}
+
 // Helper function to get headers with auth (uses cookie-based project_uuid)
 async function getOrganizerAuthHeaders() {
   const authContext = await requireServerAuthContext()
@@ -49,6 +56,7 @@ export async function getOrganizerExhibitors() {
       totalQuota: item.total_quota || 0,
       quota: 0,
       overQuota: 0,
+      isQuotaFull: getQuotaFullState(item),
       passwordNote: item.password_note
     }))
 
