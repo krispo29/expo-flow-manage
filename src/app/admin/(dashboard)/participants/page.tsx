@@ -1,5 +1,6 @@
 import { getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
+import { RemindEmail } from '@/components/remind-email'
 import { AttendanceLogs } from '@/components/attendance-logs'
 import { PrintLogs } from '@/components/print-logs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -49,6 +50,12 @@ export default async function ParticipantsPage({
           >
             Print Logs
           </TabsTrigger>
+          <TabsTrigger 
+            value="remind-email" 
+            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
+          >
+            Remind email
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="participants" className="outline-none">
@@ -62,6 +69,9 @@ export default async function ParticipantsPage({
         </TabsContent>
         <TabsContent value="print-logs" className="outline-none">
           <PrintLogs projectId={projectId} />
+        </TabsContent>
+        <TabsContent value="remind-email" className="outline-none">
+          <RemindEmail projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>

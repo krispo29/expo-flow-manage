@@ -8,6 +8,8 @@ import {
   Activity,
   MapPin,
   Clock,
+  Printer,
+  CheckCircle2,
   TrendingUp,
   Sparkles,
 } from "lucide-react"
@@ -23,7 +25,6 @@ import { getDashboard } from "@/app/actions/dashboard"
 import type { DashboardConference } from "@/app/actions/dashboard"
 import { formatDistanceToNow } from "date-fns"
 import { AttendeeTypeChart } from "@/components/dashboard/attendee-type-chart"
-import { cn } from "@/lib/utils"
 import { redirect } from "next/navigation"
 
 type Props = {
@@ -63,6 +64,23 @@ export default async function Page(props: Props) {
     name: t.type_name,
     count: t.count,
   }))
+
+  const printStatusData = [
+    {
+      title: "Exhibitor Badge Prints",
+      description: "Exhibitor staff badge readiness",
+      printed: summary?.exhibitors_printed_count ?? 0,
+      notPrinted: summary?.exhibitors_not_printed_count ?? 0,
+      icon: Building2,
+    },
+    {
+      title: "Registration Badge Prints",
+      description: "Participant badge readiness",
+      printed: summary?.registrations_printed_count ?? 0,
+      notPrinted: summary?.registrations_not_printed_count ?? 0,
+      icon: Contact,
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -168,10 +186,82 @@ export default async function Page(props: Props) {
         </Card>
       </div>
 
+      <div className="order-3 grid gap-3 sm:gap-4 md:gap-6 lg:grid-cols-2">
+        {printStatusData.map((item) => {
+          const total = item.printed + item.notPrinted
+          const printedPercent = total > 0 ? Math.round((item.printed / total) * 100) : 0
+          const Icon = item.icon
+
+          return (
+            <Card key={item.title} className="relative overflow-hidden border-none">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <div className="size-6 rounded bg-primary/10 flex items-center justify-center">
+                        <Printer className="size-3.5 text-primary" />
+                      </div>
+                      {item.title}
+                    </CardTitle>
+                    <CardDescription>{item.description}</CardDescription>
+                  </div>
+                  <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <Icon className="size-4" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {failed ? (
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <AlertCircle className="size-4" />
+                    <span className="text-sm font-medium">Unavailable</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/70">
+                          <CheckCircle2 className="size-3.5" />
+                          Printed
+                        </div>
+                        <div className="mt-2 text-3xl font-extrabold tracking-tighter">
+                          {item.printed.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+                          <Printer className="size-3.5" />
+                          Not Printed
+                        </div>
+                        <div className="mt-2 text-3xl font-extrabold tracking-tighter">
+                          {item.notPrinted.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                        <span>Print Completion</span>
+                        <span>{printedPercent}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${printedPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
       {/* ======================================================= */}
       {/* ROW 2 – Attendee Type Chart + Upcoming Conferences      */}
       {/* ======================================================= */}
-      <div className="grid gap-3 sm:gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-7">
+      <div className="order-2 grid gap-3 sm:gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-7">
 
         {/* Attendee Type Chart */}
         <Card className="lg:col-span-3 border-none">
@@ -245,7 +335,7 @@ export default async function Page(props: Props) {
       {/* ======================================================= */}
       {/* ROW 3 – Recent Registrations                            */}
       {/* ======================================================= */}
-      <Card className="border-none">
+      <Card className="order-4 border-none">
         <CardHeader className="pb-6">
           <div className="flex items-center justify-between">
             <div>

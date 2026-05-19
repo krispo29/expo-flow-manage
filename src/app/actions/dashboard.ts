@@ -21,6 +21,10 @@ export interface DashboardSummary {
   total_participants: number
   total_conferences: number
   total_rooms: number
+  exhibitors_printed_count: number
+  exhibitors_not_printed_count: number
+  registrations_printed_count: number
+  registrations_not_printed_count: number
   attendee_types: DashboardAttendeeType[]
 }
 
@@ -69,6 +73,10 @@ export async function getDashboard(projectUuid?: string) {
         total_participants: rawData.summary?.total_participants || 0,
         total_conferences: rawData.summary?.total_conferences || 0,
         total_rooms: rawData.summary?.total_rooms || 0,
+        exhibitors_printed_count: rawData.summary?.exhibitors_printed_count || 0,
+        exhibitors_not_printed_count: rawData.summary?.exhibitors_not_printed_count || 0,
+        registrations_printed_count: rawData.summary?.registrations_printed_count || 0,
+        registrations_not_printed_count: rawData.summary?.registrations_not_printed_count || 0,
         attendee_types: rawData.summary?.attendee_types || []
       },
       recent_participants: rawData.recent_participants || [],
