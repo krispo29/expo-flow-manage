@@ -388,7 +388,6 @@ export default function ReportsPage() {
   // Table column filter handlers
   const handleTableColumnFilterChange = (key: string, value: string) => {
     setTableColumnFilters(prev => ({ ...prev, [key]: value }))
-    setPage(1)
   }
 
   const clearTableFilters = () => {
@@ -399,7 +398,6 @@ export default function ReportsPage() {
       type: '',
       origin: ''
     })
-    setPage(1)
     setShowTableFilters(false)
   }
 
@@ -501,7 +499,14 @@ export default function ReportsPage() {
     )
   }
 
-  const totalPages = Math.max(1, Math.ceil(filteredResults.length / limit))
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+  const currentPageStart = total > 0 && results.length > 0 ? (page - 1) * limit + 1 : 0
+  const currentPageEnd = total > 0 && results.length > 0
+    ? Math.min(currentPageStart + results.length - 1, total)
+    : 0
+  const tableFilterSummary = filteredResults.length !== results.length
+    ? `, ${filteredResults.length.toLocaleString()} visible after table filters`
+    : ""
 
   const recordPlural = total !== 1 ? "s" : ""
   const searchResultsDescription = searched
@@ -972,7 +977,11 @@ export default function ReportsPage() {
                       {/* Pagination */}
                       <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/10 bg-white/5">
                         <p className="text-sm text-muted-foreground italic font-medium">
-                          Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span> ({filteredResults.length} results)
+                          Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
+                          {" "}
+                          ({total > 0
+                            ? `showing ${currentPageStart.toLocaleString()}-${currentPageEnd.toLocaleString()} of ${total.toLocaleString()} records${tableFilterSummary}`
+                            : "0 records"})
                         </p>
                         <div className="flex items-center gap-2">
                           <Button
