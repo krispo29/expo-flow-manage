@@ -31,38 +31,45 @@ export default async function ParticipantsPage({
       </div>
 
       <Tabs defaultValue="participants" className="w-full space-y-6">
-        <TabsList className="glass p-1 h-auto inline-flex flex-wrap rounded-2xl border-white/10">
-          <TabsTrigger 
-            value="participants" 
-            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
-          >
-            Participant List
-          </TabsTrigger>
-          <TabsTrigger 
-            value="attendance-logs" 
-            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
-          >
-            Import Scanner
-          </TabsTrigger>
-          <TabsTrigger 
-            value="print-logs" 
-            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
-          >
-            Print Logs
-          </TabsTrigger>
-          <TabsTrigger
-            value="missing-activity"
-            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
-          >
-            Missing Activity
-          </TabsTrigger>
-          <TabsTrigger
-            value="remind-email" 
-            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
-          >
-            Remind email
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto scrollbar-hide">
+          <TabsList className="glass p-1 h-auto inline-flex flex-nowrap rounded-2xl border-white/10 min-w-full sm:min-w-0 justify-between sm:justify-start">
+            <TabsTrigger 
+              value="participants" 
+              className="rounded-xl px-3 py-2 text-xs sm:px-6 sm:py-2.5 sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Participant List</span>
+              <span className="sm:hidden">List</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="attendance-logs" 
+              className="rounded-xl px-3 py-2 text-xs sm:px-6 sm:py-2.5 sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Import Scanner</span>
+              <span className="sm:hidden">Import</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="print-logs" 
+              className="rounded-xl px-3 py-2 text-xs sm:px-6 sm:py-2.5 sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Print Logs</span>
+              <span className="sm:hidden">Print</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="missing-activity"
+              className="rounded-xl px-3 py-2 text-xs sm:px-6 sm:py-2.5 sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Missing Activity</span>
+              <span className="sm:hidden">Missing</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="remind-email" 
+              className="rounded-xl px-3 py-2 text-xs sm:px-6 sm:py-2.5 sm:text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Remind email</span>
+              <span className="sm:hidden">Email</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="participants" className="outline-none">
           <ParticipantList 

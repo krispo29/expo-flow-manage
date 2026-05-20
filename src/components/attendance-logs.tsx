@@ -26,6 +26,26 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
+function getScannedDate(log: AttendanceLog) {
+  if (log.scanned_date) return log.scanned_date
+  if (!log.scanned_at) return ''
+
+  const date = new Date(log.scanned_at)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return format(date, 'yyyy-MM-dd')
+}
+
+function getScannedTime(log: AttendanceLog) {
+  if (log.scanned_time) return log.scanned_time
+  if (!log.scanned_at) return ''
+
+  const date = new Date(log.scanned_at)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return format(date, 'HH:mm:ss')
+}
+
 export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
   const [logs, setLogs] = useState<AttendanceLog[]>([])
   const [total, setTotal] = useState(0)
@@ -110,7 +130,7 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
   // Filter logs based on column filters
   const filteredLogs = logs.filter(log => {
     const matchesDate = !columnFilters.date ||
-      (log.scanned_at && format(new Date(log.scanned_at), 'yyyy-MM-dd').includes(columnFilters.date))
+      getScannedDate(log).includes(columnFilters.date)
 
     const matchesCode = !columnFilters.registrationCode ||
       (log.registration_code && log.registration_code.toLowerCase().includes(columnFilters.registrationCode.toLowerCase()))
@@ -305,8 +325,8 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
                       </div>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
-                      <span className="text-[10px] font-mono font-bold text-primary/60">{log.scanned_at ? format(new Date(log.scanned_at), 'HH:mm:ss') : '--:--'}</span>
-                      <span className="text-[9px] font-bold opacity-30 uppercase">{log.scanned_at ? format(new Date(log.scanned_at), 'MMM d') : '---'}</span>
+                      <span className="text-[10px] font-mono font-bold text-primary/60">{getScannedTime(log) || '--:--'}</span>
+                      <span className="text-[9px] font-bold opacity-30 uppercase">{getScannedDate(log) || '---'}</span>
                     </div>
                   </div>
 
@@ -414,8 +434,8 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
                     <TableRow key={log.log_id || i} className="border-white/5 hover:bg-white/5 transition-colors group">
                       <TableCell className="pl-6">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[11px] font-bold text-foreground/80">{log.scanned_at ? format(new Date(log.scanned_at), 'yyyy-MM-dd') : '---'}</span>
-                          <span className="text-[10px] font-mono font-bold text-primary/60">{log.scanned_at ? format(new Date(log.scanned_at), 'HH:mm:ss') : '---'}</span>
+                          <span className="text-[11px] font-bold text-foreground/80">{getScannedDate(log) || '---'}</span>
+                          <span className="text-[10px] font-mono font-bold text-primary/60">{getScannedTime(log) || '---'}</span>
                         </div>
                       </TableCell>
                       <TableCell>

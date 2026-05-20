@@ -615,6 +615,8 @@ export type AttendanceLog = {
   registration_code: string
   device_id: string
   scanned_at: string
+  scanned_date?: string
+  scanned_time?: string
   first_name: string
   last_name: string
   company_name: string
