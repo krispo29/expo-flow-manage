@@ -46,6 +46,17 @@ export function RemindEmail({ projectId }: RemindEmailProps) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   const codes = useMemo(() => rows.map(normalizeCode).filter(Boolean), [rows])
+  const codesPreview = useMemo(() => {
+    if (codes.length === 0) {
+      return 'No registration codes'
+    }
+
+    if (codes.length <= 8) {
+      return codes.join(', ')
+    }
+
+    return `${codes.slice(0, 4).join(', ')} ... ${codes.slice(-2).join(', ')}`
+  }, [codes])
   const canClear = rows.length > 1 || rows[0] !== ''
 
   const focusRow = (index: number) => {
@@ -158,10 +169,10 @@ export function RemindEmail({ projectId }: RemindEmailProps) {
       </CardHeader>
       <CardContent className="p-6">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-inner shadow-black/5">
-          <div className="flex max-h-[420px] flex-col gap-1 overflow-y-auto pr-1">
+          <div className="flex max-h-[min(56vh,520px)] flex-col gap-1 overflow-y-auto pr-1">
             {rows.map((row, index) => (
               <div
-                key={`${index}-${rows.length}`}
+                key={index}
                 className={cn(
                   'flex min-h-11 items-center gap-2 rounded-xl border border-transparent px-2 transition-colors',
                   row ? 'bg-white/5' : 'bg-transparent'
@@ -217,8 +228,13 @@ export function RemindEmail({ projectId }: RemindEmailProps) {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-3 border-t border-white/10 bg-white/5 p-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-muted-foreground text-xs font-medium">
-          {codes.join(', ') || 'No registration codes'}
+        <div className="text-muted-foreground min-w-0 flex-1 text-xs font-medium">
+          <span className="block truncate">
+            {codes.length > 0
+              ? `${codes.length.toLocaleString()} queued: `
+              : ''}
+            {codesPreview}
+          </span>
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           <Button
