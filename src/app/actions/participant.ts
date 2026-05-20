@@ -1,6 +1,6 @@
 'use server'
 
-import api from '@/lib/api'
+import api, { getErrorMessage } from '@/lib/api'
 import { revalidatePath } from 'next/cache'
 import { requireProjectContext } from '@/lib/authorization'
 import { getUserRole } from '@/app/actions/auth'
@@ -702,6 +702,26 @@ export async function getPrintLogs(page: number = 1, limit: number = 50, keyword
     console.error('Error fetching print logs:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch print logs'
     return { success: false, error: errorMessage, total: 0, items: [] }
+  }
+}
+
+export async function exportPrintLogs(projectId: string) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+
+    const response = await api.get('/v1/admin/project/participants/print-logs/export-excel', {
+      headers,
+      responseType: 'arraybuffer',
+    })
+
+    return {
+      success: true,
+      data: new Uint8Array(response.data),
+      contentType: response.headers['content-type'],
+    }
+  } catch (error: unknown) {
+    console.error('Error exporting print logs:', error)
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 

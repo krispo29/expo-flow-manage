@@ -31,7 +31,7 @@ export default async function ParticipantsPage({
       </div>
 
       <Tabs defaultValue="participants" className="w-full space-y-6">
-        <TabsList className="glass p-1 h-auto inline-flex rounded-2xl border-white/10">
+        <TabsList className="glass p-1 h-auto inline-flex flex-wrap rounded-2xl border-white/10">
           <TabsTrigger 
             value="participants" 
             className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
@@ -50,7 +50,13 @@ export default async function ParticipantsPage({
           >
             Print Logs
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
+            value="missing-activity"
+            className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
+          >
+            Missing Activity
+          </TabsTrigger>
+          <TabsTrigger
             value="remind-email" 
             className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 text-foreground/70 hover:text-foreground"
           >
@@ -68,7 +74,10 @@ export default async function ParticipantsPage({
           <AttendanceLogs projectId={projectId} />
         </TabsContent>
         <TabsContent value="print-logs" className="outline-none">
-          <PrintLogs projectId={projectId} />
+          <PrintLogs projectId={projectId} mode="print-logs" />
+        </TabsContent>
+        <TabsContent value="missing-activity" className="outline-none">
+          <PrintLogs projectId={projectId} mode="missing-activity" />
         </TabsContent>
         <TabsContent value="remind-email" className="outline-none">
           <RemindEmail projectId={projectId} />

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Search, ChevronLeft, ChevronRight, CheckSquare, RefreshCw, Printer, CheckCircle2, XCircle, Clock, Building2, User, LayoutDashboard, Filter, X } from 'lucide-react'
+import { Loader2, Search, ChevronLeft, ChevronRight, CheckSquare, RefreshCw, Printer, CheckCircle2, XCircle, Clock, Building2, Filter, X, Download } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { getPrintLogs, getPrintedNoAttendance, generateAttendanceLogs } from '@/app/actions/participant'
+import { getPrintLogs, getPrintedNoAttendance, generateAttendanceLogs, exportPrintLogs } from '@/app/actions/participant'
 import { getRooms, type Room } from '@/app/actions/settings'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -38,12 +38,32 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 
-export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending'>('pending')
+type PrintLogMode = 'print-logs' | 'missing-activity'
+
+function formatLogDateTime(value?: string | null) {
+  if (!value) return '---'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return format(date, 'MMM dd, yyyy hh:mm a')
+}
+
+export function PrintLogs({
+  projectId,
+  mode = 'missing-activity',
+}: Readonly<{
+  projectId: string
+  mode?: PrintLogMode
+}>) {
+  const isPrintLogsMode = mode === 'print-logs'
+  const filterStatus: 'all' | 'pending' = isPrintLogsMode ? 'all' : 'pending'
+  const tableColumnCount = isPrintLogsMode ? 5 : 8
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [logs, setLogs] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Pagination & Search
   const [page, setPage] = useState(1)
@@ -83,6 +103,8 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
 
   // Fetch Rooms
   useEffect(() => {
+    if (isPrintLogsMode) return
+
     const fetchRooms = async () => {
       const res = await getRooms(projectId)
       if (res.success) {
@@ -90,7 +112,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
       }
     }
     fetchRooms()
-  }, [projectId])
+  }, [projectId, isPrintLogsMode])
 
   // Fetch Logs
   useEffect(() => {
@@ -178,6 +200,37 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
     }
   }
 
+  const handleExport = async () => {
+    if (isExporting) return
+
+    setIsExporting(true)
+    try {
+      const result = await exportPrintLogs(projectId)
+
+      if (result.success && result.data) {
+        const blob = new Blob([result.data], {
+          type: result.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Print_Logs_${new Date().toISOString().split('T')[0]}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success('Export successful')
+      } else {
+        toast.error(result.error || 'Export failed')
+      }
+    } catch (error) {
+      console.error('Failed to export print logs:', error)
+      toast.error('Export failed')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   // Filter logs based on column filters (only for pending mode)
   const filteredLogs = filterStatus === 'pending' ? logs.filter(log => {
     const matchesCode = !columnFilters.registrationCode ||
@@ -242,8 +295,10 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                 <Printer className="h-6 w-6 text-primary" />
               </div>
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-display">Print Logs</CardTitle>
-                <CardDescription className="font-medium italic">Tracking badge emission and cross-referencing activity.</CardDescription>
+                <CardTitle className="text-2xl font-display">{isPrintLogsMode ? 'Print Logs' : 'Missing Activity'}</CardTitle>
+                <CardDescription className="font-medium italic">
+                  {isPrintLogsMode ? 'Tracking badge print history and first print time.' : 'Printed participants that still need activity records.'}
+                </CardDescription>
               </div>
             </div>
 
@@ -258,23 +313,17 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                 />
               </div>
               <Separator orientation="vertical" className="h-6 bg-white/10" />
-              <Select
-                value={filterStatus}
-                onValueChange={(val: 'all' | 'pending') => {
-                  setFilterStatus(val)
-                  setPage(1)
-                  setSearchInput('')
-                  setKeyword('')
-                }}
-              >
-                <SelectTrigger className="h-9 w-[180px] bg-white/5 border-white/5 rounded-xl text-[10px] font-bold uppercase tracking-widest px-3">
-                  <SelectValue placeholder="Stream Mode" />
-                </SelectTrigger>
-                <SelectContent className="glass border-white/10">
-                  <SelectItem value="all" className="text-[10px] font-bold">ALL</SelectItem>
-                  <SelectItem value="pending" className="text-[10px] font-bold">MISSING ACTIVITY</SelectItem>
-                </SelectContent>
-              </Select>
+              {isPrintLogsMode && (
+                <Button
+                  variant="outline"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="h-9 rounded-xl bg-white/5 border-white/5 px-4 text-[10px] font-bold uppercase tracking-widest"
+                >
+                  {isExporting ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-2" />}
+                  {isExporting ? 'Exporting...' : 'Export Excel'}
+                </Button>
+              )}
               <Button
                 variant={showFilters ? "default" : "outline"}
                 size="icon"
@@ -471,6 +520,12 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                         <Badge variant="outline" className={cn("text-[8px] font-bold uppercase", log.has_conference ? 'text-emerald-500 border-emerald-500/20' : 'text-rose-400 border-rose-400/20')}>has conference: {log.has_conference ? 'YES' : 'NO'}</Badge>
                       </div>
                     )}
+                    {isPrintLogsMode && (
+                      <div className="flex items-center gap-3 text-muted-foreground/80 font-medium">
+                        <Clock className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                        <span>first printed at: {formatLogDateTime(log.first_printed_at)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -493,6 +548,9 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                   <TableHead className={cn("w-[120px] font-bold text-[10px] uppercase tracking-widest", filterStatus !== 'pending' && 'pl-6')}>registration code</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">first name last name</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">company name</TableHead>
+                  {isPrintLogsMode && (
+                    <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest">first printed at</TableHead>
+                  )}
                   {filterStatus === 'pending' && (
                     <>
                       <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">has attendance</TableHead>
@@ -530,6 +588,7 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                         onChange={e => handleColumnFilterChange('company', e.target.value)}
                       />
                     </TableHead>
+                    {isPrintLogsMode && <TableHead className="py-2"></TableHead>}
                     {filterStatus === 'pending' && (
                       <>
                         <TableHead className="py-2">
@@ -598,14 +657,14 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
               <TableBody>
                 {loading && filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={filterStatus === 'pending' ? 12 : 5} className="text-center py-24">
+                    <TableCell colSpan={tableColumnCount} className="text-center py-24">
                       <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
                       <span className="text-sm font-bold tracking-widest uppercase opacity-40">Compiling emission logs...</span>
                     </TableCell>
                   </TableRow>
                 ) : filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={filterStatus === 'pending' ? 12 : 5} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={tableColumnCount} className="text-center py-24 italic text-muted-foreground font-medium">
                       No logs captured.
                     </TableCell>
                   </TableRow>
@@ -630,6 +689,13 @@ export function PrintLogs({ projectId }: Readonly<{ projectId: string }>) {
                         <p className="text-sm font-bold text-foreground/80 line-clamp-1">{log.company_name}</p>
                         <div className="text-[10px] text-muted-foreground/60 uppercase font-mono mt-0.5 line-clamp-1">{log.job_position || '---'}</div>
                       </TableCell>
+                      {isPrintLogsMode && (
+                        <TableCell>
+                          <div className="text-xs font-mono font-bold text-foreground/80">
+                            {formatLogDateTime(log.first_printed_at)}
+                          </div>
+                        </TableCell>
+                      )}
                       {filterStatus === 'pending' && (
                         <>
                           <TableCell className="text-center">
