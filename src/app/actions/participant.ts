@@ -593,11 +593,14 @@ export interface AttendeeType {
   need_questionnaire: boolean
   can_book_conference: boolean
   created_at: string
+  group_type?: string
+  order_index?: number
+  badge_name?: string
 }
 
-export async function getAllAttendeeTypes() {
+export async function getAllAttendeeTypes(projectId?: string) {
   try {
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders(projectId)
     const response = await api.get('/v1/admin/project/participants/attendee_types', {
       headers
     })

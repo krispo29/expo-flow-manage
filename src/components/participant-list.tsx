@@ -32,7 +32,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X, Copy, Check } from 'lucide-react'
 import { 
-  Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
+  type Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
+  type AttendeeType,
   resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
   printParticipantBadge, remindEmailConfirmation
 } from '@/app/actions/participant'
@@ -55,14 +56,37 @@ type ParticipantPrintSource = (Participant | ParticipantDetail) & {
   country?: string
 }
 
-function getParticipantPrintData(participant: ParticipantPrintSource) {
+function normalizeAttendeeTypeCode(value?: string | null) {
+  return value?.trim().toUpperCase() || ''
+}
+
+function getAttendeeTypeOptionLabel(type: AttendeeType) {
+  const label = type.type_name || type.badge_name || type.type_code
+  return `${label} (${type.type_code})`
+}
+
+function getParticipantPrintData(
+  participant: ParticipantPrintSource,
+  attendeeTypesByCode: Map<string, AttendeeType>
+) {
+  const attendeeTypeCode = normalizeAttendeeTypeCode(participant.attendee_type_code || participant.attendee_type)
+  const attendeeType = attendeeTypesByCode.get(attendeeTypeCode)
+  const badgeType =
+    participant.badge_name?.trim() ||
+    attendeeType?.badge_name?.trim() ||
+    participant.attendee_type_name?.trim() ||
+    attendeeType?.type_name?.trim() ||
+    participant.attendee_type_code ||
+    participant.attendee_type ||
+    'VISITOR'
+
   return {
     firstName: participant.first_name || '',
     lastName: participant.last_name || '',
     companyName: participant.company_name || '',
     country: getCountryNameFromValue(participant.residence_country || participant.country, ''),
     registrationCode: participant.registration_code || '',
-    badgeType: participant.badge_name || participant.attendee_type_name || participant.attendee_type_code || participant.attendee_type || 'VISITOR',
+    badgeType,
     position: participant.job_position || '',
   }
 }
@@ -70,17 +94,32 @@ function getParticipantPrintData(participant: ParticipantPrintSource) {
 interface ParticipantListProps {
   participants: Participant[]
   projectId: string
+  attendeeTypes: AttendeeType[]
 }
 
 export function ParticipantList({ 
   participants, 
   projectId, 
+  attendeeTypes,
 }: ParticipantListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set())
   const [remindingEmail, setRemindingEmail] = useState(false)
+  const attendeeTypeOptions = useMemo(
+    () => [...attendeeTypes]
+      .filter(type => type.type_code)
+      .sort((a, b) => (a.order_index ?? Number.MAX_SAFE_INTEGER) - (b.order_index ?? Number.MAX_SAFE_INTEGER)),
+    [attendeeTypes]
+  )
+  const attendeeTypesByCode = useMemo(() => {
+    const next = new Map<string, AttendeeType>()
+    attendeeTypeOptions.forEach(type => {
+      next.set(normalizeAttendeeTypeCode(type.type_code), type)
+    })
+    return next
+  }, [attendeeTypeOptions])
 
   const copyToClipboard = async (text: string, id: string) => {
     if (!text) return
@@ -206,7 +245,7 @@ export function ParticipantList({
           ? detailResult.data
           : p
 
-      printBadge(getParticipantPrintData(participantForBadge))
+      printBadge(getParticipantPrintData(participantForBadge, attendeeTypesByCode))
 
       return 'Badge print triggered'
     })()
@@ -546,13 +585,11 @@ export function ParticipantList({
                   </SelectTrigger>
                   <SelectContent className="glass border-white/10">
                     <SelectItem value="ALL">All Types</SelectItem>
-                    <SelectItem value="VI">Visitor (VI)</SelectItem>
-                    <SelectItem value="VP">VIP (VP)</SelectItem>
-                    <SelectItem value="EX">Exhibitor (EX)</SelectItem>
-                    <SelectItem value="VG">VIP Group (VG)</SelectItem>
-                    <SelectItem value="BY">Buyer (BY)</SelectItem>
-                    <SelectItem value="SP">Speaker (SP)</SelectItem>
-                    <SelectItem value="PR">Press (PR)</SelectItem>
+                    {attendeeTypeOptions.map(type => (
+                      <SelectItem key={type.type_code} value={type.type_code}>
+                        {getAttendeeTypeOptionLabel(type)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Button onClick={openCreate} className="btn-aurora h-11 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 shrink-0">
@@ -666,13 +703,11 @@ export function ParticipantList({
                     </SelectTrigger>
                     <SelectContent className="glass border-white/10 rounded-xl">
                       <SelectItem value="ALL">All Types</SelectItem>
-                      <SelectItem value="VI">Visitor (VI)</SelectItem>
-                      <SelectItem value="VP">VIP (VP)</SelectItem>
-                      <SelectItem value="EX">Exhibitor (EX)</SelectItem>
-                      <SelectItem value="VG">VIP Group (VG)</SelectItem>
-                      <SelectItem value="BY">Buyer (BY)</SelectItem>
-                      <SelectItem value="SP">Speaker (SP)</SelectItem>
-                      <SelectItem value="PR">Press (PR)</SelectItem>
+                      {attendeeTypeOptions.map(type => (
+                        <SelectItem key={type.type_code} value={type.type_code}>
+                          {getAttendeeTypeOptionLabel(type)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1020,13 +1055,11 @@ export function ParticipantList({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="glass border-white/10">
-                    <SelectItem value="VI">Visitor (VI)</SelectItem>
-                    <SelectItem value="VP">VIP (VP)</SelectItem>
-                    <SelectItem value="EX">Exhibitor (EX)</SelectItem>
-                    <SelectItem value="VG">VIP Group (VG)</SelectItem>
-                    <SelectItem value="BY">Buyer (BY)</SelectItem>
-                    <SelectItem value="SP">Speaker (SP)</SelectItem>
-                    <SelectItem value="PR">Press (PR)</SelectItem>
+                    {attendeeTypeOptions.map(type => (
+                      <SelectItem key={type.type_code} value={type.type_code}>
+                        {getAttendeeTypeOptionLabel(type)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

@@ -1,4 +1,4 @@
-import { getParticipants } from '@/app/actions/participant'
+import { getAllAttendeeTypes, getParticipants } from '@/app/actions/participant'
 import { ParticipantList } from '@/components/participant-list'
 import { RemindEmail } from '@/components/remind-email'
 import { AttendanceLogs } from '@/components/attendance-logs'
@@ -15,9 +15,13 @@ export default async function ParticipantsPage({
   const cookieStore = await cookies();
   const projectId = resolvedSearchParams.projectId || cookieStore.get('project_uuid')?.value || '67597e81-db17-4ff0-8479-56f737d9482a';
 
-  // Fetch all participants (filtering handled client-side)
-  const result = await getParticipants(projectId);
-  const participants = result.data || [];
+  // Fetch all participants and attendee type metadata for client-side filtering/printing.
+  const [participantsResult, attendeeTypesResult] = await Promise.all([
+    getParticipants(projectId),
+    getAllAttendeeTypes(projectId),
+  ]);
+  const participants = participantsResult.data || [];
+  const attendeeTypes = attendeeTypesResult.data || [];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -75,6 +79,7 @@ export default async function ParticipantsPage({
           <ParticipantList 
             participants={participants} 
             projectId={projectId}
+            attendeeTypes={attendeeTypes}
           />
         </TabsContent>
         <TabsContent value="attendance-logs" className="outline-none">
