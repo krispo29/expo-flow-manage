@@ -14,7 +14,7 @@ async function getAuthHeaders(projectUuid: string) {
 export interface Room {
   room_uuid: string
   event_uuid: string
-  event_name: string
+  event_name?: string
   room_name: string
   location_detail: string
   capacity: number

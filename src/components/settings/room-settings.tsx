@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { Edit, Plus, Loader2, MapPin, Users, Building, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Monitor, ShieldCheck, Power, Filter, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { filterRooms, type RoomColumnFilters } from "@/components/settings/room-filters"
 
 interface RoomSettingsProps {
   projectUuid: string
@@ -34,7 +35,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
 
   // Column filter state
   const [showFilters, setShowFilters] = useState(false)
-  const [columnFilters, setColumnFilters] = useState({
+  const [columnFilters, setColumnFilters] = useState<RoomColumnFilters>({
     roomName: '',
     roomType: '',
     location: '',
@@ -46,34 +47,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Filter rooms based on search and column filters
-  const filteredRooms = rooms.filter(room => {
-    // Global search
-    const matchesSearch = !searchQuery ||
-      room.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      room.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (room.location_detail?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (room.device_id?.toLowerCase().includes(searchQuery.toLowerCase()))
-
-    // Column specific filters
-    const matchesRoomName = !columnFilters.roomName ||
-      (room.room_name && room.room_name.toLowerCase().includes(columnFilters.roomName.toLowerCase()))
-
-    const matchesRoomType = !columnFilters.roomType || columnFilters.roomType === 'all' ||
-      (room.room_type && room.room_type.toLowerCase().includes(columnFilters.roomType.toLowerCase()))
-
-    const matchesLocation = !columnFilters.location ||
-      (room.location_detail && room.location_detail.toLowerCase().includes(columnFilters.location.toLowerCase()))
-
-    const matchesDeviceId = !columnFilters.deviceId ||
-      (room.device_id && room.device_id.toLowerCase().includes(columnFilters.deviceId.toLowerCase()))
-
-    const matchesStatus = columnFilters.isActive === 'all' ||
-      (columnFilters.isActive === 'active' && room.is_active) ||
-      (columnFilters.isActive === 'inactive' && !room.is_active)
-
-    return matchesSearch && matchesRoomName && matchesRoomType && matchesLocation && matchesDeviceId && matchesStatus
-  })
+  const filteredRooms = filterRooms(rooms, searchQuery, columnFilters)
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredRooms.length / itemsPerPage)
@@ -91,7 +65,7 @@ export function RoomSettings({ projectUuid }: Readonly<RoomSettingsProps>) {
   }
 
   // Handle column filter change and reset pagination
-  const handleColumnFilterChange = (key: string, value: string) => {
+  const handleColumnFilterChange = (key: keyof RoomColumnFilters, value: string) => {
     setColumnFilters(prev => ({ ...prev, [key]: value }))
     setCurrentPage(1)
   }

@@ -113,13 +113,41 @@ export interface Country {
   nationality: string
 }
 
+const normalizeApiOptionValue = (value: string) =>
+  value.trim().replace(/\s+/g, ' ').toLowerCase()
+
+const isDeprecatedDutchAntillesCountry = (country: Country) =>
+  country.code === 'AN' ||
+  normalizeApiOptionValue(country.name) === 'netherlands antilles' ||
+  normalizeApiOptionValue(country.nationality) === 'dutch antillean'
+
+const normalizeProjectCountry = (country: Country): Country => {
+  if (
+    country.code === 'NL' ||
+    normalizeApiOptionValue(country.name) === 'netherlands'
+  ) {
+    return {
+      ...country,
+      code: 'NL',
+      name: 'The Netherlands',
+      nationality: country.nationality || 'Dutch',
+    }
+  }
+
+  return country
+}
+
 // GET /v1/admin/project/countries
 export async function getCountries(projectUuid?: string) {
   try {
     const headers = await requireServerAuthHeaders({ projectUuid })
 
     const response = await api.get('/v1/admin/project/countries', { headers })
-    return { success: true, data: (response.data.data || []) as Country[] }
+    const data = ((response.data.data || []) as Country[])
+      .filter((country) => !isDeprecatedDutchAntillesCountry(country))
+      .map(normalizeProjectCountry)
+
+    return { success: true, data }
   } catch (error: unknown) {
     console.error('Error fetching countries:', error)
     return { success: false, error: 'Failed to fetch countries', data: [] }
@@ -131,13 +159,21 @@ export interface Nationality {
   nationality: string
 }
 
+const isDeprecatedDutchAntillesNationality = (nationality: Nationality) =>
+  nationality.code === 'AN' ||
+  normalizeApiOptionValue(nationality.nationality) === 'dutch antillean'
+
 // GET /v1/admin/project/nationalities
 export async function getNationalities(projectUuid?: string) {
   try {
     const headers = await requireServerAuthHeaders({ projectUuid })
 
     const response = await api.get('/v1/admin/project/nationalities', { headers })
-    return { success: true, data: (response.data.data || []) as Nationality[] }
+    const data = ((response.data.data || []) as Nationality[]).filter(
+      (nationality) => !isDeprecatedDutchAntillesNationality(nationality)
+    )
+
+    return { success: true, data }
   } catch (error: unknown) {
     console.error('Error fetching nationalities:', error)
     return { success: false, error: 'Failed to fetch nationalities', data: [] }

@@ -51,6 +51,17 @@ describe('countries', () => {
     expect(countryCodes).toContain('PH') // Philippines
   })
 
+  it('should use current Netherlands naming and exclude Netherlands Antilles', () => {
+    const countryCodes = countries.map((c) => c.code)
+    const countryNames = countries.map((c) => c.name)
+    const nationalities = countries.map((c) => c.nationality)
+
+    expect(getCountryByCode('NL')?.name).toBe('The Netherlands')
+    expect(countryCodes).not.toContain('AN')
+    expect(countryNames).not.toContain('Netherlands Antilles')
+    expect(nationalities).not.toContain('Dutch Antillean')
+  })
+
   it('should have unique country codes', () => {
     const codes = countries.map((c) => c.code)
     const uniqueCodes = new Set(codes)
@@ -130,6 +141,9 @@ describe('country value helpers', () => {
     expect(findCountryByCodeOrName('Korea')?.code).toBe('KR')
     expect(getCountryCodeFromValue('Korea')).toBe('KR')
     expect(getCountryNameFromValue('Korea')).toBe('South Korea')
+    expect(findCountryByCodeOrName('Netherlands')?.code).toBe('NL')
+    expect(getCountryCodeFromValue('Netherlands')).toBe('NL')
+    expect(getCountryNameFromValue('Netherlands')).toBe('The Netherlands')
   })
 
   it('should resolve phone country codes from API variants', () => {

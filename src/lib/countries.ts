@@ -150,8 +150,7 @@ export const countries: Country[] = [
   { code: 'NA', name: 'Namibia', phoneCode: '+264', flag: '🇳🇦', nationality: 'Namibian' },
   { code: 'NR', name: 'Nauru', phoneCode: '+674', flag: '🇳🇷', nationality: 'Nauruan' },
   { code: 'NP', name: 'Nepal', phoneCode: '+977', flag: '🇳🇵', nationality: 'Nepali' },
-  { code: 'NL', name: 'Netherlands', phoneCode: '+31', flag: '🇳🇱', nationality: 'Dutch' },
-  { code: 'AN', name: 'Netherlands Antilles', phoneCode: '+599', flag: '🇳🇱', nationality: 'Dutch Antillean' },
+  { code: 'NL', name: 'The Netherlands', phoneCode: '+31', flag: '🇳🇱', nationality: 'Dutch' },
   { code: 'NC', name: 'New Caledonia', phoneCode: '+687', flag: '🇳🇨', nationality: 'New Caledonian' },
   { code: 'NZ', name: 'New Zealand', phoneCode: '+64', flag: '🇳🇿', nationality: 'New Zealander' },
   { code: 'NI', name: 'Nicaragua', phoneCode: '+505', flag: '🇳🇮', nationality: 'Nicaraguan' },
@@ -255,6 +254,8 @@ const countryValueAliases: Record<string, string> = {
   'republic of korea': 'KR',
   'south korea': 'KR',
   'viet nam': 'VN',
+  netherlands: 'NL',
+  holland: 'NL',
 };
 
 const normalizeCountryValue = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();

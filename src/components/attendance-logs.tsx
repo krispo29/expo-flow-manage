@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Search, Upload, ChevronLeft, ChevronRight, Building2, QrCode, Filter, X } from 'lucide-react'
+import { Loader2, Search, Upload, ChevronLeft, ChevronRight, Building2, QrCode, Filter, X, Download } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -127,6 +127,10 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
     }
   }
 
+  function handleExportNotReady() {
+    toast('Export API is not available yet.')
+  }
+
   // Filter logs based on column filters
   const filteredLogs = logs.filter(log => {
     const matchesDate = !columnFilters.date ||
@@ -174,14 +178,26 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
       {/* Import Section */}
       <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
         <CardHeader className="bg-white/5 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
-              <Upload className="h-6 w-6 text-primary" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <Upload className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-display">Import Scanner</CardTitle>
+                <CardDescription className="font-medium italic">Upload external attendance.</CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-xl font-display">Import Scanner</CardTitle>
-              <CardDescription className="font-medium italic">Upload external attendance.</CardDescription>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl border-white/10 bg-white/5 px-5 text-xs font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary sm:w-auto"
+              onClick={handleExportNotReady}
+              title="Export scanner import data"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-8">
