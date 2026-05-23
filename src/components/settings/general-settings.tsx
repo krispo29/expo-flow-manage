@@ -77,6 +77,7 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
       project_site_url: formData.get('project_site_url') as string,
       is_individual_registration_open: (formData.get('is_individual_registration_open') as string) === 'on',
       is_group_registration_open: (formData.get('is_group_registration_open') as string) === 'on',
+      settings: project.settings ?? {},
       start_date: new Date(formData.get('start_date') as string).toISOString(),
       end_date: new Date(formData.get('end_date') as string).toISOString(),
       cutoff_date_exhibitor_edit: new Date(formData.get('cutoff_date_exhibitor_edit') as string).toISOString(),

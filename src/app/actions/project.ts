@@ -222,11 +222,12 @@ export async function updateProject(
   projectData: Partial<Project> & { project_uuid: string }
 ) {
   try {
+    const { project_uuid, ...projectDetailPayload } = projectData
     const headers = await requireServerAuthHeaders({
-      projectUuid: projectData.project_uuid,
+      projectUuid: project_uuid,
     })
 
-    await api.put('/v1/admin/project/detail', projectData, {
+    await api.put('/v1/admin/project/detail', projectDetailPayload, {
       headers,
     })
 
