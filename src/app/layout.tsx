@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
+import "react-quill-new/dist/quill.snow.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import { Toaster } from "sonner";

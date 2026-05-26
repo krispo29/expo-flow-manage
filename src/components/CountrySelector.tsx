@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { countries, findCountryByPhoneCodeOrValue } from "@/lib/countries"; 
+import { cn } from "@/lib/utils";
 
 interface CountrySelectorProps {
   value: string;
@@ -25,6 +26,8 @@ interface CountrySelectorProps {
   placeholder?: string;
   displayProperty?: 'name' | 'nationality' | 'phoneCode';
   required?: boolean;
+  disabled?: boolean;
+  className?: string;
 }
 
 export function CountrySelector({
@@ -33,7 +36,9 @@ export function CountrySelector({
   label = "Country",
   placeholder = "Select country",
   displayProperty = "name",
-  required = false
+  required = false,
+  disabled = false,
+  className,
 }: CountrySelectorProps) {
   const [open, setOpen] = useState(false);
 
@@ -55,7 +60,7 @@ export function CountrySelector({
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={disabled ? false : open} onOpenChange={(nextOpen) => !disabled && setOpen(nextOpen)}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -63,7 +68,8 @@ export function CountrySelector({
             aria-expanded={open}
             aria-label={label}
             aria-required={required}
-            className="w-full justify-between font-normal bg-background h-10"
+            disabled={disabled}
+            className={cn("h-10 w-full justify-between bg-background font-normal", className)}
           >
             {selectedCountry ? (
               <span className="flex items-center gap-2">
