@@ -70,7 +70,9 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
 
   const handleProjectChange = (newProjectId: string) => {
-    router.push(`${basePath}?projectId=${newProjectId}`)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('projectId', newProjectId)
+    router.push(`${pathname}?${params.toString()}`)
   }
 
   const isActive = (path: string) => {
