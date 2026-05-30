@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Edit, Plus, Loader2, Calendar, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShieldCheck, Power, Hash, Filter, X, Image as ImageIcon } from "lucide-react"
+import { Edit, Plus, Loader2, Calendar, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShieldCheck, Power, Hash, Filter, X, Eye, Image as ImageIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -81,6 +81,49 @@ function EventColorField({
   )
 }
 
+function EventLogoUrlField({
+  id,
+  value,
+  onChange,
+  onPreview,
+}: Readonly<{
+  id: string
+  value: string
+  onChange: (value: string) => void
+  onPreview: (value: string) => void
+}>) {
+  const previewUrl = value.trim()
+
+  return (
+    <div className="space-y-2.5">
+      <Label htmlFor={id} className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Logo URL</Label>
+      <div className="flex gap-3">
+        <div className="relative min-w-0 flex-1">
+          <ImageIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/40" />
+          <Input
+            id={id}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://..."
+            className="h-12 bg-white/5 border-white/10 rounded-xl pl-11"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!previewUrl}
+          onClick={() => onPreview(previewUrl)}
+          className="h-12 w-12 shrink-0 rounded-xl border-white/10 bg-white/5 p-0 hover:bg-primary/10 hover:text-primary"
+          title="Preview logo"
+          aria-label="Preview event logo"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function EventHtmlField({
   id,
   value,
@@ -145,6 +188,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
   const [saving, setSaving] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState('')
 
   // Create form state
   const [newEvent, setNewEvent] = useState<EventFormState>(emptyEventForm())
@@ -638,18 +682,12 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                 value={newEvent.event_color_code}
                 onChange={(value) => setNewEvent({ ...newEvent, event_color_code: value })}
               />
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Logo URL</Label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/40" />
-                  <Input
-                    value={newEvent.event_logo_url}
-                    onChange={(e) => setNewEvent({ ...newEvent, event_logo_url: e.target.value })}
-                    placeholder="https://..."
-                    className="h-12 bg-white/5 border-white/10 rounded-xl pl-11"
-                  />
-                </div>
-              </div>
+              <EventLogoUrlField
+                id="create-event-logo-url"
+                value={newEvent.event_logo_url}
+                onChange={(value) => setNewEvent({ ...newEvent, event_logo_url: value })}
+                onPreview={setLogoPreviewUrl}
+              />
             </div>
             <EventHtmlField
               id="create-event-registration-confirmed-message"
@@ -704,18 +742,12 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                   value={editingEvent.event_color_code || ''}
                   onChange={(value) => setEditingEvent({ ...editingEvent, event_color_code: value })}
                 />
-                <div className="space-y-2.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Logo URL</Label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/40" />
-                    <Input
-                      value={editingEvent.event_logo_url || ''}
-                      onChange={(e) => setEditingEvent({ ...editingEvent, event_logo_url: e.target.value })}
-                      placeholder="https://..."
-                      className="h-12 bg-white/5 border-white/10 rounded-xl pl-11"
-                    />
-                  </div>
-                </div>
+                <EventLogoUrlField
+                  id="edit-event-logo-url"
+                  value={editingEvent.event_logo_url || ''}
+                  onChange={(value) => setEditingEvent({ ...editingEvent, event_logo_url: value })}
+                  onPreview={setLogoPreviewUrl}
+                />
               </div>
               <EventHtmlField
                 id="edit-event-registration-confirmed-message"
@@ -742,6 +774,26 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
               Save Changes
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!logoPreviewUrl} onOpenChange={(open) => !open && setLogoPreviewUrl('')}>
+        <DialogContent className="glass sm:max-w-3xl border-white/10 rounded-3xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display font-bold">Event Logo Preview</DialogTitle>
+            <DialogDescription className="break-all font-medium">{logoPreviewUrl}</DialogDescription>
+          </DialogHeader>
+          <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white p-6">
+            {logoPreviewUrl ? (
+              <img
+                src={logoPreviewUrl}
+                alt="Event logo preview"
+                className="max-h-[60vh] w-auto max-w-full object-contain"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">No logo URL to preview.</p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
