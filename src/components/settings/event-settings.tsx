@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { getEvents, createEvent, updateEvent, type Event } from "@/app/actions/settings"
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Edit, Plus, Loader2, Calendar, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShieldCheck, Power, Hash, Filter, X } from "lucide-react"
+import { Edit, Plus, Loader2, Calendar, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShieldCheck, Power, Hash, Filter, X, Image as ImageIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -21,8 +22,121 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false })
+
 interface EventSettingsProps {
   projectUuid: string
+}
+
+interface EventFormState {
+  event_name: string
+  event_color_code: string
+  event_logo_url: string
+  event_registration_confirmed_message_html: string
+  is_active: boolean
+  order_index: number
+}
+
+const emptyEventForm = (): EventFormState => ({
+  event_name: '',
+  event_color_code: '',
+  event_logo_url: '',
+  event_registration_confirmed_message_html: '',
+  is_active: true,
+  order_index: 1,
+})
+
+const normalizeColor = (value?: string | null) =>
+  /^#[0-9a-fA-F]{6}$/.test(value || '') ? value || '#000000' : '#000000'
+
+function EventColorField({
+  id,
+  value,
+  onChange,
+}: Readonly<{
+  id: string
+  value: string
+  onChange: (value: string) => void
+}>) {
+  return (
+    <div className="space-y-2.5">
+      <Label htmlFor={id} className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Color Code</Label>
+      <div className="flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3">
+        <input
+          id={id}
+          type="color"
+          value={normalizeColor(value)}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-10 cursor-pointer rounded-md border border-white/10 bg-transparent p-0"
+          aria-label="Event color code"
+        />
+        <Input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="#1D4ED8"
+          className="h-10 flex-1 border-0 bg-transparent px-0 font-mono text-xs shadow-none focus-visible:ring-0"
+        />
+      </div>
+    </div>
+  )
+}
+
+function EventHtmlField({
+  id,
+  value,
+  onChange,
+}: Readonly<{
+  id: string
+  value: string
+  onChange: (value: string) => void
+}>) {
+  return (
+    <div className="space-y-2.5">
+      <Label htmlFor={id} className="text-[10px] font-bold uppercase tracking-widest text-primary/60">
+        Registration Confirmed Message HTML
+      </Label>
+      <div id={id} className="event-rich-text min-h-64 rounded-xl border border-white/10 bg-white">
+        <ReactQuill
+          theme="snow"
+          value={value}
+          onChange={onChange}
+          modules={{
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ["bold", "italic", "underline", "strike"],
+              [{ list: "ordered" }, { list: "bullet" }],
+              [{ align: [] }],
+              ["link", "clean"],
+            ],
+          }}
+        />
+      </div>
+      <style jsx global>{`
+        .event-rich-text .ql-toolbar {
+          border: 0;
+          border-bottom: 1px solid hsl(var(--border));
+          border-top-left-radius: 0.75rem;
+          border-top-right-radius: 0.75rem;
+          background: hsl(var(--muted) / 0.25);
+        }
+        .event-rich-text .ql-container {
+          min-height: 14rem;
+          border: 0;
+          font-size: 0.875rem;
+          border-bottom-left-radius: 0.75rem;
+          border-bottom-right-radius: 0.75rem;
+        }
+        .event-rich-text .ql-editor {
+          min-height: 14rem;
+          color: hsl(var(--foreground));
+        }
+        .event-rich-text .ql-editor *,
+        .event-rich-text .ql-editor a {
+          color: hsl(var(--foreground)) !important;
+        }
+      `}</style>
+    </div>
+  )
 }
 
 export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
@@ -33,7 +147,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
 
   // Create form state
-  const [newEvent, setNewEvent] = useState({ event_name: '', is_active: true, order_index: 1 })
+  const [newEvent, setNewEvent] = useState<EventFormState>(emptyEventForm())
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -55,7 +169,8 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
     // Global search
     const matchesSearch = !searchQuery ||
       event.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (event.event_code && event.event_code.toLowerCase().includes(searchQuery.toLowerCase()))
+      (event.event_code && event.event_code.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (event.event_color_code && event.event_color_code.toLowerCase().includes(searchQuery.toLowerCase()))
 
     // Column specific filters
     const matchesEventName = !columnFilters.eventName ||
@@ -127,7 +242,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
     if (result.success) {
       toast.success("Event created")
       setIsCreateOpen(false)
-      setNewEvent({ event_name: '', is_active: true, order_index: 1 })
+      setNewEvent(emptyEventForm())
       fetchEvents()
     } else {
       toast.error(result.error || "Failed to create event")
@@ -140,6 +255,9 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
     const result = await updateEvent(projectUuid, {
       event_uuid: editingEvent.event_uuid,
       event_name: editingEvent.event_name,
+      event_color_code: editingEvent.event_color_code || '',
+      event_logo_url: editingEvent.event_logo_url || '',
+      event_registration_confirmed_message_html: editingEvent.event_registration_confirmed_message_html || '',
       is_active: editingEvent.is_active,
       order_index: editingEvent.order_index,
     })
@@ -270,6 +388,22 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                         </code>
                         <span className="text-[10px] font-mono font-bold text-primary/60">ORDER: {event.order_index}</span>
                       </div>
+                      {(event.event_color_code || event.event_logo_url) && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {event.event_color_code && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              <span className="h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: normalizeColor(event.event_color_code) }} />
+                              {event.event_color_code}
+                            </span>
+                          )}
+                          {event.event_logo_url && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              <ImageIcon className="h-3 w-3" />
+                              Logo
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <Badge className={cn("rounded-full px-3 text-[10px] font-bold", event.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20')}>
                       {event.is_active ? "Active" : "Inactive"}
@@ -294,6 +428,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                 <TableRow className="border-white/10 hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest pl-6">Event Name</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Event Code</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Branding</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Order</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
@@ -316,6 +451,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                         onChange={e => handleColumnFilterChange('eventCode', e.target.value)}
                       />
                     </TableHead>
+                    <TableHead className="py-2"></TableHead>
                     <TableHead className="py-2"></TableHead>
                     <TableHead className="py-2 text-center">
                       <Select value={columnFilters.isActive} onValueChange={v => handleColumnFilterChange('isActive', v)}>
@@ -345,7 +481,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
               <TableBody>
                 {filteredEvents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={6} className="text-center py-24 italic text-muted-foreground font-medium">
                       {searchQuery ? "No matching results found." : "No events found. Click \"Add Event\" to create one."}
                     </TableCell>
                   </TableRow>
@@ -362,6 +498,25 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                         <code className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono uppercase tracking-tighter">
                           {event.event_code || '---'}
                         </code>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {event.event_color_code && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              <span className="h-2.5 w-2.5 rounded-full border border-white/20" style={{ backgroundColor: normalizeColor(event.event_color_code) }} />
+                              {event.event_color_code}
+                            </span>
+                          )}
+                          {event.event_logo_url && (
+                            <span title={event.event_logo_url} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              <ImageIcon className="h-3 w-3" />
+                              Logo
+                            </span>
+                          )}
+                          {!event.event_color_code && !event.event_logo_url && (
+                            <span className="text-[10px] font-mono font-bold opacity-40">---</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="text-[10px] font-mono font-bold opacity-40">{event.order_index}</span>
@@ -460,7 +615,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+        <DialogContent className="glass max-h-[90vh] overflow-y-auto sm:max-w-[760px] border-white/10 rounded-3xl shadow-2xl p-0">
           <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
@@ -477,6 +632,30 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Name</Label>
               <Input value={newEvent.event_name} onChange={(e) => setNewEvent({ ...newEvent, event_name: e.target.value })} placeholder="e.g. ILDEX Vietnam 2026" className="h-12 bg-white/5 border-white/10 rounded-xl" />
             </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <EventColorField
+                id="create-event-color-code"
+                value={newEvent.event_color_code}
+                onChange={(value) => setNewEvent({ ...newEvent, event_color_code: value })}
+              />
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Logo URL</Label>
+                <div className="relative">
+                  <ImageIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/40" />
+                  <Input
+                    value={newEvent.event_logo_url}
+                    onChange={(e) => setNewEvent({ ...newEvent, event_logo_url: e.target.value })}
+                    placeholder="https://..."
+                    className="h-12 bg-white/5 border-white/10 rounded-xl pl-11"
+                  />
+                </div>
+              </div>
+            </div>
+            <EventHtmlField
+              id="create-event-registration-confirmed-message"
+              value={newEvent.event_registration_confirmed_message_html}
+              onChange={(value) => setNewEvent({ ...newEvent, event_registration_confirmed_message_html: value })}
+            />
             <div className="space-y-2.5">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Order Index</Label>
               <div className="relative">
@@ -501,7 +680,7 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingEvent} onOpenChange={(open) => !open && setEditingEvent(null)}>
-        <DialogContent className="glass sm:max-w-[480px] border-white/10 rounded-3xl shadow-2xl p-0 overflow-hidden">
+        <DialogContent className="glass max-h-[90vh] overflow-y-auto sm:max-w-[760px] border-white/10 rounded-3xl shadow-2xl p-0">
           <DialogHeader className="p-8 bg-white/5 border-b border-white/10">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
@@ -519,6 +698,30 @@ export function EventSettings({ projectUuid }: Readonly<EventSettingsProps>) {
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Name</Label>
                 <Input value={editingEvent.event_name} onChange={(e) => setEditingEvent({ ...editingEvent, event_name: e.target.value })} className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <EventColorField
+                  id="edit-event-color-code"
+                  value={editingEvent.event_color_code || ''}
+                  onChange={(value) => setEditingEvent({ ...editingEvent, event_color_code: value })}
+                />
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event Logo URL</Label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/40" />
+                    <Input
+                      value={editingEvent.event_logo_url || ''}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, event_logo_url: e.target.value })}
+                      placeholder="https://..."
+                      className="h-12 bg-white/5 border-white/10 rounded-xl pl-11"
+                    />
+                  </div>
+                </div>
+              </div>
+              <EventHtmlField
+                id="edit-event-registration-confirmed-message"
+                value={editingEvent.event_registration_confirmed_message_html || ''}
+                onChange={(value) => setEditingEvent({ ...editingEvent, event_registration_confirmed_message_html: value })}
+              />
               <div className="space-y-2.5">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Order Index</Label>
                 <div className="relative">

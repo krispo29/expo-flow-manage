@@ -1,5 +1,5 @@
 import api from '@/lib/api'
-import { getParticipants, getParticipantById, createParticipant, updateParticipant, deleteParticipant, importParticipants } from '@/app/actions/participant'
+import { getParticipants, getParticipantById, createParticipant, updateParticipant, deleteParticipant, importParticipants, exportAttendanceLogs } from '@/app/actions/participant'
 import { cookies } from 'next/headers'
 
 // Mock the API module
@@ -8,6 +8,26 @@ jest.mock('@/lib/api', () => ({
   post: jest.fn(),
   put: jest.fn(),
   delete: jest.fn(),
+}))
+
+jest.mock('@/app/actions/auth', () => ({
+  getUserRole: jest.fn().mockResolvedValue('ADMIN'),
+}))
+
+jest.mock('@/lib/authorization', () => ({
+  requireProjectContext: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
+}))
+
+jest.mock('@/lib/server-auth', () => ({
+  getServerAuthContext: jest.fn().mockResolvedValue({
+    accessToken: 'token-123',
+    projectUuid: 'project-123',
+    userRole: 'ADMIN',
+  }),
+  requireServerAuthHeaders: jest.fn().mockResolvedValue({
+    Authorization: 'Bearer token-123',
+    'X-Project-UUID': 'project-123',
+  }),
 }))
 
 // Mock next/headers
@@ -46,7 +66,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await getParticipants('project-123')
 
@@ -59,7 +79,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await getParticipants('project-123')
 
@@ -76,7 +96,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await getParticipants('project-123', 'john')
 
@@ -94,7 +114,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await getParticipantById('p-1')
 
@@ -107,7 +127,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await getParticipantById('invalid-id')
 
@@ -121,17 +141,25 @@ describe('participant actions', () => {
       formData.append('first_name', 'John')
       formData.append('last_name', 'Doe')
       formData.append('email', 'john@example.com')
+      formData.append('describe_your_business', 'Agritech equipment supplier')
 
       mockApiPost.mockResolvedValue({ data: { code: 201 } })
 
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await createParticipant(formData)
 
       expect(result).toEqual({ success: true })
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/admin/project/participants',
+        expect.objectContaining({
+          describe_your_business: 'Agritech equipment supplier',
+        }),
+        expect.any(Object)
+      )
     })
 
     it('should return error when creation fails', async () => {
@@ -143,7 +171,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await createParticipant(formData)
 
@@ -155,17 +183,26 @@ describe('participant actions', () => {
     it('should update participant successfully', async () => {
       const formData = new FormData()
       formData.append('first_name', 'John Updated')
+      formData.append('describe_your_business', 'Updated business profile')
 
       mockApiPut.mockResolvedValue({ data: { code: 200 } })
 
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await updateParticipant('p-1', formData)
 
       expect(result).toEqual({ success: true })
+      expect(mockApiPut).toHaveBeenCalledWith(
+        '/v1/admin/project/participants',
+        expect.objectContaining({
+          registration_uuid: 'p-1',
+          describe_your_business: 'Updated business profile',
+        }),
+        expect.any(Object)
+      )
     })
   })
 
@@ -176,7 +213,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await deleteParticipant('p-1')
 
@@ -189,7 +226,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await deleteParticipant('p-1')
 
@@ -220,7 +257,7 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await importParticipants(participants)
 
@@ -265,11 +302,37 @@ describe('participant actions', () => {
       const mockCookieStore = {
         get: jest.fn().mockReturnValue({ value: 'token-123' }),
       }
-      mockCookies.mockResolvedValue(mockCookieStore as any)
+      mockCookies.mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
 
       const result = await importParticipants(participants)
 
       expect(result).toEqual({ success: true, count: 1 })
+    })
+  })
+
+  describe('exportAttendanceLogs', () => {
+    it('should export attendance logs with the expected GET endpoint', async () => {
+      const bytes = new Uint8Array([1, 2, 3])
+      mockApiGet.mockResolvedValue({
+        data: bytes.buffer,
+        headers: {
+          'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        },
+      })
+
+      const result = await exportAttendanceLogs('project-123')
+
+      expect(result).toEqual({
+        success: true,
+        data: new Uint8Array(bytes.buffer),
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      expect(mockApiGet).toHaveBeenCalledWith(
+        '/v1/admin/project/participants/attendance_logs/export-excel',
+        expect.objectContaining({
+          responseType: 'arraybuffer',
+        })
+      )
     })
   })
 })

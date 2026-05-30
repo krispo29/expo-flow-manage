@@ -55,6 +55,7 @@ export interface Participant {
   email: string
   company_name: string
   job_position: string
+  describe_your_business?: string
   attendee_type_code: string
   registered_at: string
   is_active: boolean
@@ -255,6 +256,7 @@ export async function createParticipant(formData: FormData) {
       last_name: formData.get('last_name') as string,
       company_name: formData.get('company_name') as string,
       job_position: formData.get('job_position') as string,
+      describe_your_business: formData.get('describe_your_business') as string || '',
       residence_country: formData.get('residence_country') as string,
       mobile_country_code: formData.get('mobile_country_code') as string,
       mobile_number: formData.get('mobile_number') as string,
@@ -288,6 +290,7 @@ export async function updateParticipant(registrationUuid: string, formData: Form
       last_name: formData.get('last_name') as string,
       company_name: formData.get('company_name') as string,
       job_position: formData.get('job_position') as string,
+      describe_your_business: formData.get('describe_your_business') as string || '',
       residence_country: formData.get('residence_country') as string,
       mobile_country_code: formData.get('mobile_country_code') as string,
       mobile_number: formData.get('mobile_number') as string,
@@ -681,6 +684,26 @@ export async function importAttendanceLogs(formData: FormData) {
     console.error('Attendance Log import error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to import attendance logs'
     return { success: false, error: errorMessage }
+  }
+}
+
+export async function exportAttendanceLogs(projectId: string) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+
+    const response = await api.get('/v1/admin/project/participants/attendance_logs/export-excel', {
+      headers,
+      responseType: 'arraybuffer',
+    })
+
+    return {
+      success: true,
+      data: new Uint8Array(response.data),
+      contentType: response.headers['content-type'],
+    }
+  } catch (error: unknown) {
+    console.error('Error exporting attendance logs:', error)
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 

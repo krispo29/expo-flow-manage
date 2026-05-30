@@ -12,6 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 
 import {
@@ -1114,6 +1115,16 @@ export function ParticipantList({
               <div className="space-y-2.5">
                 <Label htmlFor="job_position" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Position *</Label>
                 <Input id="job_position" name="job_position" placeholder="Job Title / Position" defaultValue={selectedParticipant?.job_position || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
+              </div>
+              <div className="space-y-2.5 sm:col-span-3">
+                <Label htmlFor="describe_your_business" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Describe Your Business</Label>
+                <Textarea
+                  id="describe_your_business"
+                  name="describe_your_business"
+                  placeholder="Briefly describe your business"
+                  defaultValue={selectedParticipant?.describe_your_business || ''}
+                  className="min-h-24 resize-y bg-white/5 border-white/10 rounded-xl"
+                />
               </div>
               <div className="space-y-2.5 sm:col-span-3">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Residence Country *</Label>

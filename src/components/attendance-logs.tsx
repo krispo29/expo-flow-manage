@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { getAttendanceLogs, importAttendanceLogs, type AttendanceLog } from '@/app/actions/participant'
+import { exportAttendanceLogs, getAttendanceLogs, importAttendanceLogs, type AttendanceLog } from '@/app/actions/participant'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
@@ -58,6 +58,7 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
   const [refreshCounter, setRefreshCounter] = useState(0)
 
   const [importing, setImporting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Column filter state
   const [showFilters, setShowFilters] = useState(false)
@@ -127,8 +128,35 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
     }
   }
 
-  function handleExportNotReady() {
-    toast('Export API is not available yet.')
+  async function handleExport() {
+    if (isExporting) return
+
+    setIsExporting(true)
+    try {
+      const result = await exportAttendanceLogs(projectId)
+
+      if (result.success && result.data) {
+        const blob = new Blob([result.data], {
+          type: result.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Attendance_Logs_${new Date().toISOString().split('T')[0]}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success('Export successful')
+      } else {
+        toast.error(result.error || 'Export failed')
+      }
+    } catch (error) {
+      console.error('Failed to export attendance logs:', error)
+      toast.error('Export failed')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   // Filter logs based on column filters
@@ -192,11 +220,12 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
               type="button"
               variant="outline"
               className="h-11 rounded-2xl border-white/10 bg-white/5 px-5 text-xs font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary sm:w-auto"
-              onClick={handleExportNotReady}
+              onClick={handleExport}
+              disabled={isExporting}
               title="Export scanner import data"
             >
-              <Download className="mr-2 h-4 w-4" />
-              Export
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {isExporting ? 'Exporting...' : 'Export'}
             </Button>
           </div>
         </CardHeader>

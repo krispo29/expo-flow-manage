@@ -27,6 +27,18 @@ export interface Event {
   event_uuid: string
   event_code: string
   event_name: string
+  event_color_code?: string | null
+  event_logo_url?: string | null
+  event_registration_confirmed_message_html?: string | null
+  is_active: boolean
+  order_index: number
+}
+
+interface EventPayload {
+  event_name: string
+  event_color_code?: string
+  event_logo_url?: string
+  event_registration_confirmed_message_html?: string
   is_active: boolean
   order_index: number
 }
@@ -111,15 +123,12 @@ export async function getEvents(projectUuid: string) {
   }
 }
 
-export async function createEvent(projectUuid: string, data: {
-  event_name: string
-  is_active: boolean
-  order_index: number
-}) {
+export async function createEvent(projectUuid: string, data: EventPayload) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     await api.post('/v1/admin/project/events', data, { headers })
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/events')
     return { success: true }
   } catch (error: any) {
     console.error('Error creating event:', error)
@@ -128,16 +137,12 @@ export async function createEvent(projectUuid: string, data: {
   }
 }
 
-export async function updateEvent(projectUuid: string, data: {
-  event_uuid: string
-  event_name: string
-  is_active: boolean
-  order_index: number
-}) {
+export async function updateEvent(projectUuid: string, data: EventPayload & { event_uuid: string }) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     await api.put('/v1/admin/project/events', data, { headers })
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/events')
     return { success: true }
   } catch (error: any) {
     console.error('Error updating event:', error)
