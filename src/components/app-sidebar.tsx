@@ -18,6 +18,7 @@ import {
   BarChart3,
   FileUp,
   ArrowUpCircle,
+  BadgeCheck,
   Sparkles,
 } from "lucide-react"
 
@@ -320,6 +321,20 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       <Link href={projectId ? `${basePath}/quota-requests?projectId=${projectId}` : `${basePath}/quota-requests`}>
                         <ArrowUpCircle />
                         <span>Quota Requests</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Upgrade Requests"
+                      isActive={isActive(`${basePath}/upgrade-requests`)}
+                    >
+                      <Link href={projectId ? `${basePath}/upgrade-requests?projectId=${projectId}` : `${basePath}/upgrade-requests`}>
+                        <BadgeCheck />
+                        <span>Upgrade Requests</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

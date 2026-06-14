@@ -24,6 +24,7 @@ const routeMap: Record<string, string> = {
   staff: "Staff",
   settings: "Settings",
   "quota-requests": "Quota Requests",
+  "upgrade-requests": "Upgrade Requests",
   "questionnaires-stats": "Questionnaires Stats",
   participants: "Participants",
   "invitation-codes": "Invitation Codes",
