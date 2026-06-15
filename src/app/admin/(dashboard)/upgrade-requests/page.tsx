@@ -39,6 +39,7 @@ export default async function UpgradeRequestsPage({
 
   return (
     <UpgradeRequestQueue
+      key={projectId}
       projectId={projectId}
       initialRequests={requestsResult.data}
       attendeeTypes={attendeeTypesResult.data || []}
