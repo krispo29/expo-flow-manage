@@ -65,7 +65,7 @@ Add a page-level event selector with:
 - A single selected value shared by list loading and export.
 - A list refresh and pagination reset whenever the selection changes.
 
-The Admin page loads events through the existing Admin events action. The Organizer page loads events through the existing Organizer events action. Event-loading failures leave `All Events` available and show an error toast without blocking the invitation list.
+Both the Admin and Organizer invitation pages load event options from `GET /v1/admin/project/events`. The request uses the selected page `projectId` as the `X-Project-UUID` header. The Organizer invitation page must not fall back to `/v1/organizer/project/events`; this endpoint rule is scoped to the invitation-code workflow and does not change conference or exhibitor event loading. Event-loading failures leave `All Events` available and show an error toast without blocking the invitation list.
 
 The export component receives the selected event UUID from the page instead of managing an independent selection. This ensures the exported file matches the scope currently shown in the list.
 
@@ -126,6 +126,9 @@ Other import types retain their existing required-event behavior.
 - Admin invite-code import appends `event_uuid`, including an empty string.
 - Organizer list includes `event_uuid` only when an event is selected.
 - Organizer export uses `/v1/organizer/invitations/export-excel` and applies the optional event query.
+- Admin and Organizer invitation event selectors both load from `GET /v1/admin/project/events`.
+- Organizer invitation event loading does not call `/v1/organizer/project/events` as a fallback.
+- Event loading sends the current page `projectId` as `X-Project-UUID`.
 - UI tests cover selector changes, payload forwarding, and empty-event submissions where practical.
 - Run targeted Jest tests, TypeScript validation, and the production build.
 - Verify Admin and Organizer invitation pages plus the Admin import card in the in-app browser.
