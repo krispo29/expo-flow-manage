@@ -13,12 +13,15 @@ async function getOrganizerAuthHeaders() {
   }
 }
 
-export async function getOrganizerInvitations() {
+export async function getOrganizerInvitations(eventUuid?: string) {
   try {
     const { headers, projectUuid } = await getOrganizerAuthHeaders()
     const response = await api.get('/v1/organizer/invitations', {
       headers,
-      params: { project_uuid: projectUuid },
+      params: {
+        project_uuid: projectUuid,
+        ...(eventUuid ? { event_uuid: eventUuid } : {}),
+      },
     })
 
     return {
@@ -35,15 +38,16 @@ export async function getOrganizerInvitations() {
   }
 }
 
-export async function exportOrganizerInvitations(projectId?: string) {
+export async function exportOrganizerInvitations(projectId?: string, eventUuid?: string) {
   try {
     const { headers } = await getOrganizerAuthHeaders()
     if (projectId) {
       Object.assign(headers, { 'X-Project-UUID': projectId })
     }
 
-    const response = await api.get('/v1/admin/project/invitations/export-excel', {
+    const response = await api.get('/v1/organizer/invitations/export-excel', {
       headers,
+      ...(eventUuid ? { params: { event_uuid: eventUuid } } : {}),
       responseType: 'arraybuffer',
     })
 

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power, Info } from 'lucide-react'
+import { Search, X, Clock, Users, Pencil, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History, Loader2, CalendarDays, User, ArrowRight, ShieldCheck, Power, Info, Copy, Link as LinkIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { copyTextToClipboard } from '@/lib/clipboard'
 
 interface ConferenceListProps {
   conferences: Conference[]
@@ -148,6 +149,16 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
       toast.error('Failed to toggle active status')
     } finally {
       setTogglingConferenceUuid(null)
+    }
+  }
+
+  async function handleCopyUniqueLink(uniqueLink: string) {
+    try {
+      await copyTextToClipboard(uniqueLink)
+      toast.success('Registration link copied')
+    } catch (error) {
+      console.error('Failed to copy registration link:', error)
+      toast.error('Failed to copy registration link')
     }
   }
 
@@ -395,6 +406,36 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                                     className="prose prose-sm max-w-none dark:prose-invert ql-editor !p-0 line-clamp-2 break-all"
                                     dangerouslySetInnerHTML={{ __html: conference.detail }}
                                   />
+                                </div>
+                              </div>
+                            )}
+
+                            {conference.unique_link?.trim() && (
+                              <div className="mt-4 pt-4 border-t border-dashed border-white/10">
+                                <p className="font-bold text-[10px] text-primary/40 uppercase tracking-widest mb-2">
+                                  Registration Link
+                                </p>
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <div
+                                    className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"
+                                    title={conference.unique_link}
+                                  >
+                                    <LinkIcon className="h-4 w-4 shrink-0 text-primary/60" />
+                                    <span className="truncate text-xs font-medium text-muted-foreground">
+                                      {conference.unique_link}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => void handleCopyUniqueLink(conference.unique_link!)}
+                                    className="h-10 shrink-0 rounded-xl border border-white/10 bg-primary/5 px-4 text-primary hover:bg-primary/10"
+                                    aria-label={`Copy registration link for ${conference.title}`}
+                                  >
+                                    <Copy className="mr-2 h-3.5 w-3.5" />
+                                    Copy
+                                  </Button>
                                 </div>
                               </div>
                             )}

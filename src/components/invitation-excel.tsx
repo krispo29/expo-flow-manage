@@ -10,9 +10,10 @@ import { exportOrganizerInvitations } from '@/app/actions/organizer-invitation'
 interface InvitationExcelOperationsProps {
   projectId: string
   userRole?: string | null
+  eventUuid?: string
 }
 
-export function InvitationExcelOperations({ projectId, userRole }: Readonly<InvitationExcelOperationsProps>) {
+export function InvitationExcelOperations({ projectId, userRole, eventUuid }: Readonly<InvitationExcelOperationsProps>) {
   const [isExporting, setIsExporting] = useState(false)
 
   async function handleExport() {
@@ -21,8 +22,8 @@ export function InvitationExcelOperations({ projectId, userRole }: Readonly<Invi
     setIsExporting(true)
     try {
       const result = userRole === 'ORGANIZER'
-        ? await exportOrganizerInvitations(projectId)
-        : await exportInvitations(projectId)
+        ? await exportOrganizerInvitations(projectId, eventUuid)
+        : await exportInvitations(projectId, eventUuid)
 
       if (result.success && result.data) {
         const blob = new Blob([result.data], {

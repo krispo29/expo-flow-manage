@@ -63,6 +63,8 @@ const CODE_IMPORT_TYPE_LABELS: Record<string, string> = {
   'exhibitor-members': 'Exhibitor Member Codes',
 }
 
+const NO_EVENT_VALUE = '__no_event__'
+
 const normalizeImportType = (importType?: string | null) => (importType || '').replace(/_/g, '-')
 
 const getCodeImportLabel = (importType?: string | null) => {
@@ -80,7 +82,9 @@ function ImportsContent() {
   const [exhibitors, setExhibitors] = useState<ImportExhibitor[]>([])
   const [histories, setHistories] = useState<ImportHistory[]>([])
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
-  const [eventUuids, setEventUuids] = useState<Record<string, string>>({})
+  const [eventUuids, setEventUuids] = useState<Record<string, string>>({
+    'invite-codes': NO_EVENT_VALUE,
+  })
   const [exhibitorUuids, setExhibitorUuids] = useState<Record<string, string>>({})
   const [attendeeTypeCodes, setAttendeeTypeCodes] = useState<Record<string, string>>({})
   const [files, setFiles] = useState<Record<ImportKind, File | null>>({
@@ -168,6 +172,7 @@ function ImportsContent() {
             exhibitors: defaultUuid,
             registrations: defaultUuid,
             conferences: defaultUuid,
+            'invite-codes': NO_EVENT_VALUE,
           })
         }
       }
@@ -310,6 +315,11 @@ function ImportsContent() {
         return
       }
       formData.append('event_uuid', eventUuid)
+    }
+
+    if (kind === 'invite-codes') {
+      const eventUuid = eventUuids[kind]
+      formData.append('event_uuid', eventUuid === NO_EVENT_VALUE ? '' : eventUuid || '')
     }
 
     if (kind === 'exhibitor-members') {
@@ -584,6 +594,20 @@ function ImportsContent() {
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event</Label>
+              <Combobox
+                options={[
+                  { value: NO_EVENT_VALUE, label: 'No Event' },
+                  ...eventOptions,
+                ]}
+                value={eventUuids['invite-codes'] || NO_EVENT_VALUE}
+                onValueChange={(value) => setEventUuids((prev) => ({ ...prev, 'invite-codes': value }))}
+                placeholder="No Event"
+                emptyMessage="No events found"
+                triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
+              />
+            </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
               <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('invite-codes', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-rose-500/10 file:text-rose-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />

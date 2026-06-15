@@ -26,9 +26,18 @@ import {
 interface InvitationCodeSettingsProps {
   projectUuid: string
   userRole?: string | null
+  events: Array<{ event_uuid: string; event_name: string }>
+  selectedEventUuid?: string
 }
 
-export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<InvitationCodeSettingsProps>) {
+const NO_EVENT_VALUE = '__no_event__'
+
+export function InvitationCodeSettings({
+  projectUuid,
+  userRole,
+  events,
+  selectedEventUuid,
+}: Readonly<InvitationCodeSettingsProps>) {
   const isReadOnly = userRole === 'ORGANIZER'
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +46,7 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
   const [editingInvite, setEditingInvite] = useState<Invitation | null>(null)
 
   // Create form state
-  const [newInvite, setNewInvite] = useState({ company_name: '' })
+  const [newInvite, setNewInvite] = useState({ company_name: '', event_uuid: '' })
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -115,16 +124,17 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
   async function fetchInvitations() {
     setLoading(true)
     const result = isReadOnly
-      ? await getOrganizerInvitations()
-      : await getInvitations(projectUuid)
+      ? await getOrganizerInvitations(selectedEventUuid)
+      : await getInvitations(projectUuid, selectedEventUuid)
     if (result.success) setInvitations(result.invitations)
     setLoading(false)
   }
 
   useEffect(() => {
+    setCurrentPage(1)
     fetchInvitations()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectUuid])
+  }, [projectUuid, selectedEventUuid])
 
 
   async function handleCreate() {
@@ -139,7 +149,7 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
     if (result.success) {
       toast.success("Invitation created")
       setIsCreateOpen(false)
-      setNewInvite({ company_name: '' })
+      setNewInvite({ company_name: '', event_uuid: '' })
       fetchInvitations()
     } else {
       toast.error(result.error || "Failed to create invitation")
@@ -152,6 +162,7 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
     setSaving(true)
     const result = await updateInvitation(projectUuid, {
       invite_uuid: editingInvite.invite_uuid,
+      event_uuid: editingInvite.event_uuid || '',
       company_name: editingInvite.company_name,
       invite_code: editingInvite.invite_code,
       is_active: editingInvite.is_active,
@@ -174,6 +185,12 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
       console.error("Failed to copy invitation link:", error)
       toast.error("Failed to copy link")
     }
+  }
+
+  function getInvitationEventLabel(invite: Invitation) {
+    if (invite.event_name) return invite.event_name
+    if (!invite.event_uuid) return 'No Event'
+    return events.find((event) => event.event_uuid === invite.event_uuid)?.event_name || invite.event_uuid
   }
 
   if (loading) {
@@ -307,10 +324,14 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
                       <LinkIcon className="h-3.5 w-3.5 shrink-0 opacity-40" />
                       <span className="truncate">{invite.invite_link}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground/80 font-medium">
-                      <User className="h-3.5 w-3.5 shrink-0 opacity-40" />
-                      <span className="truncate">Creator: {invite.creator_name || '-'}</span>
-                    </div>
+                      <div className="flex items-center gap-2 text-muted-foreground/80 font-medium">
+                        <User className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                        <span className="truncate">Creator: {invite.creator_name || '-'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground/80 font-medium">
+                        <Ticket className="h-3.5 w-3.5 shrink-0 opacity-40" />
+                        <span className="truncate">Event: {getInvitationEventLabel(invite)}</span>
+                      </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">
@@ -420,6 +441,7 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold opacity-60">SOURCE: {invite.source || '-'}</span>
                           <span className="text-[9px] font-medium opacity-30 uppercase tracking-widest">BY: {invite.creator_name || '-'}</span>
+                          <span className="text-[9px] font-medium opacity-30 uppercase tracking-widest">EVENT: {getInvitationEventLabel(invite)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -556,6 +578,28 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Company Name</Label>
                   <Input value={newInvite.company_name} onChange={(e) => setNewInvite({ ...newInvite, company_name: e.target.value })} placeholder="e.g. THE DEFT" className="h-12 bg-white/5 border-white/10 rounded-xl" />
                 </div>
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event</Label>
+                  <Select
+                    value={newInvite.event_uuid || NO_EVENT_VALUE}
+                    onValueChange={(value) => setNewInvite({
+                      ...newInvite,
+                      event_uuid: value === NO_EVENT_VALUE ? '' : value,
+                    })}
+                  >
+                    <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl">
+                      <SelectValue placeholder="Select event" />
+                    </SelectTrigger>
+                    <SelectContent className="glass border-white/10 rounded-xl">
+                      <SelectItem value={NO_EVENT_VALUE}>No Event</SelectItem>
+                      {events.map((event) => (
+                        <SelectItem key={event.event_uuid} value={event.event_uuid}>
+                          {event.event_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <DialogFooter className="p-8 bg-white/5 border-t border-white/10 flex sm:flex-row gap-3">
                 <Button variant="ghost" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
@@ -593,6 +637,28 @@ export function InvitationCodeSettings({ projectUuid, userRole }: Readonly<Invit
                       <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
                       <Input value={editingInvite.invite_code} onChange={(e) => setEditingInvite({ ...editingInvite, invite_code: e.target.value })} className="h-12 pl-11 bg-white/5 border-white/10 rounded-xl font-mono uppercase" />
                     </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event</Label>
+                    <Select
+                      value={editingInvite.event_uuid || NO_EVENT_VALUE}
+                      onValueChange={(value) => setEditingInvite({
+                        ...editingInvite,
+                        event_uuid: value === NO_EVENT_VALUE ? '' : value,
+                      })}
+                    >
+                      <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl">
+                        <SelectValue placeholder="Select event" />
+                      </SelectTrigger>
+                      <SelectContent className="glass border-white/10 rounded-xl">
+                        <SelectItem value={NO_EVENT_VALUE}>No Event</SelectItem>
+                        {events.map((event) => (
+                          <SelectItem key={event.event_uuid} value={event.event_uuid}>
+                            {event.event_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-center justify-between p-4 glass rounded-2xl border-white/5">
                     <Label className="text-xs font-bold uppercase tracking-tight">Active Status</Label>

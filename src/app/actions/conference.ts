@@ -84,6 +84,7 @@ export interface Conference {
   status: string
   is_active?: boolean
   detail?: string
+  unique_link?: string
   created_at: string
   can_book: boolean
 }

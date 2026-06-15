@@ -45,6 +45,8 @@ interface EventPayload {
 
 export interface Invitation {
   invite_uuid: string
+  event_uuid?: string
+  event_name?: string
   company_name: string
   invite_code: string
   invite_link: string
@@ -153,10 +155,13 @@ export async function updateEvent(projectUuid: string, data: EventPayload & { ev
 
 // ==================== INVITATIONS ====================
 
-export async function getInvitations(projectUuid: string) {
+export async function getInvitations(projectUuid: string, eventUuid?: string) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const response = await api.get('/v1/admin/project/invitations', { headers })
+    const response = await api.get('/v1/admin/project/invitations', {
+      headers,
+      ...(eventUuid ? { params: { event_uuid: eventUuid } } : {}),
+    })
     const result = response.data
     return { success: true, invitations: (result.data || []) as Invitation[] }
   } catch (error: any) {
@@ -165,11 +170,12 @@ export async function getInvitations(projectUuid: string) {
   }
 }
 
-export async function exportInvitations(projectUuid: string) {
+export async function exportInvitations(projectUuid: string, eventUuid?: string) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/invitations/export-excel', {
       headers,
+      ...(eventUuid ? { params: { event_uuid: eventUuid } } : {}),
       responseType: 'arraybuffer',
     })
 
@@ -186,6 +192,7 @@ export async function exportInvitations(projectUuid: string) {
 
 export async function createInvitation(projectUuid: string, data: {
   company_name: string
+  event_uuid: string
 }) {
   try {
     const headers = await getAuthHeaders(projectUuid)
@@ -202,6 +209,7 @@ export async function createInvitation(projectUuid: string, data: {
 
 export async function updateInvitation(projectUuid: string, data: {
   invite_uuid: string
+  event_uuid: string
   company_name: string
   invite_code: string
   is_active: boolean
