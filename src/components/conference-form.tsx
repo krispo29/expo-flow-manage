@@ -277,7 +277,7 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
 
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
-                <Input id="title" name="title" defaultValue={conference?.title} placeholder="e.g. Future of AgriTech 2024" className="h-11" required />
+                <Input id="title" name="title" defaultValue={conference?.title} placeholder="e.g. Future of AgriTech 2024" className="h-11" required allowThai />
               </div>
 
               <div className="space-y-4 md:col-span-2">
@@ -325,6 +325,7 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                             placeholder={`e.g. John Doe`}
                             className="h-10"
                             required
+                            allowThai
                           />
                         </div>
                         <div className="space-y-2 md:col-span-2">
@@ -334,6 +335,7 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                             onChange={(e) => updateSpeaker(index, 'speaker_info', e.target.value)}
                             placeholder="Title, Company, Bio..."
                             rows={3}
+                            allowThai
                           />
                         </div>
                         <div className="space-y-2 md:col-span-2">

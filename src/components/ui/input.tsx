@@ -2,9 +2,13 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, onChange, ...props }: React.ComponentProps<"input">) {
+export interface InputProps extends React.ComponentProps<"input"> {
+  allowThai?: boolean
+}
+
+function Input({ className, type, onChange, allowThai = false, ...props }: InputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (type !== "file") {
+    if (type !== "file" && !allowThai) {
       e.target.value = e.target.value.replaceAll(/[\u0E00-\u0E7F]/g, "")
     }
     if (onChange) {

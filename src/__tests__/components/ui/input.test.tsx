@@ -75,7 +75,7 @@ describe('Input Component', () => {
     expect(input).toHaveAttribute('id', 'email-input')
   })
 
-  it('should filter Thai characters on change', () => {
+  it('should filter Thai characters on change by default', () => {
     const handleChange = jest.fn()
     render(<Input onChange={handleChange} data-testid="input" />)
     
@@ -86,6 +86,19 @@ describe('Input Component', () => {
     
     // Value should be filtered to only contain non-Thai characters
     expect(input).toHaveValue('hello')
+  })
+
+  it('should NOT filter Thai characters on change when allowThai is true', () => {
+    const handleChange = jest.fn()
+    render(<Input onChange={handleChange} data-testid="input" allowThai />)
+    
+    const input = screen.getByTestId('input')
+    
+    // Input contains Thai characters
+    fireEvent.change(input, { target: { value: 'helloสวัสดี' } })
+    
+    // Value should NOT be filtered
+    expect(input).toHaveValue('helloสวัสดี')
   })
 
   it('should handle aria-invalid prop', () => {

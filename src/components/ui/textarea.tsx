@@ -2,9 +2,15 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Textarea({ className, onChange, ...props }: React.ComponentProps<"textarea">) {
+export interface TextareaProps extends React.ComponentProps<"textarea"> {
+  allowThai?: boolean
+}
+
+function Textarea({ className, onChange, allowThai = false, ...props }: TextareaProps) {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    e.target.value = e.target.value.replaceAll(/[\u0E00-\u0E7F]/g, "")
+    if (!allowThai) {
+      e.target.value = e.target.value.replaceAll(/[\u0E00-\u0E7F]/g, "")
+    }
     if (onChange) {
       onChange(e)
     }

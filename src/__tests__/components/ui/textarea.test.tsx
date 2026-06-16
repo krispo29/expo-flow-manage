@@ -104,6 +104,28 @@ describe('Textarea Component', () => {
     })
   })
 
+  describe('Thai Character Filtering', () => {
+    it('should filter Thai characters by default', () => {
+      const handleChange = jest.fn()
+      render(<Textarea onChange={handleChange} data-testid="textarea" />)
+      
+      const textarea = screen.getByTestId('textarea')
+      fireEvent.change(textarea, { target: { value: 'helloสวัสดี' } })
+      
+      expect(textarea).toHaveValue('hello')
+    })
+
+    it('should NOT filter Thai characters when allowThai is true', () => {
+      const handleChange = jest.fn()
+      render(<Textarea onChange={handleChange} data-testid="textarea" allowThai />)
+      
+      const textarea = screen.getByTestId('textarea')
+      fireEvent.change(textarea, { target: { value: 'helloสวัสดี' } })
+      
+      expect(textarea).toHaveValue('helloสวัสดี')
+    })
+  })
+
   describe('Accessibility', () => {
     it('should render as textbox role', () => {
       render(<Textarea />)
