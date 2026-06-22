@@ -11,6 +11,7 @@ import { ProjectGuard } from "@/components/project-guard"
 import { getProjects } from "@/app/actions/project"
 import { getUserRole } from "@/app/actions/auth"
 import { CommandPalette } from "@/components/command-palette"
+import { NotificationBell } from "@/components/notification-bell"
 
 export const dynamic = 'force-dynamic'
 
@@ -45,11 +46,14 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
         <AppSidebar projects={sidebarProjects} />
         <SidebarInset className="bg-muted/30">
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/60">
-            <div className="flex items-center gap-2 px-4 md:px-6 w-full max-w-7xl mx-auto">
+            <div className="flex items-center justify-between px-4 md:px-6 w-full max-w-7xl mx-auto">
               <div className="flex items-center gap-2 flex-1">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mx-2 h-4 opacity-50" />
                 <DynamicBreadcrumb />
+              </div>
+              <div className="flex items-center gap-4">
+                <NotificationBell />
               </div>
             </div>
           </header>

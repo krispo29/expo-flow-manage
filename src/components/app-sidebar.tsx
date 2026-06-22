@@ -340,20 +340,6 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {user?.role === 'ADMIN' && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip="Notifications"
-                      isActive={isActive(`${basePath}/notifications`)}
-                    >
-                      <Link href={projectId ? `${basePath}/notifications?projectId=${projectId}` : `${basePath}/notifications`}>
-                        <Bell />
-                        <span>Notifications</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
