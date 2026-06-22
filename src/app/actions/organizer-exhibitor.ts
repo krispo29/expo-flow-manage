@@ -8,7 +8,7 @@ import { requireServerAuthContext, requireServerAuthHeaders } from '@/lib/server
 
 // Re-export shared interfaces
 export type { Exhibitor } from './exhibitor'
-import type { Exhibitor } from './exhibitor'
+import type { Exhibitor, ExhibitorPayload } from './exhibitor'
 
 function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number; total_quota?: number }) {
   const usedQuota = Number(item.used_quota || 0)
@@ -104,7 +104,10 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
       usedQuota: 0,
       totalQuota: rawData.total_quota || 0,
       createdAt: rawData.created_at,
-      passwordNote: rawData.password_note
+      passwordNote: rawData.password_note,
+      companyProfile: rawData.company_profile || '',
+      companyLogo: rawData.company_logo || '',
+      productHighlights: rawData.product_highlights || []
     }
 
     return { success: true, exhibitor: mappedExhibitor, members: response.data.data.members }
@@ -115,7 +118,7 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
 }
 
 // POST /v1/organizer/exhibitors
-export async function createOrganizerExhibitor(data: any) {
+export async function createOrganizerExhibitor(data: ExhibitorPayload) {
   try {
     const { headers, projectUuid } = await getOrganizerAuthHeaders()
     const payload = {
@@ -136,7 +139,10 @@ export async function createOrganizerExhibitor(data: any) {
       website: data.website,
       booth_no: data.boothNo,
       quota: data.quota,
-      over_quota: data.overQuota
+      over_quota: data.overQuota,
+      company_profile: data.companyProfile,
+      company_logo: data.companyLogo,
+      product_highlights: data.productHighlights
     }
 
     const response = await api.post('/v1/organizer/exhibitors', payload, { headers })
@@ -150,7 +156,7 @@ export async function createOrganizerExhibitor(data: any) {
 }
 
 // PUT /v1/organizer/exhibitors
-export async function updateOrganizerExhibitor(exhibitorUuid: string, data: any) {
+export async function updateOrganizerExhibitor(exhibitorUuid: string, data: ExhibitorPayload) {
   try {
     const { headers, projectUuid } = await getOrganizerAuthHeaders()
     const payload = {
@@ -169,7 +175,10 @@ export async function updateOrganizerExhibitor(exhibitorUuid: string, data: any)
       website: data.website,
       booth_no: data.boothNo,
       quota: data.quota,
-      over_quota: data.overQuota
+      over_quota: data.overQuota,
+      company_profile: data.companyProfile,
+      company_logo: data.companyLogo,
+      product_highlights: data.productHighlights
     }
 
     const response = await api.put('/v1/organizer/exhibitors', payload, { headers })

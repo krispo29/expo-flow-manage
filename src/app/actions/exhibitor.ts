@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import api from '@/lib/api'
+import api, { getErrorMessage } from '@/lib/api'
 import { requireProjectContext } from '@/lib/authorization'
 import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
@@ -41,6 +41,37 @@ export interface Exhibitor {
   password?: string
   passwordNote?: string
   createdAt?: string
+  companyProfile?: string
+  companyLogo?: string
+  productHighlights: ProductHighlight[]
+}
+
+export interface ProductHighlight {
+  description: string
+  url: string
+}
+
+export interface ExhibitorPayload {
+  eventId: string
+  username?: string
+  password?: string
+  companyName: string
+  address?: string
+  city?: string
+  province?: string
+  country?: string
+  postalCode?: string
+  phone?: string
+  fax?: string
+  contactPerson?: string
+  email?: string
+  website?: string
+  boothNo?: string
+  quota: number
+  overQuota: number
+  companyProfile: string
+  companyLogo: string
+  productHighlights: ProductHighlight[]
 }
 
 function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number; total_quota?: number }) {
@@ -89,7 +120,7 @@ export async function getExhibitors(projectUuid: string) {
 }
 
 // POST /v1/admin/project/exhibitors
-export async function createExhibitor(projectUuid: string, data: any) {
+export async function createExhibitor(projectUuid: string, data: ExhibitorPayload) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
@@ -109,7 +140,10 @@ export async function createExhibitor(projectUuid: string, data: any) {
       website: data.website,
       booth_no: data.boothNo,
       quota: data.quota,
-      over_quota: data.overQuota
+      over_quota: data.overQuota,
+      company_profile: data.companyProfile,
+      company_logo: data.companyLogo,
+      product_highlights: data.productHighlights
     }
 
     const response = await api.post('/v1/admin/project/exhibitors', payload, { headers })
@@ -123,7 +157,7 @@ export async function createExhibitor(projectUuid: string, data: any) {
 }
 
 // PUT /v1/admin/project/exhibitors
-export async function updateExhibitor(projectUuid: string, exhibitorUuid: string, data: any) {
+export async function updateExhibitor(projectUuid: string, exhibitorUuid: string, data: ExhibitorPayload) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
@@ -141,7 +175,10 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       website: data.website,
       booth_no: data.boothNo,
       quota: data.quota,
-      over_quota: data.overQuota
+      over_quota: data.overQuota,
+      company_profile: data.companyProfile,
+      company_logo: data.companyLogo,
+      product_highlights: data.productHighlights
     }
 
     const response = await api.put('/v1/admin/project/exhibitors', payload, { headers })
@@ -211,13 +248,35 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
       usedQuota: 0, // usually comes from members length or separated field
       totalQuota: rawData.total_quota || 0,
       createdAt: rawData.created_at,
-      passwordNote: rawData.password_note
+      passwordNote: rawData.password_note,
+      companyProfile: rawData.company_profile || '',
+      companyLogo: rawData.company_logo || '',
+      productHighlights: rawData.product_highlights || []
     }
 
     return { success: true, exhibitor: mappedExhibitor, members: response.data.data.members }
   } catch (error: any) {
     console.error('Error fetching exhibitor:', error)
     return { success: false, error: 'Failed to fetch exhibitor' }
+  }
+}
+
+export async function uploadExhibitorImage(projectUuid: string, formData: FormData) {
+  try {
+    const file = formData.get('file')
+    if (!(file instanceof File)) return { success: false, error: 'Image file is required' }
+
+    const headers = await requireServerAuthHeaders({ projectUuid: projectUuid || undefined })
+    const response = await api.post('/v1/admin/project/upload/image', formData, {
+      headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+    })
+    const imageUrl = response.data?.data?.url
+
+    return typeof imageUrl === 'string'
+      ? { success: true, imageUrl }
+      : { success: false, error: 'Upload succeeded but no image URL returned' }
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 

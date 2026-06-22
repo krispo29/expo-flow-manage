@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { createExhibitor, updateExhibitor } from '@/app/actions/exhibitor'
+import { createExhibitor, updateExhibitor, uploadExhibitorImage } from '@/app/actions/exhibitor'
 import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents } from '@/app/actions/organizer-exhibitor'
 import { getEvents, type Event } from '@/app/actions/settings'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Loader2, Store, User, Mail, MapPin, Ticket, Globe, Phone, Printer } from 'lucide-react'
+import { ImagePlus, Loader2, Store, User, Mail, MapPin, Ticket, Globe, Phone, Printer, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { type Exhibitor } from '@/app/actions/exhibitor'
@@ -50,6 +51,13 @@ const exhibitorSchema = z.object({
   postalCode: z.string().optional(),
   quota: z.coerce.number().min(0, 'Quota must be 0 or greater'),
   overQuota: z.coerce.number().min(0, 'Over quota must be 0 or greater'),
+  companyProfile: z.string(),
+  companyLogo: z.string(),
+  productHighlights: z.array(z.object({
+    description: z.string(),
+    url: z.string(),
+    file: z.custom<File>().optional(),
+  }).refine(highlight => highlight.url || highlight.file, 'Image is required')),
 })
 
 type ExhibitorFormValues = z.infer<typeof exhibitorSchema>
@@ -99,6 +107,9 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         postalCode: initialData.postalCode || '',
         quota: initialData.quota,
         overQuota: initialData.overQuota,
+        companyProfile: initialData.companyProfile || '',
+        companyLogo: initialData.companyLogo || '',
+        productHighlights: initialData.productHighlights || [],
       }
     : {
         eventId: '',
@@ -116,34 +127,58 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         postalCode: '',
         quota: 0,
         overQuota: 0,
+        companyProfile: '',
+        companyLogo: '',
+        productHighlights: [],
       }
 
   const form = useForm<ExhibitorFormValues>({
     resolver: zodResolver(exhibitorSchema) as any,
     defaultValues,
   })
+  const { fields: productHighlights, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'productHighlights',
+  })
 
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
+
+    const uploads = await Promise.all(data.productHighlights.map(async highlight => {
+      if (!highlight.file) return { success: true as const, imageUrl: highlight.url }
+      const formData = new FormData()
+      formData.append('file', highlight.file)
+      return uploadExhibitorImage(projectId, formData)
+    }))
+    const failedUpload = uploads.find(result => !result.success)
+    if (failedUpload) {
+      toast.error(failedUpload.error)
+      setLoading(false)
+      return
+    }
     
     // Payload now correctly maps directly via the new actions
     const payload = {
       ...data,
+      productHighlights: data.productHighlights.map((highlight, index) => ({
+        description: highlight.description,
+        url: uploads[index].imageUrl || highlight.url,
+      })),
       projectId, // Not required by API body, but let's conform
     }
 
     let result
     if (isOrganizer) {
       if (initialData) {
-        result = await updateOrganizerExhibitor(initialData.id, payload as any)
+        result = await updateOrganizerExhibitor(initialData.id, payload)
       } else {
-        result = await createOrganizerExhibitor(payload as any)
+        result = await createOrganizerExhibitor(payload)
       }
     } else {
       if (initialData) {
-        result = await updateExhibitor(projectId, initialData.id, payload as any)
+        result = await updateExhibitor(projectId, initialData.id, payload)
       } else {
-        result = await createExhibitor(projectId, payload as any)
+        result = await createExhibitor(projectId, payload)
       }
     }
 
@@ -231,7 +266,58 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="companyLogo"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Company Logo URL</FormLabel>
+                      <FormControl><Input type="url" placeholder="https://example.com/logo.png" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="companyProfile"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Company Profile</FormLabel>
+                      <FormControl><Textarea placeholder="Describe the company" rows={5} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><ImagePlus className="size-4" /></div>
+                <CardTitle className="text-lg">Product Highlights</CardTitle>
+              </div>
+              <CardDescription>Add product descriptions and images.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {productHighlights.map((highlight, index) => (
+                <div key={highlight.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_1fr_auto]">
+                  <FormField
+                    control={form.control}
+                    name={`productHighlights.${index}.description`}
+                    render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>}
+                  />
+                  <FormItem>
+                    <FormLabel>Image</FormLabel>
+                    <Input type="file" accept="image/*" onChange={event => form.setValue(`productHighlights.${index}.file`, event.target.files?.[0], { shouldValidate: true })} />
+                    {form.watch(`productHighlights.${index}.url`) && <FormDescription className="truncate">{form.watch(`productHighlights.${index}.url`)}</FormDescription>}
+                    <FormMessage>{form.formState.errors.productHighlights?.[index]?.root?.message}</FormMessage>
+                  </FormItem>
+                  <Button type="button" variant="ghost" size="icon" className="self-end" onClick={() => remove(index)} aria-label="Remove product highlight"><Trash2 className="size-4" /></Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={() => append({ description: '', url: '' })}><Plus className="mr-2 size-4" />Add Highlight</Button>
             </CardContent>
           </Card>
 
