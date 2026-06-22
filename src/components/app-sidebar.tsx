@@ -19,6 +19,7 @@ import {
   FileUp,
   ArrowUpCircle,
   BadgeCheck,
+  Bell,
   Sparkles,
 } from "lucide-react"
 
@@ -335,6 +336,20 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       <Link href={projectId ? `${basePath}/upgrade-requests?projectId=${projectId}` : `${basePath}/upgrade-requests`}>
                         <BadgeCheck />
                         <span>Upgrade Requests</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Notifications"
+                      isActive={isActive(`${basePath}/notifications`)}
+                    >
+                      <Link href={projectId ? `${basePath}/notifications?projectId=${projectId}` : `${basePath}/notifications`}>
+                        <Bell />
+                        <span>Notifications</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
