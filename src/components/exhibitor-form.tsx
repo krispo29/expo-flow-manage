@@ -53,6 +53,7 @@ const exhibitorSchema = z.object({
   overQuota: z.coerce.number().min(0, 'Over quota must be 0 or greater'),
   companyProfile: z.string(),
   companyLogo: z.string(),
+  companyLogoFile: z.custom<File>().optional(),
   productHighlights: z.array(z.object({
     description: z.string(),
     url: z.string(),
@@ -109,6 +110,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         overQuota: initialData.overQuota,
         companyProfile: initialData.companyProfile || '',
         companyLogo: initialData.companyLogo || '',
+        companyLogoFile: undefined,
         productHighlights: initialData.productHighlights || [],
       }
     : {
@@ -129,6 +131,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         overQuota: 0,
         companyProfile: '',
         companyLogo: '',
+        companyLogoFile: undefined,
         productHighlights: [],
       }
 
@@ -144,6 +147,18 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
 
+    let companyLogoUpload: Awaited<ReturnType<typeof uploadExhibitorImage>> = { success: true, imageUrl: data.companyLogo }
+    if (data.companyLogoFile) {
+      const formData = new FormData()
+      formData.append('file', data.companyLogoFile)
+      companyLogoUpload = await uploadExhibitorImage(projectId, formData)
+    }
+    if (!companyLogoUpload.success) {
+      toast.error(companyLogoUpload.error)
+      setLoading(false)
+      return
+    }
+
     const uploads = await Promise.all(data.productHighlights.map(async highlight => {
       if (!highlight.file) return { success: true as const, imageUrl: highlight.url }
       const formData = new FormData()
@@ -156,11 +171,13 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
       setLoading(false)
       return
     }
+    const { companyLogoFile, ...submitData } = data
     
     // Payload now correctly maps directly via the new actions
     const payload = {
-      ...data,
-      productHighlights: data.productHighlights.map((highlight, index) => ({
+      ...submitData,
+      companyLogo: companyLogoUpload.imageUrl || data.companyLogo,
+      productHighlights: submitData.productHighlights.map((highlight, index) => ({
         description: highlight.description,
         url: uploads[index].imageUrl || highlight.url,
       })),
@@ -268,11 +285,14 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                 />
                 <FormField
                   control={form.control}
-                  name="companyLogo"
-                  render={({ field }) => (
+                  name="companyLogoFile"
+                  render={() => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Company Logo URL</FormLabel>
-                      <FormControl><Input type="url" placeholder="https://example.com/logo.png" {...field} /></FormControl>
+                      <FormLabel>Company Logo</FormLabel>
+                      <FormControl>
+                        <Input type="file" accept="image/*" onChange={event => form.setValue('companyLogoFile', event.target.files?.[0], { shouldValidate: true })} />
+                      </FormControl>
+                      {form.watch('companyLogo') && <FormDescription className="truncate">{form.watch('companyLogo')}</FormDescription>}
                       <FormMessage />
                     </FormItem>
                   )}
