@@ -69,6 +69,32 @@ interface ExhibitorFormProps {
   userRole?: string | null
 }
 
+function ImagePreviewLink({ url, file, alt }: Readonly<{ url?: string; file?: File; alt: string }>) {
+  const [previewUrl, setPreviewUrl] = useState(url || '')
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(url || '')
+      return
+    }
+    const nextUrl = URL.createObjectURL(file)
+    setPreviewUrl(nextUrl)
+    return () => URL.revokeObjectURL(nextUrl)
+  }, [file, url])
+
+  if (!previewUrl) return null
+
+  return (
+    <a href={previewUrl} target="_blank" rel="noreferrer" className="group mt-2 flex items-center gap-3 rounded-xl border bg-slate-50 p-2 transition hover:border-primary/40 hover:bg-primary/5">
+      <img src={previewUrl} alt={alt} className="size-14 rounded-lg border bg-white object-cover" />
+      <span className="min-w-0 text-sm text-slate-600">
+        <span className="block font-medium text-slate-900">Click to preview image</span>
+        <span className="block truncate group-hover:text-primary">{previewUrl}</span>
+      </span>
+    </a>
+  )
+}
+
 export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
@@ -292,7 +318,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                       <FormControl>
                         <Input type="file" accept="image/*" onChange={event => form.setValue('companyLogoFile', event.target.files?.[0], { shouldValidate: true })} />
                       </FormControl>
-                      {form.watch('companyLogo') && <FormDescription className="truncate">{form.watch('companyLogo')}</FormDescription>}
+                      <ImagePreviewLink url={form.watch('companyLogo')} file={form.watch('companyLogoFile')} alt="Company logo preview" />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -331,7 +357,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                   <FormItem>
                     <FormLabel>Image</FormLabel>
                     <Input type="file" accept="image/*" onChange={event => form.setValue(`productHighlights.${index}.file`, event.target.files?.[0], { shouldValidate: true })} />
-                    {form.watch(`productHighlights.${index}.url`) && <FormDescription className="truncate">{form.watch(`productHighlights.${index}.url`)}</FormDescription>}
+                    <ImagePreviewLink url={form.watch(`productHighlights.${index}.url`)} file={form.watch(`productHighlights.${index}.file`)} alt={`Product highlight ${index + 1} preview`} />
                     <FormMessage>{form.formState.errors.productHighlights?.[index]?.root?.message}</FormMessage>
                   </FormItem>
                   <Button type="button" variant="ghost" size="icon" className="self-end" onClick={() => remove(index)} aria-label="Remove product highlight"><Trash2 className="size-4" /></Button>
