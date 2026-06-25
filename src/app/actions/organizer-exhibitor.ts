@@ -17,6 +17,22 @@ function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number;
   return Boolean(item.is_quota_full || (totalQuota > 0 && usedQuota >= totalQuota))
 }
 
+function getExhibitorProfilePayload(data: ExhibitorPayload) {
+  if (
+    data.companyProfile === undefined &&
+    data.companyLogo === undefined &&
+    data.productHighlights === undefined
+  ) {
+    return {}
+  }
+
+  return {
+    company_profile: data.companyProfile,
+    company_logo: data.companyLogo,
+    product_highlights: data.productHighlights || [],
+  }
+}
+
 // Helper function to get headers with auth (uses cookie-based project_uuid)
 async function getOrganizerAuthHeaders() {
   const authContext = await requireServerAuthContext()
@@ -140,9 +156,7 @@ export async function createOrganizerExhibitor(data: ExhibitorPayload) {
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      company_profile: data.companyProfile,
-      company_logo: data.companyLogo,
-      product_highlights: data.productHighlights
+      ...getExhibitorProfilePayload(data),
     }
 
     const response = await api.post('/v1/organizer/exhibitors', payload, { headers })
@@ -176,9 +190,7 @@ export async function updateOrganizerExhibitor(exhibitorUuid: string, data: Exhi
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      company_profile: data.companyProfile,
-      company_logo: data.companyLogo,
-      product_highlights: data.productHighlights
+      ...getExhibitorProfilePayload(data),
     }
 
     const response = await api.put('/v1/organizer/exhibitors', payload, { headers })

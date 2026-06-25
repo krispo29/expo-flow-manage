@@ -69,9 +69,9 @@ export interface ExhibitorPayload {
   boothNo?: string
   quota: number
   overQuota: number
-  companyProfile: string
-  companyLogo: string
-  productHighlights: ProductHighlight[]
+  companyProfile?: string
+  companyLogo?: string
+  productHighlights?: ProductHighlight[]
 }
 
 function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number; total_quota?: number }) {
@@ -79,6 +79,22 @@ function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number;
   const totalQuota = Number(item.total_quota || 0)
 
   return Boolean(item.is_quota_full || (totalQuota > 0 && usedQuota >= totalQuota))
+}
+
+function getExhibitorProfilePayload(data: ExhibitorPayload) {
+  if (
+    data.companyProfile === undefined &&
+    data.companyLogo === undefined &&
+    data.productHighlights === undefined
+  ) {
+    return {}
+  }
+
+  return {
+    company_profile: data.companyProfile,
+    company_logo: data.companyLogo,
+    product_highlights: data.productHighlights || [],
+  }
 }
 
 // GET /v1/admin/project/exhibitors
@@ -141,9 +157,7 @@ export async function createExhibitor(projectUuid: string, data: ExhibitorPayloa
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      company_profile: data.companyProfile,
-      company_logo: data.companyLogo,
-      product_highlights: data.productHighlights
+      ...getExhibitorProfilePayload(data),
     }
 
     const response = await api.post('/v1/admin/project/exhibitors', payload, { headers })
@@ -176,9 +190,7 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      company_profile: data.companyProfile,
-      company_logo: data.companyLogo,
-      product_highlights: data.productHighlights
+      ...getExhibitorProfilePayload(data),
     }
 
     const response = await api.put('/v1/admin/project/exhibitors', payload, { headers })
@@ -261,20 +273,22 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
   }
 }
 
-export async function uploadExhibitorImage(projectUuid: string, formData: FormData) {
+export async function presignExhibitorImage(projectUuid: string, file: { filename: string; contentType: string }) {
   try {
-    const file = formData.get('file')
-    if (!(file instanceof File)) return { success: false, error: 'Image file is required' }
+    if (!file.filename || !file.contentType) return { success: false, error: 'Image file is required' }
 
     const headers = await requireServerAuthHeaders({ projectUuid: projectUuid || undefined })
-    const response = await api.post('/v1/admin/project/upload/image', formData, {
-      headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+    const response = await api.post('/v1/exhibitor/upload/presign', {
+      filename: file.filename,
+      content_type: file.contentType,
+    }, {
+      headers,
     })
-    const imageUrl = response.data?.data?.url
+    const data = response.data?.data
 
-    return typeof imageUrl === 'string'
-      ? { success: true, imageUrl }
-      : { success: false, error: 'Upload succeeded but no image URL returned' }
+    return typeof data?.upload_url === 'string' && typeof data?.file_url === 'string'
+      ? { success: true, uploadUrl: data.upload_url, fileUrl: data.file_url }
+      : { success: false, error: 'Signed URL response is missing upload URL' }
   } catch (error: unknown) {
     return { success: false, error: getErrorMessage(error) }
   }

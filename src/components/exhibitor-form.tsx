@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { createExhibitor, updateExhibitor, uploadExhibitorImage } from '@/app/actions/exhibitor'
+import { createExhibitor, updateExhibitor, presignExhibitorImage } from '@/app/actions/exhibitor'
 import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents } from '@/app/actions/organizer-exhibitor'
+import { getProjectDetail } from '@/app/actions/project'
 import { getEvents, type Event } from '@/app/actions/settings'
 import { Button } from '@/components/ui/button'
 import {
@@ -95,11 +96,33 @@ function ImagePreviewLink({ url, file, alt }: Readonly<{ url?: string; file?: Fi
   )
 }
 
+function resizeImage(file: File, maxWidth = 2048, quality = 0.85) {
+  return new Promise<Blob>((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width)
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
+      canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(url)
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Failed to resize image')), file.type, quality)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Invalid image file'))
+    }
+    img.src = url
+  })
+}
+
 export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
+  const [showCompanyProfileFields, setShowCompanyProfileFields] = useState(false)
 
   useEffect(() => {
     async function loadEvents() {
@@ -115,6 +138,23 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     }
     loadEvents()
   }, [projectId, isOrganizer])
+
+  useEffect(() => {
+    async function loadProjectSettings() {
+      const result = await getProjectDetail(projectId || undefined)
+      if (result.success && result.project) {
+        const exhibitorPortal = result.project.settings?.exhibitor_portal
+        const portalSettings =
+          !!exhibitorPortal && typeof exhibitorPortal === 'object' && !Array.isArray(exhibitorPortal)
+            ? exhibitorPortal as { is_show_company_profile_fields?: unknown }
+            : null
+        setShowCompanyProfileFields(
+          portalSettings?.is_show_company_profile_fields === true
+        )
+      }
+    }
+    loadProjectSettings()
+  }, [projectId])
 
   const defaultValues: Partial<ExhibitorFormValues> = initialData
     ? {
@@ -173,24 +213,37 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
 
-    let companyLogoUpload: Awaited<ReturnType<typeof uploadExhibitorImage>> = { success: true, imageUrl: data.companyLogo }
-    if (data.companyLogoFile) {
-      const formData = new FormData()
-      formData.append('file', data.companyLogoFile)
-      companyLogoUpload = await uploadExhibitorImage(projectId, formData)
+    const uploadImage = async (file?: File, existingUrl = '') => {
+      try {
+        if (!file) return { success: true as const, imageUrl: existingUrl }
+        const presign = await presignExhibitorImage(projectId, { filename: file.name, contentType: file.type })
+        if (!presign.success || !('uploadUrl' in presign) || !('fileUrl' in presign)) {
+          return { success: false as const, error: 'error' in presign ? presign.error : 'Failed to get signed upload URL' }
+        }
+        const response = await fetch(presign.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: await resizeImage(file),
+        })
+        return response.ok
+          ? { success: true as const, imageUrl: presign.fileUrl }
+          : { success: false as const, error: 'Failed to upload image to storage' }
+      } catch (error) {
+        return { success: false as const, error: error instanceof Error ? error.message : 'Failed to upload image' }
+      }
     }
+
+    const [companyLogoUpload, uploads] = showCompanyProfileFields
+      ? await Promise.all([
+          uploadImage(data.companyLogoFile, data.companyLogo),
+          Promise.all(data.productHighlights.map(highlight => uploadImage(highlight.file, highlight.url))),
+        ])
+      : [{ success: true as const, imageUrl: '' }, []]
     if (!companyLogoUpload.success) {
       toast.error(companyLogoUpload.error)
       setLoading(false)
       return
     }
-
-    const uploads = await Promise.all(data.productHighlights.map(async highlight => {
-      if (!highlight.file) return { success: true as const, imageUrl: highlight.url }
-      const formData = new FormData()
-      formData.append('file', highlight.file)
-      return uploadExhibitorImage(projectId, formData)
-    }))
     const failedUpload = uploads.find(result => !result.success)
     if (failedUpload) {
       toast.error(failedUpload.error)
@@ -202,12 +255,17 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     // Payload now correctly maps directly via the new actions
     const payload = {
       ...submitData,
-      companyLogo: companyLogoUpload.imageUrl || data.companyLogo,
-      productHighlights: submitData.productHighlights.map((highlight, index) => ({
-        description: highlight.description,
-        url: uploads[index].imageUrl || highlight.url,
-      })),
       projectId, // Not required by API body, but let's conform
+      ...(showCompanyProfileFields
+        ? {
+            companyLogo: companyLogoUpload.imageUrl || data.companyLogo,
+            companyProfile: data.companyProfile,
+            productHighlights: submitData.productHighlights.map((highlight, index) => ({
+              description: highlight.description,
+              url: uploads[index].imageUrl || highlight.url,
+            })),
+          }
+        : {}),
     }
 
     let result
@@ -309,63 +367,69 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="companyLogoFile"
-                  render={() => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Company Logo</FormLabel>
-                      <FormControl>
-                        <Input type="file" accept="image/*" onChange={event => form.setValue('companyLogoFile', event.target.files?.[0], { shouldValidate: true })} />
-                      </FormControl>
-                      <ImagePreviewLink url={form.watch('companyLogo')} file={form.watch('companyLogoFile')} alt="Company logo preview" />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="companyProfile"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Company Profile</FormLabel>
-                      <FormControl><Textarea placeholder="Describe the company" rows={5} {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {showCompanyProfileFields && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="companyLogoFile"
+                      render={() => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Company Logo</FormLabel>
+                          <FormControl>
+                            <Input type="file" accept="image/*" onChange={event => form.setValue('companyLogoFile', event.target.files?.[0], { shouldValidate: true })} />
+                          </FormControl>
+                          <ImagePreviewLink url={form.watch('companyLogo')} file={form.watch('companyLogoFile')} alt="Company logo preview" />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="companyProfile"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Company Profile</FormLabel>
+                          <FormControl><Textarea placeholder="Describe the company" rows={5} {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b pb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><ImagePlus className="size-4" /></div>
-                <CardTitle className="text-lg">Product Highlights</CardTitle>
-              </div>
-              <CardDescription>Add product descriptions and images.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              {productHighlights.map((highlight, index) => (
-                <div key={highlight.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_1fr_auto]">
-                  <FormField
-                    control={form.control}
-                    name={`productHighlights.${index}.description`}
-                    render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>}
-                  />
-                  <FormItem>
-                    <FormLabel>Image</FormLabel>
-                    <Input type="file" accept="image/*" onChange={event => form.setValue(`productHighlights.${index}.file`, event.target.files?.[0], { shouldValidate: true })} />
-                    <ImagePreviewLink url={form.watch(`productHighlights.${index}.url`)} file={form.watch(`productHighlights.${index}.file`)} alt={`Product highlight ${index + 1} preview`} />
-                    <FormMessage>{form.formState.errors.productHighlights?.[index]?.root?.message}</FormMessage>
-                  </FormItem>
-                  <Button type="button" variant="ghost" size="icon" className="self-end" onClick={() => remove(index)} aria-label="Remove product highlight"><Trash2 className="size-4" /></Button>
+          {showCompanyProfileFields && (
+            <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><ImagePlus className="size-4" /></div>
+                  <CardTitle className="text-lg">Product Highlights</CardTitle>
                 </div>
-              ))}
-              <Button type="button" variant="outline" onClick={() => append({ description: '', url: '' })}><Plus className="mr-2 size-4" />Add Highlight</Button>
-            </CardContent>
-          </Card>
+                <CardDescription>Add product descriptions and images.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                {productHighlights.map((highlight, index) => (
+                  <div key={highlight.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_1fr_auto]">
+                    <FormField
+                      control={form.control}
+                      name={`productHighlights.${index}.description`}
+                      render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>}
+                    />
+                    <FormItem>
+                      <FormLabel>Image</FormLabel>
+                      <Input type="file" accept="image/*" onChange={event => form.setValue(`productHighlights.${index}.file`, event.target.files?.[0], { shouldValidate: true })} />
+                      <ImagePreviewLink url={form.watch(`productHighlights.${index}.url`)} file={form.watch(`productHighlights.${index}.file`)} alt={`Product highlight ${index + 1} preview`} />
+                      <FormMessage>{form.formState.errors.productHighlights?.[index]?.root?.message}</FormMessage>
+                    </FormItem>
+                    <Button type="button" variant="ghost" size="icon" className="self-end" onClick={() => remove(index)} aria-label="Remove product highlight"><Trash2 className="size-4" /></Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={() => append({ description: '', url: '' })}><Plus className="mr-2 size-4" />Add Highlight</Button>
+              </CardContent>
+            </Card>
+          )}
 
 
 

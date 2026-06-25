@@ -150,6 +150,7 @@ interface SettingsForm {
     logo_url: string
     favicon_url: string
     support_email: string
+    is_show_company_profile_fields: boolean
     branding: {
       theme_color: string
       primary_hover_color: string
@@ -254,6 +255,7 @@ const defaultSettingsForm = (): SettingsForm => ({
     logo_url: "",
     favicon_url: "",
     support_email: "",
+    is_show_company_profile_fields: false,
     branding: {
       theme_color: "#000000",
       primary_hover_color: "#000000",
@@ -298,6 +300,8 @@ const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : [
 
 const getString = (record: SettingsRecord, key: string, fallback = "") =>
   typeof record[key] === "string" ? (record[key] as string) : fallback
+
+const getBoolean = (record: SettingsRecord, key: string) => record[key] === true
 
 const normalizeColor = (value: string, fallback = "#000000") =>
   /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback
@@ -457,6 +461,7 @@ const formFromSettings = (settings?: SettingsRecord | null): SettingsForm => {
       logo_url: getString(exhibitorPortal, "logo_url"),
       favicon_url: getString(exhibitorPortal, "favicon_url"),
       support_email: getString(exhibitorPortal, "support_email"),
+      is_show_company_profile_fields: getBoolean(exhibitorPortal, "is_show_company_profile_fields"),
       branding: {
         theme_color: normalizeColor(getString(exhibitorPortalBranding, "theme_color")),
         primary_hover_color: normalizeColor(getString(exhibitorPortalBranding, "primary_hover_color")),
@@ -569,6 +574,7 @@ const mergeSettings = (baseSettings: SettingsRecord | undefined | null, form: Se
       logo_url: form.exhibitor_portal.logo_url,
       favicon_url: form.exhibitor_portal.favicon_url,
       support_email: form.exhibitor_portal.support_email,
+      is_show_company_profile_fields: form.exhibitor_portal.is_show_company_profile_fields,
       branding: {
         ...exhibitorPortalBranding,
         theme_color: form.exhibitor_portal.branding.theme_color,
@@ -1720,6 +1726,15 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
                 </Field>
                 <Field label="Support Email">
                   <Input type="email" value={settingsForm.exhibitor_portal.support_email} onChange={(event) => updateSettings((current) => ({ ...current, exhibitor_portal: { ...current.exhibitor_portal, support_email: event.target.value } }))} className="h-12 rounded-xl border-white/10 bg-white/5" />
+                </Field>
+                <Field label="Show Company Profile Fields">
+                  <div className="flex h-12 items-center rounded-xl border border-white/10 bg-white/5 px-4">
+                    <Switch
+                      checked={settingsForm.exhibitor_portal.is_show_company_profile_fields}
+                      onCheckedChange={(checked) => updateSettings((current) => ({ ...current, exhibitor_portal: { ...current.exhibitor_portal, is_show_company_profile_fields: checked } }))}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
                 </Field>
                 <Field label="Logo URL">
                   <ImageUrlInput value={settingsForm.exhibitor_portal.logo_url} onChange={(value) => updateSettings((current) => ({ ...current, exhibitor_portal: { ...current.exhibitor_portal, logo_url: value } }))} />

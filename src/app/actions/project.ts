@@ -69,7 +69,7 @@ export async function getProjects() {
 }
 
 // GET /v1/admin/project/detail
-export async function getProjectDetail(uuid: string) {
+export async function getProjectDetail(uuid?: string) {
   try {
     const headers = await requireServerAuthHeaders({ projectUuid: uuid })
 
