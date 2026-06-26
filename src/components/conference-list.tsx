@@ -58,10 +58,23 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   const itemsPerPage = 10
 
   const filteredConferences = conferences.filter(conf => {
-    const matchesSearch = 
-      conf.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conf.speaker_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conf.speaker_info?.toLowerCase().includes(searchQuery.toLowerCase())
+    const query = searchQuery.trim().toLowerCase()
+    const matchesSearch = !query || [
+      conf.title,
+      conf.title_th,
+      conf.speaker_name,
+      conf.speaker_name_th,
+      conf.speaker_info,
+      conf.speaker_info_th,
+      conf.detail,
+      conf.detail_th,
+      ...(conf.speakers?.flatMap(s => [
+        s.speaker_name,
+        s.speaker_name_th,
+        s.speaker_info,
+        s.speaker_info_th,
+      ]) ?? []),
+    ].some(value => value?.toLowerCase().includes(query))
     
     const confDate = conf.show_date
     const matchesStartDate = !startDate || confDate >= startDate
@@ -207,6 +220,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                 className="h-11 bg-white/5 border-white/10 rounded-xl focus-visible:ring-primary/30 transition-all focus:bg-white/10"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                allowThai
               />
             </div>
             <div className="space-y-2">

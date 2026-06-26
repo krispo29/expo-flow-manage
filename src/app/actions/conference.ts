@@ -57,7 +57,9 @@ export interface Speaker {
   speaker_id: number
   conference_uuid: string
   speaker_name: string
+  speaker_name_th?: string
   speaker_info: string
+  speaker_info_th?: string
   speaker_image: string
   sort_order: number
   created_at: string
@@ -68,8 +70,11 @@ export interface Conference {
   project_uuid: string
   event_uuid?: string
   title: string
+  title_th?: string
   speaker_name: string
+  speaker_name_th?: string
   speaker_info: string
+  speaker_info_th?: string
   speakers?: Speaker[]
   image_url?: string
   show_date: string
@@ -84,6 +89,7 @@ export interface Conference {
   status: string
   is_active?: boolean
   detail?: string
+  detail_th?: string
   unique_link?: string
   created_at: string
   can_book: boolean

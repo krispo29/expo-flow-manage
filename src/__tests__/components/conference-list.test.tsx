@@ -97,3 +97,27 @@ describe('ConferenceList unique link', () => {
     consoleError.mockRestore()
   })
 })
+
+describe('ConferenceList search', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('filters conferences with Thai search terms', () => {
+    render(
+      <ConferenceList
+        conferences={[
+          { ...conference, title: 'Future of AgriTech', title_th: 'อนาคตเกษตรอัจฉริยะ' },
+          { ...conference, conference_uuid: 'conference-2', title: 'Aquaculture Summit', title_th: 'งานประมง' },
+        ]}
+        projectId="project-1"
+        userRole="ORGANIZER"
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('Search Conference'), { target: { value: 'เกษตร' } })
+
+    expect(screen.getByText('Future of AgriTech')).toBeInTheDocument()
+    expect(screen.queryByText('Aquaculture Summit')).not.toBeInTheDocument()
+  })
+})
