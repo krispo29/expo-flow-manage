@@ -28,9 +28,10 @@ interface ConferenceListProps {
   conferences: Conference[]
   projectId: string
   userRole?: string | null
+  events?: Array<{ event_uuid: string; event_name: string }>
 }
 
-export function ConferenceList({ conferences: initialConferences, projectId, userRole }: Readonly<ConferenceListProps>) {
+export function ConferenceList({ conferences: initialConferences, projectId, userRole, events = [] }: Readonly<ConferenceListProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
   const router = useRouter()
 
@@ -40,6 +41,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   )
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [eventUuid, setEventUuid] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [previewConference, setPreviewConference] = useState<Conference | null>(null)
@@ -56,6 +58,15 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+
+  const eventNames = new Map(events.map(event => [event.event_uuid, event.event_name]))
+  const filterEventOptions = Array.from(
+    new Map(
+      conferences
+        .filter(conf => conf.event_uuid)
+        .map(conf => [conf.event_uuid!, eventNames.get(conf.event_uuid!) || conf.event_name || conf.event_uuid!])
+    ).entries()
+  )
 
   const filteredConferences = conferences.filter(conf => {
     const query = searchQuery.trim().toLowerCase()
@@ -77,10 +88,11 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     ].some(value => value?.toLowerCase().includes(query))
     
     const confDate = conf.show_date
+    const matchesEvent = !eventUuid || conf.event_uuid === eventUuid
     const matchesStartDate = !startDate || confDate >= startDate
     const matchesEndDate = !endDate || confDate <= endDate
 
-    return matchesSearch && matchesStartDate && matchesEndDate
+    return matchesSearch && matchesEvent && matchesStartDate && matchesEndDate
   })
 
   // Calculate pagination based on FILTERED data
@@ -118,6 +130,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
 
   function clearFilters() {
     setSearchQuery('')
+    setEventUuid('')
     setStartDate('')
     setEndDate('')
   }
@@ -208,7 +221,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
     <div className="space-y-8 animate-in fade-in duration-700">
       <Card className="glass shadow-xl shadow-primary/5 border-white/10">
         <CardContent className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div className="md:col-span-2 space-y-2 group">
               <Label htmlFor="search" className="text-sm font-bold flex items-center gap-2 group-focus-within:text-primary transition-colors">
                 <Search className="size-4" />
@@ -222,6 +235,25 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                 onChange={(e) => handleSearchChange(e.target.value)}
                 allowThai
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="eventFilter" className="text-sm font-bold">Event</Label>
+              <select
+                id="eventFilter"
+                className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm shadow-sm outline-none transition-all focus:bg-white/10 focus-visible:ring-[3px] focus-visible:ring-primary/30"
+                value={eventUuid}
+                onChange={(e) => {
+                  setEventUuid(e.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="">All Events</option>
+                {filterEventOptions.map(([uuid, name]) => (
+                  <option key={uuid} value={uuid}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="startDate" className="text-sm font-bold">Start Date</Label>
@@ -245,7 +277,7 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
             </div>
           </div>
           
-          {(searchQuery || startDate || endDate) && (
+          {(searchQuery || eventUuid || startDate || endDate) && (
             <div className="flex justify-end pt-2">
               <Button 
                 variant="outline" 

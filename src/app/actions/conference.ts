@@ -69,6 +69,7 @@ export interface Conference {
   conference_uuid: string
   project_uuid: string
   event_uuid?: string
+  event_name?: string
   title: string
   title_th?: string
   speaker_name: string

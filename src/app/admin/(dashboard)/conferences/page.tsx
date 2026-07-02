@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getConferenceVouchers, getConferences } from '@/app/actions/conference'
-import { getOrganizerConferences } from '@/app/actions/organizer-conference'
+import { getOrganizerConferences, getOrganizerEvents } from '@/app/actions/organizer-conference'
 import { ConferenceExcelOperations } from '@/components/conference-excel'
 import { getUserRole } from '@/app/actions/auth'
+import { getEvents } from '@/app/actions/settings'
 
 export default async function ConferencesPage({
   searchParams,
@@ -24,6 +25,9 @@ export default async function ConferencesPage({
   const { data: conferences } = userRole === 'ORGANIZER'
     ? await getOrganizerConferences()
     : await getConferences(projectId);
+  const events = userRole === 'ORGANIZER'
+    ? (await getOrganizerEvents()).data || []
+    : (await getEvents(projectId)).events || []
   const { data: vouchers } = userRole === 'ORGANIZER'
     ? { data: [] }
     : await getConferenceVouchers(projectId)
@@ -49,7 +53,7 @@ export default async function ConferencesPage({
       </div>
 
       {userRole === 'ORGANIZER' ? (
-        <ConferenceList conferences={conferences || []} projectId={projectId} userRole={userRole} />
+        <ConferenceList conferences={conferences || []} projectId={projectId} userRole={userRole} events={events} />
       ) : (
         <Tabs defaultValue="conferences" className="w-full space-y-6">
           <TabsList className="glass p-1 h-auto inline-flex rounded-2xl border-white/10">
@@ -68,7 +72,7 @@ export default async function ConferencesPage({
           </TabsList>
 
           <TabsContent value="conferences" className="outline-none">
-            <ConferenceList conferences={conferences || []} projectId={projectId} userRole={userRole} />
+            <ConferenceList conferences={conferences || []} projectId={projectId} userRole={userRole} events={events} />
           </TabsContent>
           <TabsContent value="vouchers" className="outline-none">
             <ConferenceVouchers initialVouchers={vouchers || []} projectId={projectId} conferences={conferences || []} />
