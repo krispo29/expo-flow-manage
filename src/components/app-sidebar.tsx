@@ -21,6 +21,7 @@ import {
   BadgeCheck,
   Bell,
   Sparkles,
+  Tags,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -54,6 +55,8 @@ interface SidebarProject {
   url: string
 }
 
+const THAILAB2026_PROJECT_UUID = '07626a19-001d-4675-addd-3a92e3f46d47'
+
 export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof Sidebar> & { projects?: SidebarProject[] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -70,6 +73,8 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   }
 
   const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
+  const canManageThailabMatchingCategories =
+    user?.role === 'ADMIN' && projectId === THAILAB2026_PROJECT_UUID
 
   const handleProjectChange = (newProjectId: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -292,6 +297,21 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       <Link href={projectId ? `${basePath}/events?projectId=${projectId}` : `${basePath}/events`}>
                         <Calendar />
                         <span>Events</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {canManageThailabMatchingCategories && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Business Matching Categories"
+                      isActive={isActive(`${basePath}/business-matching-categories`)}
+                    >
+                      <Link href={`${basePath}/business-matching-categories?projectId=${projectId}`}>
+                        <Tags />
+                        <span>Matching Categories</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
