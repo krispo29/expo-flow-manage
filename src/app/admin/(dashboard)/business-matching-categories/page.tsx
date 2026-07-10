@@ -13,6 +13,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Check, Clock, Tags, X } from 'lucide-react'
 
@@ -64,6 +72,10 @@ function BusinessMatchingCategoriesContent() {
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [actionUuid, setActionUuid] = useState<string | null>(null)
+  const [pendingReview, setPendingReview] = useState<{
+    request: BusinessMatchingCategoryRequest
+    action: 'approve' | 'reject'
+  } | null>(null)
 
   const loadRequests = useCallback(async () => {
     if (!isThailab2026) return
@@ -103,16 +115,9 @@ function BusinessMatchingCategoriesContent() {
     [allRequests]
   )
 
-  async function handleReview(
-    request: BusinessMatchingCategoryRequest,
-    action: 'approve' | 'reject'
-  ) {
-    const verb = action === 'approve' ? 'approve' : 'reject'
-    const confirmed = window.confirm(
-      `Are you sure you want to ${verb} "${request.requested_name}" for ${request.company_name}?`
-    )
-    if (!confirmed) return
-
+  async function handleReview() {
+    if (!pendingReview) return
+    const { request, action } = pendingReview
     setActionUuid(request.request_uuid)
     const note = notes[request.request_uuid] || ''
     const result =
@@ -139,6 +144,7 @@ function BusinessMatchingCategoriesContent() {
       toast.error(result.error)
     }
     setActionUuid(null)
+    setPendingReview(null)
   }
 
   if (!isThailab2026) {
@@ -297,7 +303,9 @@ function BusinessMatchingCategoriesContent() {
                         }
                       />
                       <Button
-                        onClick={() => handleReview(request, 'approve')}
+                        onClick={() =>
+                          setPendingReview({ request, action: 'approve' })
+                        }
                         disabled={actionUuid === request.request_uuid}
                         className="bg-emerald-600 hover:bg-emerald-700"
                       >
@@ -306,7 +314,9 @@ function BusinessMatchingCategoriesContent() {
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={() => handleReview(request, 'reject')}
+                        onClick={() =>
+                          setPendingReview({ request, action: 'reject' })
+                        }
                         disabled={actionUuid === request.request_uuid}
                         className="border-red-200 text-red-700 hover:bg-red-50"
                       >
@@ -321,6 +331,58 @@ function BusinessMatchingCategoriesContent() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={Boolean(pendingReview)}
+        onOpenChange={(open) => {
+          if (!open && !actionUuid) setPendingReview(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {pendingReview?.action === 'approve'
+                ? 'Approve category request?'
+                : 'Reject category request?'}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingReview
+                ? `This will ${pendingReview.action} "${pendingReview.request.requested_name}" for ${pendingReview.request.company_name || 'this exhibitor'}.`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          {pendingReview ? (
+            <div className="rounded-xl bg-muted/60 p-4 text-sm">
+              <div className="font-semibold">
+                {pendingReview.request.requested_name}
+              </div>
+              <div className="mt-1 text-muted-foreground">
+                {pendingReview.request.description || 'No description provided.'}
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPendingReview(null)}
+              disabled={Boolean(actionUuid)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReview}
+              disabled={Boolean(actionUuid)}
+              className={
+                pendingReview?.action === 'approve'
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-red-600 hover:bg-red-700'
+              }
+            >
+              {pendingReview?.action === 'approve' ? 'Approve' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
