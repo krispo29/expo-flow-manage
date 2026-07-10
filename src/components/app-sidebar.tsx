@@ -73,8 +73,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   }
 
   const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
-  const canManageThailabMatchingCategories =
-    user?.role === 'ADMIN' && projectId === THAILAB2026_PROJECT_UUID
+  const canManageThailabMatchingCategories = false // Temporarily hidden: user?.role === 'ADMIN' && projectId === THAILAB2026_PROJECT_UUID
 
   const handleProjectChange = (newProjectId: string) => {
     const params = new URLSearchParams(searchParams.toString())
