@@ -21,6 +21,7 @@ const payload: ExhibitorPayload = {
   companyProfile: 'Profile',
   companyLogo: 'https://example.com/logo.png',
   productHighlights: [{ description: 'Product', url: 'https://example.com/product.png' }],
+  categoryUUIDs: ['category-main', 'category-sub'],
 }
 
 beforeEach(() => {
@@ -43,6 +44,7 @@ test('Create/Update send exhibitor profile fields for Admin and Organizer', asyn
     company_profile: 'Profile',
     company_logo: 'https://example.com/logo.png',
     product_highlights: [{ description: 'Product', url: 'https://example.com/product.png' }],
+    category_uuids: ['category-main', 'category-sub'],
   }
   expect(post).toHaveBeenNthCalledWith(1, '/v1/admin/project/exhibitors', expect.objectContaining(fields), expect.any(Object))
   expect(post).toHaveBeenNthCalledWith(2, '/v1/organizer/exhibitors', expect.objectContaining(fields), expect.any(Object))

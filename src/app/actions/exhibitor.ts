@@ -53,6 +53,14 @@ export interface ProductHighlight {
   url: string
 }
 
+export interface BusinessMatchingCategory {
+  category_uuid: string
+  name: string
+  parent_uuid: string
+  event_uuid: string
+  event_code: string
+}
+
 export interface ExhibitorPayload {
   eventId: string
   username?: string
@@ -74,6 +82,7 @@ export interface ExhibitorPayload {
   companyProfile?: string
   companyLogo?: string
   productHighlights?: ProductHighlight[]
+  categoryUUIDs?: string[]
 }
 
 function getQuotaFullState(item: {
@@ -174,6 +183,7 @@ export async function createExhibitor(
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
+      category_uuids: data.categoryUUIDs || [],
       ...getExhibitorProfilePayload(data),
     }
 
@@ -215,6 +225,7 @@ export async function updateExhibitor(
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
+      category_uuids: data.categoryUUIDs || [],
       ...getExhibitorProfilePayload(data),
     }
 
@@ -227,6 +238,37 @@ export async function updateExhibitor(
     console.error('Error updating exhibitor:', error)
     const errMsg = error.response?.data?.message || 'Failed to update exhibitor'
     return { success: false, error: errMsg }
+  }
+}
+
+export async function getExhibitorBusinessMatchingCategories(
+  projectUuid: string,
+  eventUuid: string,
+  exhibitorUuid?: string
+) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get(
+      '/v1/admin/project/exhibitors/business-matching/categories',
+      {
+        headers,
+        params: { event_uuid: eventUuid, exhibitor_uuid: exhibitorUuid },
+      }
+    )
+    return {
+      success: true as const,
+      categories: (response.data.data?.categories ||
+        []) as BusinessMatchingCategory[],
+      selectedCategoryUUIDs: (response.data.data?.selected_category_uuids ||
+        []) as string[],
+    }
+  } catch (error: unknown) {
+    return {
+      success: false as const,
+      error:
+        getErrorMessage(error) ||
+        'Failed to fetch business matching categories',
+    }
   }
 }
 

@@ -11,7 +11,11 @@ import {
 
 // Re-export shared interfaces
 export type { Exhibitor } from './exhibitor'
-import type { Exhibitor, ExhibitorPayload } from './exhibitor'
+import type {
+  BusinessMatchingCategory,
+  Exhibitor,
+  ExhibitorPayload,
+} from './exhibitor'
 
 function getQuotaFullState(item: {
   is_quota_full?: boolean
@@ -152,6 +156,36 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
   }
 }
 
+export async function getOrganizerExhibitorBusinessMatchingCategories(
+  eventUuid: string,
+  exhibitorUuid?: string
+) {
+  try {
+    const { headers } = await getOrganizerAuthHeaders()
+    const response = await api.get(
+      '/v1/organizer/exhibitors/business-matching/categories',
+      {
+        headers,
+        params: { event_uuid: eventUuid, exhibitor_uuid: exhibitorUuid },
+      }
+    )
+    return {
+      success: true as const,
+      categories: (response.data.data?.categories ||
+        []) as BusinessMatchingCategory[],
+      selectedCategoryUUIDs: (response.data.data?.selected_category_uuids ||
+        []) as string[],
+    }
+  } catch (error: any) {
+    return {
+      success: false as const,
+      error:
+        error.response?.data?.message ||
+        'Failed to fetch business matching categories',
+    }
+  }
+}
+
 // POST /v1/organizer/exhibitors
 export async function createOrganizerExhibitor(data: ExhibitorPayload) {
   try {
@@ -177,6 +211,7 @@ export async function createOrganizerExhibitor(data: ExhibitorPayload) {
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
+      category_uuids: data.categoryUUIDs || [],
       ...getExhibitorProfilePayload(data),
     }
 
@@ -218,6 +253,7 @@ export async function updateOrganizerExhibitor(
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
+      category_uuids: data.categoryUUIDs || [],
       ...getExhibitorProfilePayload(data),
     }
 

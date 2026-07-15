@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { createExhibitor, updateExhibitor, presignExhibitorImage } from '@/app/actions/exhibitor'
-import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents } from '@/app/actions/organizer-exhibitor'
+import { createExhibitor, updateExhibitor, presignExhibitorImage, getExhibitorBusinessMatchingCategories } from '@/app/actions/exhibitor'
+import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents, getOrganizerExhibitorBusinessMatchingCategories } from '@/app/actions/organizer-exhibitor'
 import { getProjectDetail } from '@/app/actions/project'
 import { getEvents, type Event } from '@/app/actions/settings'
 import { Button } from '@/components/ui/button'
@@ -27,12 +27,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { ImagePlus, Loader2, Store, User, Mail, MapPin, Ticket, Globe, Phone, Printer, Plus, Trash2 } from 'lucide-react'
+import { BriefcaseBusiness, ImagePlus, Loader2, Store, User, Mail, MapPin, Ticket, Globe, Phone, Printer, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { type Exhibitor } from '@/app/actions/exhibitor'
+import { type BusinessMatchingCategory, type Exhibitor } from '@/app/actions/exhibitor'
 import { CountrySelector } from '@/components/CountrySelector'
 
 const exhibitorSchema = z.object({
@@ -60,6 +61,7 @@ const exhibitorSchema = z.object({
     url: z.string(),
     file: z.custom<File>().optional(),
   }).refine(highlight => highlight.url || highlight.file, 'Image is required')),
+  categoryUUIDs: z.array(z.string()),
 })
 
 type ExhibitorFormValues = z.infer<typeof exhibitorSchema>
@@ -123,6 +125,9 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
   const [showCompanyProfileFields, setShowCompanyProfileFields] = useState(false)
+  const [businessMatchingCategories, setBusinessMatchingCategories] = useState<BusinessMatchingCategory[]>([])
+  const [categorySearch, setCategorySearch] = useState('')
+  const [loadingCategories, setLoadingCategories] = useState(false)
 
   useEffect(() => {
     async function loadEvents() {
@@ -178,6 +183,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         companyLogo: initialData.companyLogo || '',
         companyLogoFile: undefined,
         productHighlights: initialData.productHighlights || [],
+        categoryUUIDs: [],
       }
     : {
         eventId: '',
@@ -199,6 +205,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         companyLogo: '',
         companyLogoFile: undefined,
         productHighlights: [],
+        categoryUUIDs: [],
       }
 
   const form = useForm<ExhibitorFormValues>({
@@ -209,6 +216,42 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     control: form.control,
     name: 'productHighlights',
   })
+  const eventId = form.watch('eventId')
+
+  useEffect(() => {
+    if (!eventId) {
+      setBusinessMatchingCategories([])
+      form.setValue('categoryUUIDs', [])
+      return
+    }
+
+    let active = true
+    setLoadingCategories(true)
+    const loadCategories = isOrganizer
+      ? getOrganizerExhibitorBusinessMatchingCategories(eventId, initialData?.id)
+      : getExhibitorBusinessMatchingCategories(projectId, eventId, initialData?.id)
+
+    loadCategories.then(result => {
+      if (!active) return
+      if (!result.success) {
+        setBusinessMatchingCategories([])
+        form.setValue('categoryUUIDs', [])
+        toast.error(result.error)
+        return
+      }
+      const available = new Set(result.categories.map(category => category.category_uuid))
+      setBusinessMatchingCategories(result.categories)
+      form.setValue(
+        'categoryUUIDs',
+        result.selectedCategoryUUIDs.filter(categoryUUID => available.has(categoryUUID)),
+        { shouldDirty: false }
+      )
+    }).finally(() => {
+      if (active) setLoadingCategories(false)
+    })
+
+    return () => { active = false }
+  }, [eventId, form, initialData?.id, isOrganizer, projectId])
 
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
@@ -285,7 +328,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
 
     if (result.success) {
       toast.success(initialData ? 'Exhibitor updated successfully' : 'Exhibitor created successfully')
-      router.push(isOrganizer ? '/admin/exhibitors' : `/admin/exhibitors?projectId=${projectId}`)
+      router.push(isOrganizer ? '/organizer/exhibitors' : `/admin/exhibitors?projectId=${projectId}`)
       router.refresh()
     } else {
       toast.error(result.error || 'Something went wrong')
@@ -431,7 +474,63 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
             </Card>
           )}
 
-
+          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><BriefcaseBusiness className="size-4" /></div>
+                <CardTitle className="text-lg">Business Matching Categories</CardTitle>
+              </div>
+              <CardDescription>Select any main or sub-profile that describes the exhibitor. This field is optional.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <FormField
+                control={form.control}
+                name="categoryUUIDs"
+                render={({ field }) => (
+                  <FormItem>
+                    <Input
+                      value={categorySearch}
+                      onChange={event => setCategorySearch(event.target.value)}
+                      placeholder="Search category..."
+                      disabled={!eventId || loadingCategories}
+                      className="mb-3"
+                    />
+                    <div className="max-h-80 overflow-y-auto rounded-lg border p-3">
+                      {loadingCategories ? (
+                        <div className="flex items-center justify-center py-8 text-sm text-slate-500"><Loader2 className="mr-2 size-4 animate-spin" />Loading categories...</div>
+                      ) : businessMatchingCategories.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-slate-500">{eventId ? 'No categories available for this event.' : 'Select an event to load categories.'}</p>
+                      ) : (
+                        businessMatchingCategories
+                          .filter(category => category.name.toLowerCase().includes(categorySearch.trim().toLowerCase()))
+                          .map(category => {
+                            const isMainProfile = !category.parent_uuid
+                            return (
+                              <label
+                                key={category.category_uuid}
+                                className={`flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-slate-50 ${isMainProfile ? 'font-semibold' : 'ml-7'}`}
+                              >
+                                <Checkbox
+                                  checked={field.value.includes(category.category_uuid)}
+                                  onCheckedChange={checked => field.onChange(
+                                    checked
+                                      ? [...field.value, category.category_uuid]
+                                      : field.value.filter(categoryUUID => categoryUUID !== category.category_uuid)
+                                  )}
+                                />
+                                <span>{category.name}</span>
+                                <span className="ml-auto text-xs font-normal text-slate-400">{category.event_code}</span>
+                              </label>
+                            )
+                          })
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
           {/* Contact Information Card */}
           <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
