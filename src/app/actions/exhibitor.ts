@@ -36,6 +36,8 @@ export interface Exhibitor {
   overQuota: number
   isActive: boolean
   isQuotaFull?: boolean
+  isBusinessMatchingReadyEmailSent?: boolean
+  canSendBusinessMatchingReadyEmail?: boolean
   inviteCode?: string
   projectId?: string
   password?: string
@@ -74,11 +76,17 @@ export interface ExhibitorPayload {
   productHighlights?: ProductHighlight[]
 }
 
-function getQuotaFullState(item: { is_quota_full?: boolean; used_quota?: number; total_quota?: number }) {
+function getQuotaFullState(item: {
+  is_quota_full?: boolean
+  used_quota?: number
+  total_quota?: number
+}) {
   const usedQuota = Number(item.used_quota || 0)
   const totalQuota = Number(item.total_quota || 0)
 
-  return Boolean(item.is_quota_full || (totalQuota > 0 && usedQuota >= totalQuota))
+  return Boolean(
+    item.is_quota_full || (totalQuota > 0 && usedQuota >= totalQuota)
+  )
 }
 
 function getExhibitorProfilePayload(data: ExhibitorPayload) {
@@ -101,14 +109,14 @@ function getExhibitorProfilePayload(data: ExhibitorPayload) {
 export async function getExhibitors(projectUuid: string) {
   // Verify user has access to this project
   await requireProjectContext(projectUuid)
-  
+
   try {
     const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/exhibitors', { headers })
-    
+
     // The API returns an array directly in data.data
     const exhibitorsList = response.data.data || []
-    
+
     // Map to camelCase Exhibitor frontend interface
     const mappedExhibitors: Exhibitor[] = exhibitorsList.map((item: any) => ({
       id: item.exhibitor_uuid,
@@ -125,7 +133,11 @@ export async function getExhibitors(projectUuid: string) {
       quota: 0, // Not provided in list
       overQuota: 0, // Not provided in list
       isQuotaFull: getQuotaFullState(item),
-      passwordNote: item.password_note
+      passwordNote: item.password_note,
+      isBusinessMatchingReadyEmailSent:
+        item.is_business_matching_ready_email_sent,
+      canSendBusinessMatchingReadyEmail:
+        item.can_send_business_matching_ready_email,
     }))
 
     return { success: true, exhibitors: mappedExhibitors }
@@ -136,7 +148,10 @@ export async function getExhibitors(projectUuid: string) {
 }
 
 // POST /v1/admin/project/exhibitors
-export async function createExhibitor(projectUuid: string, data: ExhibitorPayload) {
+export async function createExhibitor(
+  projectUuid: string,
+  data: ExhibitorPayload
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
@@ -147,7 +162,9 @@ export async function createExhibitor(projectUuid: string, data: ExhibitorPayloa
       address: data.address,
       city: data.city,
       province: data.province,
-      country: data.country ? getCountryNameFromValue(data.country) : data.country,
+      country: data.country
+        ? getCountryNameFromValue(data.country)
+        : data.country,
       postal_code: data.postalCode,
       tel: data.phone,
       fax: data.fax,
@@ -160,7 +177,9 @@ export async function createExhibitor(projectUuid: string, data: ExhibitorPayloa
       ...getExhibitorProfilePayload(data),
     }
 
-    const response = await api.post('/v1/admin/project/exhibitors', payload, { headers })
+    const response = await api.post('/v1/admin/project/exhibitors', payload, {
+      headers,
+    })
     revalidatePath('/admin/exhibitors')
     return { success: true, exhibitor: response.data.data }
   } catch (error: any) {
@@ -171,7 +190,11 @@ export async function createExhibitor(projectUuid: string, data: ExhibitorPayloa
 }
 
 // PUT /v1/admin/project/exhibitors
-export async function updateExhibitor(projectUuid: string, exhibitorUuid: string, data: ExhibitorPayload) {
+export async function updateExhibitor(
+  projectUuid: string,
+  exhibitorUuid: string,
+  data: ExhibitorPayload
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
@@ -180,7 +203,9 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       address: data.address,
       city: data.city,
       province: data.province,
-      country: data.country ? getCountryNameFromValue(data.country) : data.country,
+      country: data.country
+        ? getCountryNameFromValue(data.country)
+        : data.country,
       postal_code: data.postalCode,
       tel: data.phone,
       fax: data.fax,
@@ -193,7 +218,9 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
       ...getExhibitorProfilePayload(data),
     }
 
-    const response = await api.put('/v1/admin/project/exhibitors', payload, { headers })
+    const response = await api.put('/v1/admin/project/exhibitors', payload, {
+      headers,
+    })
     revalidatePath('/admin/exhibitors')
     return { success: true, exhibitor: response.data.data }
   } catch (error: any) {
@@ -204,15 +231,18 @@ export async function updateExhibitor(projectUuid: string, exhibitorUuid: string
 }
 
 // DELETE /v1/admin/project/exhibitors
-export async function deleteExhibitor(projectUuid: string, exhibitorId: string) {
+export async function deleteExhibitor(
+  projectUuid: string,
+  exhibitorId: string
+) {
   // Verify user has access to this project before deletion
   await requireProjectContext(projectUuid)
-  
+
   try {
     const headers = await getAuthHeaders(projectUuid)
     await api.delete('/v1/admin/project/exhibitors', {
       headers,
-      data: { exhibitor_uuid: exhibitorId }
+      data: { exhibitor_uuid: exhibitorId },
     })
     revalidatePath('/admin/exhibitors')
     return { success: true }
@@ -223,14 +253,20 @@ export async function deleteExhibitor(projectUuid: string, exhibitorId: string) 
 }
 
 // GET /v1/admin/project/exhibitors/:id (Get One)
-export async function getExhibitorById(projectUuid: string, exhibitorId: string) {
+export async function getExhibitorById(
+  projectUuid: string,
+  exhibitorId: string
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const response = await api.get(`/v1/admin/project/exhibitors/${exhibitorId}`, { headers })
-    
+    const response = await api.get(
+      `/v1/admin/project/exhibitors/${exhibitorId}`,
+      { headers }
+    )
+
     // API returns { data: { info: {...}, members: [...] } }
     const rawData = response.data.data.info
-    
+
     if (!rawData) {
       return { success: false, error: 'Exhibitor info not found' }
     }
@@ -263,30 +299,45 @@ export async function getExhibitorById(projectUuid: string, exhibitorId: string)
       passwordNote: rawData.password_note,
       companyProfile: rawData.company_profile || '',
       companyLogo: rawData.company_logo || '',
-      productHighlights: rawData.product_highlights || []
+      productHighlights: rawData.product_highlights || [],
     }
 
-    return { success: true, exhibitor: mappedExhibitor, members: response.data.data.members }
+    return {
+      success: true,
+      exhibitor: mappedExhibitor,
+      members: response.data.data.members,
+    }
   } catch (error: any) {
     console.error('Error fetching exhibitor:', error)
     return { success: false, error: 'Failed to fetch exhibitor' }
   }
 }
 
-export async function presignExhibitorImage(projectUuid: string, file: { filename: string; contentType: string }) {
+export async function presignExhibitorImage(
+  projectUuid: string,
+  file: { filename: string; contentType: string }
+) {
   try {
-    if (!file.filename || !file.contentType) return { success: false, error: 'Image file is required' }
+    if (!file.filename || !file.contentType)
+      return { success: false, error: 'Image file is required' }
 
-    const headers = await requireServerAuthHeaders({ projectUuid: projectUuid || undefined })
-    const response = await api.post('/v1/exhibitor/upload/presign', {
-      filename: file.filename,
-      content_type: file.contentType,
-    }, {
-      headers,
+    const headers = await requireServerAuthHeaders({
+      projectUuid: projectUuid || undefined,
     })
+    const response = await api.post(
+      '/v1/exhibitor/upload/presign',
+      {
+        filename: file.filename,
+        content_type: file.contentType,
+      },
+      {
+        headers,
+      }
+    )
     const data = response.data?.data
 
-    return typeof data?.upload_url === 'string' && typeof data?.file_url === 'string'
+    return typeof data?.upload_url === 'string' &&
+      typeof data?.file_url === 'string'
       ? { success: true, uploadUrl: data.upload_url, fileUrl: data.file_url }
       : { success: false, error: 'Signed URL response is missing upload URL' }
   } catch (error: unknown) {
@@ -295,12 +346,19 @@ export async function presignExhibitorImage(projectUuid: string, file: { filenam
 }
 
 // Custom action for generating invite code
-export async function generateInviteCode(projectUuid: string, exhibitorId: string) {
+export async function generateInviteCode(
+  projectUuid: string,
+  exhibitorId: string
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const response = await api.post('/v1/admin/project/exhibitors/generate_invite_code', {
-      exhibitor_uuid: exhibitorId
-    }, { headers })
+    const response = await api.post(
+      '/v1/admin/project/exhibitors/generate_invite_code',
+      {
+        exhibitor_uuid: exhibitorId,
+      },
+      { headers }
+    )
     return { success: true, inviteCode: response.data.data?.inviteCode }
   } catch (error: any) {
     console.error('Error generating invite code:', error)
@@ -309,14 +367,22 @@ export async function generateInviteCode(projectUuid: string, exhibitorId: strin
 }
 
 // Custom action for sending credentials
-export async function sendExhibitorCredentials(projectUuid: string, exhibitorId: string, email?: string) {
+export async function sendExhibitorCredentials(
+  projectUuid: string,
+  exhibitorId: string,
+  email?: string
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const payload = email 
-      ? [{ exhibitor_uuid: exhibitorId, email }] 
+    const payload = email
+      ? [{ exhibitor_uuid: exhibitorId, email }]
       : [exhibitorId]
-      
-    await api.post('/v1/admin/project/exhibitors/send_mail_credential', payload, { headers })
+
+    await api.post(
+      '/v1/admin/project/exhibitors/send_mail_credential',
+      payload,
+      { headers }
+    )
     return { success: true }
   } catch (error: any) {
     console.error('Error sending credentials:', error)
@@ -325,10 +391,16 @@ export async function sendExhibitorCredentials(projectUuid: string, exhibitorId:
 }
 
 // GET /v1/admin/project/exhibitors/:id/members (Get Members subset)
-export async function getExhibitorMembers(projectUuid: string, exhibitorId: string) {
+export async function getExhibitorMembers(
+  projectUuid: string,
+  exhibitorId: string
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const response = await api.get(`/v1/admin/project/exhibitors/${exhibitorId}/members/`, { headers })
+    const response = await api.get(
+      `/v1/admin/project/exhibitors/${exhibitorId}/members/`,
+      { headers }
+    )
     return { success: true, members: response.data.data }
   } catch (error: any) {
     console.error('Error fetching exhibitor members:', error)
@@ -337,13 +409,21 @@ export async function getExhibitorMembers(projectUuid: string, exhibitorId: stri
 }
 
 // PATCH /v1/admin/project/exhibitors/force_reset_password
-export async function forcePasswordResetExhibitor(projectUuid: string, exhibitorId: string, newPassword: string) {
+export async function forcePasswordResetExhibitor(
+  projectUuid: string,
+  exhibitorId: string,
+  newPassword: string
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    await api.patch('/v1/admin/project/exhibitors/force_reset_password', {
-      exhibitor_uuid: exhibitorId,
-      new_password: newPassword
-    }, { headers })
+    await api.patch(
+      '/v1/admin/project/exhibitors/force_reset_password',
+      {
+        exhibitor_uuid: exhibitorId,
+        new_password: newPassword,
+      },
+      { headers }
+    )
     return { success: true }
   } catch (error: any) {
     console.error('Error resetting password:', error)
@@ -353,12 +433,19 @@ export async function forcePasswordResetExhibitor(projectUuid: string, exhibitor
 }
 
 // PATCH /v1/admin/project/exhibitors/toggle_status
-export async function toggleStatusExhibitor(projectUuid: string, exhibitorId: string) {
+export async function toggleStatusExhibitor(
+  projectUuid: string,
+  exhibitorId: string
+) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    await api.patch('/v1/admin/project/exhibitors/toggle_status', {
-      exhibitor_uuid: exhibitorId
-    }, { headers })
+    await api.patch(
+      '/v1/admin/project/exhibitors/toggle_status',
+      {
+        exhibitor_uuid: exhibitorId,
+      },
+      { headers }
+    )
     revalidatePath('/admin/exhibitors')
     return { success: true }
   } catch (error: any) {
@@ -372,7 +459,11 @@ export async function toggleStatusExhibitor(projectUuid: string, exhibitorId: st
 export async function testLoginExhibitor(projectUuid: string, data: any) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const response = await api.post('/v1/admin/project/exhibitors/login', data, { headers })
+    const response = await api.post(
+      '/v1/admin/project/exhibitors/login',
+      data,
+      { headers }
+    )
     return { success: true, data: response.data }
   } catch (error: any) {
     console.error('Error testing exhibitor login:', error)
