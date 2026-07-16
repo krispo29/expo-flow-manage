@@ -121,6 +121,7 @@ function resizeImage(file: File, maxWidth = 2048, quality = 0.85) {
 
 export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
+  const showBusinessMatchingCategories = false
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
@@ -219,6 +220,8 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
   const eventId = form.watch('eventId')
 
   useEffect(() => {
+    if (!showBusinessMatchingCategories) return
+
     if (!eventId) {
       setBusinessMatchingCategories([])
       form.setValue('categoryUUIDs', [])
@@ -251,7 +254,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     })
 
     return () => { active = false }
-  }, [eventId, form, initialData?.id, isOrganizer, projectId])
+  }, [eventId, form, initialData?.id, isOrganizer, projectId, showBusinessMatchingCategories])
 
   async function onSubmit(data: ExhibitorFormValues) {
     setLoading(true)
@@ -474,7 +477,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
             </Card>
           )}
 
-          <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
+          {showBusinessMatchingCategories && <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><BriefcaseBusiness className="size-4" /></div>
@@ -530,7 +533,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                 )}
               />
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Contact Information Card */}
           <Card className="md:col-span-2 shadow-sm border-slate-200 overflow-hidden">
