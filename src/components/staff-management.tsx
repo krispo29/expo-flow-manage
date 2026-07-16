@@ -48,6 +48,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [togglingStaffId, setTogglingStaffId] = useState<string | null>(null)
   
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
@@ -175,6 +177,9 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
     
     const finalTitle = isOtherTitle ? customTitle : formData.title
     
@@ -193,27 +198,31 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
       staffTypeCode: formData.staffTypeCode
     }
 
-    let result
-    if (isOrganizer) {
-      if (editingStaff) {
-        result = await updateOrganizerMember(editingStaff.id, payload)
+    try {
+      let result
+      if (isOrganizer) {
+        if (editingStaff) {
+          result = await updateOrganizerMember(editingStaff.id, payload)
+        } else {
+          result = await createOrganizerMember(payload)
+        }
       } else {
-        result = await createOrganizerMember(payload)
+        if (editingStaff) {
+          result = await updateStaff(projectId, editingStaff.id, payload)
+        } else {
+          result = await createStaff(projectId, payload)
+        }
       }
-    } else {
-      if (editingStaff) {
-        result = await updateStaff(projectId, editingStaff.id, payload)
-      } else {
-        result = await createStaff(projectId, payload)
-      }
-    }
 
-    if (result.success) {
-      toast.success(editingStaff ? 'Staff updated' : 'Staff added')
-      setIsDialogOpen(false)
-      fetchStaff()
-    } else {
-      toast.error(result.error || 'Operation failed')
+      if (result.success) {
+        toast.success(editingStaff ? 'Staff updated' : 'Staff added')
+        setIsDialogOpen(false)
+        fetchStaff()
+      } else {
+        toast.error(result.error || 'Operation failed')
+      }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -236,18 +245,25 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   }
 
   async function handleToggleStatus(staff: Staff) {
+    if (togglingStaffId) return
+
+    setTogglingStaffId(staff.id)
     let result
-    if (isOrganizer) {
-      result = await toggleStatusOrganizerMember(exhibitorId, staff.id)
-    } else {
-      const { toggleStatusStaff } = await import('@/app/actions/staff')
-      result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
-    }
-    if (result.success) {
-      toast.success('Status toggled successfully')
-      fetchStaff()
-    } else {
-      toast.error('Failed to toggle status')
+    try {
+      if (isOrganizer) {
+        result = await toggleStatusOrganizerMember(exhibitorId, staff.id)
+      } else {
+        const { toggleStatusStaff } = await import('@/app/actions/staff')
+        result = await toggleStatusStaff(projectId, staff.id, exhibitorId)
+      }
+      if (result.success) {
+        toast.success('Status toggled successfully')
+        fetchStaff()
+      } else {
+        toast.error('Failed to toggle status')
+      }
+    } finally {
+      setTogglingStaffId(null)
     }
   }
 
@@ -342,8 +358,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(staff)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                       <Button variant="ghost" size="icon" title={staff.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(staff)}>
-                        <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />
+                       <Button variant="ghost" size="icon" title={staff.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggleStatus(staff)} disabled={togglingStaffId !== null}>
+                        {togglingStaffId === staff.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className={`h-4 w-4 ${staff.isActive ? 'text-green-500' : 'text-muted-foreground'}`} />}
                       </Button>
                     </div>
                   </TableCell>
@@ -453,7 +469,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">{editingStaff ? 'Save Changes' : 'Add Staff'}</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingStaff ? 'Save Changes' : 'Add Staff'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
