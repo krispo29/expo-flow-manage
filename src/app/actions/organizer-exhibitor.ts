@@ -417,7 +417,7 @@ export async function updateOrganizerMember(memberUuid: string, data: any) {
   try {
     const payload = {
       exhibitor_uuid: data.exhibitorId,
-      member_uuid: memberUuid,
+      registration_uuid: memberUuid,
       title: data.title,
       title_other: data.title_other || '',
       first_name: data.firstName,
@@ -457,7 +457,7 @@ export async function toggleStatusOrganizerMember(
       '/v1/organizer/exhibitors/members/toggle_status',
       {
         exhibitor_uuid: exhibitorUuid,
-        member_uuid: memberUuid,
+        registration_uuid: memberUuid,
       },
       { headers }
     )

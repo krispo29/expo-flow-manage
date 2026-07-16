@@ -92,7 +92,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     if (result.success && result.members) {
       // Map members to Staff format
       const mappedStaff: Staff[] = result.members.map((m: any) => ({
-        id: m.member_uuid,
+        id: m.registration_uuid,
         registrationUuid: m.registration_uuid,
         registrationCode: m.registration_code,
         exhibitorId: exhibitorId,

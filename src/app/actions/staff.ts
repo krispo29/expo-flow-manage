@@ -87,7 +87,7 @@ export async function updateStaff(projectUuid: string, memberUuid: string, data:
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
       exhibitor_uuid: data.exhibitorId, // Needs to be passed down or handled
-      member_uuid: memberUuid,
+      registration_uuid: memberUuid,
       title: data.title,
       title_other: data.title_other || "",
       first_name: data.firstName,
@@ -149,7 +149,7 @@ export async function toggleStatusStaff(projectUuid: string, memberId: string, e
     const headers = await getAuthHeaders(projectUuid)
     await api.patch('/v1/admin/project/exhibitors/members/toggle_status', {
       exhibitor_uuid: exhibitorId,
-      member_uuid: memberId
+      registration_uuid: memberId
     }, { headers })
     revalidatePath('/admin/exhibitors')
     return { success: true }
