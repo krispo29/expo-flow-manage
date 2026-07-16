@@ -18,6 +18,7 @@ import {
   sendPendingBusinessMatchingReadyEmailsOrganizerExhibitor,
   testLoginOrganizerExhibitor,
 } from '@/app/actions/organizer-exhibitor'
+import { businessMatchingEnabled } from '@/lib/features'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import {
@@ -444,7 +445,7 @@ export default function ExhibitorsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
+          {businessMatchingEnabled && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
             <Button
               variant="outline"
               className="rounded-full px-6 font-semibold"
@@ -473,7 +474,7 @@ export default function ExhibitorsPage() {
         </div>
       </div>
 
-      <Dialog
+      {businessMatchingEnabled && <Dialog
         open={businessMatchingReadyDialogOpen}
         onOpenChange={setBusinessMatchingReadyDialogOpen}
       >
@@ -511,7 +512,7 @@ export default function ExhibitorsPage() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       <Card className="glass shadow-primary/5 shadow-xl">
         <CardHeader className="border-b border-white/10 bg-white/5">

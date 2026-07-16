@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { businessMatchingEnabled } from "@/lib/features"
 import {
   Users,
   Contact,
@@ -73,7 +74,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   }
 
   const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
-  const canManageThailabMatchingCategories = false // Temporarily hidden: user?.role === 'ADMIN' && projectId === THAILAB2026_PROJECT_UUID
+  const canManageThailabMatchingCategories = businessMatchingEnabled && user?.role === 'ADMIN' && projectId === THAILAB2026_PROJECT_UUID
 
   const handleProjectChange = (newProjectId: string) => {
     const params = new URLSearchParams(searchParams.toString())

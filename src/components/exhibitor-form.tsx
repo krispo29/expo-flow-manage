@@ -9,6 +9,7 @@ import { createExhibitor, updateExhibitor, presignExhibitorImage, getExhibitorBu
 import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents, getOrganizerExhibitorBusinessMatchingCategories } from '@/app/actions/organizer-exhibitor'
 import { getProjectDetail } from '@/app/actions/project'
 import { getEvents, type Event } from '@/app/actions/settings'
+import { businessMatchingEnabled } from '@/lib/features'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -121,7 +122,7 @@ function resizeImage(file: File, maxWidth = 2048, quality = 0.85) {
 
 export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
-  const showBusinessMatchingCategories = false
+  const showBusinessMatchingCategories = businessMatchingEnabled
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])

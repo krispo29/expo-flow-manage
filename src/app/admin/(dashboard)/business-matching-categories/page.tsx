@@ -1,7 +1,8 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { businessMatchingEnabled } from '@/lib/features'
 import { toast } from 'sonner'
 import {
   approveBusinessMatchingCategoryRequest,
@@ -388,15 +389,5 @@ function BusinessMatchingCategoriesContent() {
 }
 
 export default function BusinessMatchingCategoriesPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
-      }
-    >
-      <BusinessMatchingCategoriesContent />
-    </Suspense>
-  )
+  return businessMatchingEnabled ? <BusinessMatchingCategoriesContent /> : null
 }
