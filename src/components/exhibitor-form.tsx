@@ -220,6 +220,19 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     name: 'productHighlights',
   })
   const eventId = form.watch('eventId')
+  const categoryUUIDs = form.watch('categoryUUIDs')
+  const selectedCategories = businessMatchingCategories.filter(category =>
+    categoryUUIDs.includes(category.category_uuid)
+  )
+
+  function focusCategory(categoryUuid: string) {
+    setCategorySearch('')
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`business-matching-category-${categoryUuid}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
 
   useEffect(() => {
     if (!showBusinessMatchingCategories) return
@@ -497,6 +510,23 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                 name="categoryUUIDs"
                 render={({ field }) => (
                   <FormItem>
+                    {selectedCategories.length > 0 && (
+                      <div className="mb-3">
+                        <p className="mb-2 text-xs font-medium text-slate-500">Selected categories</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCategories.map(category => (
+                            <button
+                              key={category.category_uuid}
+                              type="button"
+                              onClick={() => focusCategory(category.category_uuid)}
+                              className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200"
+                            >
+                              {category.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <Input
                       value={categorySearch}
                       onChange={event => setCategorySearch(event.target.value)}
@@ -517,6 +547,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                             return (
                               <label
                                 key={category.category_uuid}
+                                id={`business-matching-category-${category.category_uuid}`}
                                 className={`flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-slate-50 ${isMainProfile ? 'font-semibold' : 'ml-7'}`}
                               >
                                 <Checkbox
@@ -528,7 +559,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                                   )}
                                 />
                                 <span>{category.name}</span>
-                                <span className="ml-auto text-xs font-normal text-slate-400">{category.event_code}</span>
+                                <span className="ml-auto text-xs font-normal text-slate-400">{category.event_code.split('_').pop()}</span>
                               </label>
                             )
                           })
