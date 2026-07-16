@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { businessMatchingEnabled } from '@/lib/features'
+import { businessMatchingEnabled, THAILAB2026_PROJECT_UUID } from '@/lib/features'
 import { toast } from 'sonner'
 import {
   approveBusinessMatchingCategoryRequest,
@@ -24,8 +24,6 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Check, Clock, Tags, X } from 'lucide-react'
-
-const THAILAB2026_PROJECT_UUID = '07626a19-001d-4675-addd-3a92e3f46d47'
 
 type StatusFilter = BusinessMatchingCategoryRequestStatus | 'all'
 

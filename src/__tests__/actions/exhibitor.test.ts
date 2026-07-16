@@ -3,6 +3,9 @@ import { createExhibitor, presignExhibitorImage, updateExhibitor, type Exhibitor
 import { createOrganizerExhibitor, updateOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { cookies } from 'next/headers'
 
+const THAILAB2026_PROJECT_UUID = '07626a19-001d-4675-addd-3a92e3f46d47'
+let currentProjectUuid = 'project-1'
+
 jest.mock('@/lib/api', () => ({
   post: jest.fn(),
   put: jest.fn(),
@@ -26,18 +29,20 @@ const payload: ExhibitorPayload = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  currentProjectUuid = 'project-1'
   ;(cookies as jest.MockedFunction<typeof cookies>).mockResolvedValue({
-    get: jest.fn((name: string) => ({ value: name === 'project_uuid' ? 'project-1' : 'token' })),
+    get: jest.fn((name: string) => ({ value: name === 'project_uuid' ? currentProjectUuid : 'token' })),
   } as never)
 })
 
 test('Create/Update send exhibitor profile fields for Admin and Organizer', async () => {
+  currentProjectUuid = THAILAB2026_PROJECT_UUID
   post.mockResolvedValue({ data: { data: {} } })
   put.mockResolvedValue({ data: { data: {} } })
 
-  await createExhibitor('project-1', payload)
+  await createExhibitor(THAILAB2026_PROJECT_UUID, payload)
   await createOrganizerExhibitor(payload)
-  await updateExhibitor('project-1', 'exhibitor-1', payload)
+  await updateExhibitor(THAILAB2026_PROJECT_UUID, 'exhibitor-1', payload)
   await updateOrganizerExhibitor('exhibitor-1', payload)
 
   const fields = {
@@ -52,14 +57,15 @@ test('Create/Update send exhibitor profile fields for Admin and Organizer', asyn
   expect(put).toHaveBeenNthCalledWith(2, '/v1/organizer/exhibitors', expect.objectContaining(fields), expect.any(Object))
 })
 
-test('Create/Update omit exhibitor profile fields when disabled', async () => {
+test('Create/Update omit categories outside THAILAB2026', async () => {
   post.mockResolvedValue({ data: { data: {} } })
   put.mockResolvedValue({ data: { data: {} } })
-  const hiddenPayload = {
+  const hiddenPayload: ExhibitorPayload = {
     eventId: 'event-1',
     companyName: 'Expo Co',
     quota: 1,
     overQuota: 0,
+    categoryUUIDs: ['category-main', 'category-sub'],
   }
 
   await createExhibitor('project-1', hiddenPayload)
@@ -71,6 +77,7 @@ test('Create/Update omit exhibitor profile fields when disabled', async () => {
     expect(call[1]).not.toHaveProperty('company_profile')
     expect(call[1]).not.toHaveProperty('company_logo')
     expect(call[1]).not.toHaveProperty('product_highlights')
+    expect(call[1]).not.toHaveProperty('category_uuids')
   }
 })
 

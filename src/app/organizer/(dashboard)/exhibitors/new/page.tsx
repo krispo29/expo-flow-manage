@@ -9,8 +9,8 @@ import { ArrowLeft } from 'lucide-react'
 
 export default function NewExhibitorPage() {
   const searchParams = useSearchParams()
-  const projectId = searchParams.get('projectId')
   const { user, isAuthenticated, isHydrated } = useAuthStore()
+  const projectId = searchParams.get('projectId') || user?.projectId
   const isOrganizer = user?.role === 'ORGANIZER'
 
   if (!isHydrated || !isAuthenticated || !user) {

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { businessMatchingEnabled } from "@/lib/features"
+import { isBusinessMatchingEnabled } from "@/lib/features"
 import {
   Users,
   Contact,
@@ -56,8 +56,6 @@ interface SidebarProject {
   url: string
 }
 
-const THAILAB2026_PROJECT_UUID = '07626a19-001d-4675-addd-3a92e3f46d47'
-
 export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof Sidebar> & { projects?: SidebarProject[] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -74,7 +72,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
   }
 
   const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
-  const canManageThailabMatchingCategories = businessMatchingEnabled && user?.role === 'ADMIN' && projectId === THAILAB2026_PROJECT_UUID
+  const canManageThailabMatchingCategories = user?.role === 'ADMIN' && isBusinessMatchingEnabled(projectId || undefined)
 
   const handleProjectChange = (newProjectId: string) => {
     const params = new URLSearchParams(searchParams.toString())

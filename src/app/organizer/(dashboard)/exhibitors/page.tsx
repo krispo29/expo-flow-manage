@@ -18,7 +18,7 @@ import {
   sendPendingBusinessMatchingReadyEmailsOrganizerExhibitor,
   testLoginOrganizerExhibitor,
 } from '@/app/actions/organizer-exhibitor'
-import { businessMatchingEnabled } from '@/lib/features'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import {
@@ -82,9 +82,10 @@ import {
 
 export default function ExhibitorsPage() {
   const searchParams = useSearchParams()
-  const projectId = searchParams.get('projectId')
   const { user, isAuthenticated, isHydrated } = useAuthStore()
+  const projectId = searchParams.get('projectId') || user?.projectId
   const isOrganizer = user?.role === 'ORGANIZER'
+  const showBusinessMatching = isBusinessMatchingEnabled(projectId)
 
   const [exhibitors, setExhibitors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -445,7 +446,7 @@ export default function ExhibitorsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {businessMatchingEnabled && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
+          {showBusinessMatching && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
             <Button
               variant="outline"
               className="rounded-full px-6 font-semibold"
@@ -474,7 +475,7 @@ export default function ExhibitorsPage() {
         </div>
       </div>
 
-      {businessMatchingEnabled && <Dialog
+      {showBusinessMatching && <Dialog
         open={businessMatchingReadyDialogOpen}
         onOpenChange={setBusinessMatchingReadyDialogOpen}
       >

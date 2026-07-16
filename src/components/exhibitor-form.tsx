@@ -9,7 +9,7 @@ import { createExhibitor, updateExhibitor, presignExhibitorImage, getExhibitorBu
 import { createOrganizerExhibitor, updateOrganizerExhibitor, getOrganizerEvents, getOrganizerExhibitorBusinessMatchingCategories } from '@/app/actions/organizer-exhibitor'
 import { getProjectDetail } from '@/app/actions/project'
 import { getEvents, type Event } from '@/app/actions/settings'
-import { businessMatchingEnabled } from '@/lib/features'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -122,7 +122,7 @@ function resizeImage(file: File, maxWidth = 2048, quality = 0.85) {
 
 export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<ExhibitorFormProps>) {
   const isOrganizer = userRole === 'ORGANIZER'
-  const showBusinessMatchingCategories = businessMatchingEnabled
+  const showBusinessMatchingCategories = isBusinessMatchingEnabled(projectId)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
@@ -130,6 +130,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
   const [businessMatchingCategories, setBusinessMatchingCategories] = useState<BusinessMatchingCategory[]>([])
   const [categorySearch, setCategorySearch] = useState('')
   const [loadingCategories, setLoadingCategories] = useState(false)
+  const [categoriesReady, setCategoriesReady] = useState(false)
 
   useEffect(() => {
     async function loadEvents() {
@@ -226,11 +227,13 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
     if (!eventId) {
       setBusinessMatchingCategories([])
       form.setValue('categoryUUIDs', [])
+      setCategoriesReady(false)
       return
     }
 
     let active = true
     setLoadingCategories(true)
+    setCategoriesReady(false)
     const loadCategories = isOrganizer
       ? getOrganizerExhibitorBusinessMatchingCategories(eventId, initialData?.id)
       : getExhibitorBusinessMatchingCategories(projectId, eventId, initialData?.id)
@@ -239,7 +242,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
       if (!active) return
       if (!result.success) {
         setBusinessMatchingCategories([])
-        form.setValue('categoryUUIDs', [])
+        setCategoriesReady(false)
         toast.error(result.error)
         return
       }
@@ -250,6 +253,7 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         result.selectedCategoryUUIDs.filter(categoryUUID => available.has(categoryUUID)),
         { shouldDirty: false }
       )
+      setCategoriesReady(true)
     }).finally(() => {
       if (active) setLoadingCategories(false)
     })
@@ -297,12 +301,13 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
       setLoading(false)
       return
     }
-    const { companyLogoFile, ...submitData } = data
+    const { companyLogoFile, categoryUUIDs, ...submitData } = data
     
     // Payload now correctly maps directly via the new actions
     const payload = {
       ...submitData,
       projectId, // Not required by API body, but let's conform
+      ...(categoriesReady ? { categoryUUIDs } : {}),
       ...(showCompanyProfileFields
         ? {
             companyLogo: companyLogoUpload.imageUrl || data.companyLogo,

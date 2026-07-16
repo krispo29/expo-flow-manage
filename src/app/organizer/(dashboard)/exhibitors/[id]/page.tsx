@@ -15,9 +15,9 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 export default function EditExhibitorPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const projectId = searchParams.get('projectId')
   const id = params?.id as string
   const { user, isAuthenticated, isHydrated } = useAuthStore()
+  const projectId = searchParams.get('projectId') || user?.projectId
   const isOrganizer = user?.role === 'ORGANIZER'
   const { setLabel, clearLabel } = useBreadcrumbStore()
   

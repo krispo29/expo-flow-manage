@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { getCountryNameFromValue } from '@/lib/countries'
 import { revalidatePath } from 'next/cache'
 import { requireOrganizer } from '@/lib/authorization'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 import {
   requireServerAuthContext,
   requireServerAuthHeaders,
@@ -211,7 +212,7 @@ export async function createOrganizerExhibitor(data: ExhibitorPayload) {
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      category_uuids: data.categoryUUIDs || [],
+      ...(isBusinessMatchingEnabled(projectUuid) ? { category_uuids: data.categoryUUIDs || [] } : {}),
       ...getExhibitorProfilePayload(data),
     }
 
@@ -253,7 +254,7 @@ export async function updateOrganizerExhibitor(
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      category_uuids: data.categoryUUIDs || [],
+      ...(isBusinessMatchingEnabled(projectUuid) ? { category_uuids: data.categoryUUIDs || [] } : {}),
       ...getExhibitorProfilePayload(data),
     }
 

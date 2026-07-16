@@ -5,6 +5,7 @@ import api, { getErrorMessage } from '@/lib/api'
 import { requireProjectContext } from '@/lib/authorization'
 import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid: string) {
@@ -183,7 +184,7 @@ export async function createExhibitor(
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      category_uuids: data.categoryUUIDs || [],
+      ...(isBusinessMatchingEnabled(projectUuid) ? { category_uuids: data.categoryUUIDs || [] } : {}),
       ...getExhibitorProfilePayload(data),
     }
 
@@ -225,7 +226,7 @@ export async function updateExhibitor(
       booth_no: data.boothNo,
       quota: data.quota,
       over_quota: data.overQuota,
-      category_uuids: data.categoryUUIDs || [],
+      ...(isBusinessMatchingEnabled(projectUuid) ? { category_uuids: data.categoryUUIDs || [] } : {}),
       ...getExhibitorProfilePayload(data),
     }
 
