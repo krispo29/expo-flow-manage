@@ -27,6 +27,7 @@ import {
 } from '@/app/actions/upgrade-request'
 import {
   buildReviewUpgradePayload,
+  dedupeUpgradeRequests,
   filterUpgradeRequests,
   getAttendeeTypeName,
   getDefaultTargetTypeCode,
@@ -353,13 +354,15 @@ export function UpgradeRequestQueue({
     [attendeeTypes]
   )
 
+  const uniqueRequests = useMemo(() => dedupeUpgradeRequests(requests), [requests])
+
   const counts = useMemo(() => {
     const result = { pending: 0, approved: 0, rejected: 0 }
-    requests.forEach((request) => {
+    uniqueRequests.forEach((request) => {
       result[normalizeUpgradeStatus(request.status)] += 1
     })
     return result
-  }, [requests])
+  }, [uniqueRequests])
 
   const approvalRate = useMemo(() => {
     const reviewed = counts.approved + counts.rejected

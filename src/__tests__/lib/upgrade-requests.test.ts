@@ -2,6 +2,7 @@ import type { UpgradeRequest } from '@/app/actions/upgrade-request'
 import type { AttendeeType } from '@/app/actions/participant'
 import {
   buildReviewUpgradePayload,
+  dedupeUpgradeRequests,
   filterUpgradeRequests,
   getAttendeeTypeName,
   getDefaultTargetTypeCode,
@@ -99,12 +100,11 @@ describe('upgrade request helpers', () => {
   })
 
   it('removes duplicate upgrade requests for the same attendee and target type', () => {
+    const duplicate = { ...requests[0], request_uuid: 'request-duplicate' }
+
+    expect(dedupeUpgradeRequests([...requests, duplicate])).toEqual(requests)
     expect(
-      filterUpgradeRequests(
-        [...requests, { ...requests[0], request_uuid: 'request-duplicate' }],
-        'pending',
-        ''
-      )
+      filterUpgradeRequests([...requests, duplicate], 'pending', '')
     ).toEqual([requests[0]])
   })
 

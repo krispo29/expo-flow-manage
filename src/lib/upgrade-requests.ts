@@ -35,23 +35,29 @@ export function getDefaultTargetTypeCode(
   return request.suggested_type_code || request.approved_type_code || ''
 }
 
+export function dedupeUpgradeRequests(requests: UpgradeRequest[]) {
+  const requestKeys = new Set<string>()
+
+  return requests.filter((request) => {
+    const requestKey = `${request.registration_uuid}:${request.suggested_type_code}`
+    if (requestKeys.has(requestKey)) return false
+    requestKeys.add(requestKey)
+    return true
+  })
+}
+
 export function filterUpgradeRequests(
   requests: UpgradeRequest[],
   status: UpgradeRequestFilter,
   searchQuery: string
 ) {
   const query = searchQuery.trim().toLowerCase()
-  const requestKeys = new Set<string>()
 
-  return requests.filter((request) => {
+  return dedupeUpgradeRequests(requests).filter((request) => {
     const matchesStatus =
       status === 'all' || normalizeUpgradeStatus(request.status) === status
 
     if (!matchesStatus) return false
-
-    const requestKey = `${request.registration_uuid}:${request.suggested_type_code}`
-    if (requestKeys.has(requestKey)) return false
-    requestKeys.add(requestKey)
     if (!query) return true
 
     return [
