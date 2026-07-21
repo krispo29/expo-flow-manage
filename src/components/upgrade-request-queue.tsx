@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   Building2,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Mail,
   RefreshCw,
@@ -36,6 +37,11 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -152,6 +158,7 @@ function RequestCard({
   onApprove: (request: UpgradeRequest) => void
   onReject: (request: UpgradeRequest) => void
 }) {
+  const [showTrigger, setShowTrigger] = useState(false)
   const status = normalizeUpgradeStatus(request.status)
   const targetTypeCode =
     status === 'approved'
@@ -161,6 +168,21 @@ function RequestCard({
   const relativeCreatedAt = Number.isNaN(createdAt.getTime())
     ? 'Recently'
     : formatDistanceToNow(createdAt, { addSuffix: true })
+  const triggerDetails = request.trigger_details?.length
+    ? request.trigger_details
+    : [
+        {
+          question_uuid: request.question_uuid,
+          question_text: request.question_text,
+          trigger_option_value: request.trigger_option_value,
+          option_label: request.option_label,
+          user_answer: '',
+        },
+      ]
+
+  const hasTriggerInfo = triggerDetails.some(
+    (d) => d.question_text || d.option_label || d.user_answer || d.trigger_option_value
+  )
 
   return (
     <article className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.055] shadow-lg shadow-black/5 backdrop-blur-xl transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5">
@@ -214,20 +236,56 @@ function RequestCard({
           />
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/[0.025] p-4 dark:bg-white/[0.035]">
-          <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-            <Sparkles className="size-3.5 text-primary" />
-            Questionnaire trigger
-          </div>
-          <p className="text-sm font-semibold leading-6 text-foreground/80">
-            {request.question_text || 'Question not available'}
-          </p>
-          <div className="mt-3 rounded-xl border border-primary/10 bg-primary/5 px-3 py-2.5">
-            <p className="text-sm font-black text-primary">
-              {request.option_label || request.trigger_option_value || 'Answer not available'}
-            </p>
-          </div>
-        </div>
+        {hasTriggerInfo ? (
+          <Collapsible
+            open={showTrigger}
+            onOpenChange={setShowTrigger}
+            className="rounded-2xl border border-white/10 bg-black/[0.025] transition-colors dark:bg-white/[0.035]"
+          >
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 p-3.5 text-left transition-colors hover:bg-white/5 rounded-2xl focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                  <Sparkles className="size-3.5 text-primary" />
+                  <span>Questionnaire trigger</span>
+                  {triggerDetails.length > 1 && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary">
+                      {triggerDetails.length}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary/80">
+                  <span>{showTrigger ? 'Hide' : 'Show details'}</span>
+                  <ChevronDown
+                    className={cn(
+                      'size-4 text-muted-foreground transition-transform duration-200',
+                      showTrigger && 'rotate-180'
+                    )}
+                  />
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 border-t border-white/5 px-4 pb-4 pt-3">
+              {triggerDetails.map((detail, idx) => (
+                <div key={detail.question_uuid || idx}>
+                  <p className="text-xs font-semibold leading-relaxed text-foreground/80">
+                    {detail.question_text || 'Question not available'}
+                  </p>
+                  <div className="mt-1.5 rounded-xl border border-primary/10 bg-primary/5 px-3 py-2">
+                    <p className="text-xs font-bold text-primary">
+                      {detail.option_label ||
+                        detail.user_answer ||
+                        detail.trigger_option_value ||
+                        'Answer not available'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
 
         {status !== 'pending' ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-muted-foreground">

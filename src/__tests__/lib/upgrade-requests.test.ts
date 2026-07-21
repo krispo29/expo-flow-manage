@@ -98,6 +98,16 @@ describe('upgrade request helpers', () => {
     expect(filterUpgradeRequests(requests, 'all', 'VI131')).toEqual([requests[0]])
   })
 
+  it('removes duplicate upgrade requests for the same attendee and target type', () => {
+    expect(
+      filterUpgradeRequests(
+        [...requests, { ...requests[0], request_uuid: 'request-duplicate' }],
+        'pending',
+        ''
+      )
+    ).toEqual([requests[0]])
+  })
+
   it('builds approve and reject payloads with trimmed optional values', () => {
     expect(
       buildReviewUpgradePayload({

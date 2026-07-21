@@ -8,6 +8,14 @@ import type { ReviewUpgradeRequestPayload } from '@/lib/upgrade-requests'
 
 export type UpgradeRequestStatus = 'pending' | 'approved' | 'rejected'
 
+export interface UpgradeTriggerDetail {
+  question_uuid: string
+  question_text: string
+  trigger_option_value: string
+  option_label: string
+  user_answer: string
+}
+
 export interface UpgradeRequest {
   request_uuid: string
   project_uuid: string
@@ -30,6 +38,7 @@ export interface UpgradeRequest {
   registration_code: string
   question_text: string
   option_label: string
+  trigger_details?: UpgradeTriggerDetail[]
 }
 
 async function getAuthHeaders(projectUuid: string) {
