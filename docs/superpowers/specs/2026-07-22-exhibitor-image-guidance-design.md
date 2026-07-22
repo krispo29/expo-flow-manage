@@ -7,8 +7,15 @@ for Company Logo and Product Highlight uploads.
 
 ## Design
 
-- Add the Company Logo note directly below its file input.
-- Add the Product Highlight note below the Product Highlights section heading.
+- Add the following note directly below the Company Logo file input:
+  - `Note:`
+  - `- Format & Size: JPG or PNG only (Max. 2 MB)`
+  - `- Company Logo: 1:1 ratio recommended (e.g., 512 × 512 px)`
+- Add the following note once below the Product Highlights section heading,
+  before its individual highlight inputs:
+  - `Note:`
+  - `- Format & Size: JPG or PNG only (Max. 2 MB)`
+  - `- Product Highlight: Landscape 16:9 ratio recommended (e.g., 1280 × 720 px / 1920 × 1080 px)`
 - Keep the text in the shared `ExhibitorForm`, used by Admin and Organizer
   create and edit pages.
 - Do not change upload behavior or add validation; this request is display-only.
