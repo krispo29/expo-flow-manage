@@ -443,6 +443,11 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                           <FormControl>
                             <Input type="file" accept="image/*" onChange={event => form.setValue('companyLogoFile', event.target.files?.[0], { shouldValidate: true })} />
                           </FormControl>
+                          <FormDescription>
+                            Note:<br />
+                            - Format &amp; Size: JPG or PNG only (Max. 2 MB)<br />
+                            - Company Logo: 1:1 ratio recommended (e.g., 512 &#215; 512 px)
+                          </FormDescription>
                           <ImagePreviewLink url={form.watch('companyLogo')} file={form.watch('companyLogoFile')} alt="Company logo preview" />
                           <FormMessage />
                         </FormItem>
@@ -473,6 +478,11 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
                   <CardTitle className="text-lg">Product Highlights</CardTitle>
                 </div>
                 <CardDescription>Add product descriptions and images.</CardDescription>
+                <FormDescription>
+                  Note:<br />
+                  - Format &amp; Size: JPG or PNG only (Max. 2 MB)<br />
+                  - Product Highlight: Landscape 16:9 ratio recommended (e.g., 1280 &#215; 720 px / 1920 &#215; 1080 px)
+                </FormDescription>
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
                 {productHighlights.map((highlight, index) => (
