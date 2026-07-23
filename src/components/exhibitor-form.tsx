@@ -286,7 +286,10 @@ export function ExhibitorForm({ initialData, projectId, userRole }: Readonly<Exh
         }
         const response = await fetch(presign.uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type },
+          headers: {
+            'Content-Type': file.type,
+            'x-goog-acl': 'public-read',
+          },
           body: await resizeImage(file),
         })
         return response.ok
