@@ -68,8 +68,6 @@ export default async function Page(props: Props) {
         <p className="text-muted-foreground font-medium">Welcome back. Here is what is happening with your project.</p>
       </div>
 
-      <EventSummaryCards events={result.data?.event_summaries || []} />
-
       {/* ======================================================= */}
       {/* ROW 1 – Key Metric Cards                               */}
       {/* ======================================================= */}
@@ -151,6 +149,8 @@ export default async function Page(props: Props) {
           <div className="absolute -bottom-2 -right-2 p-4 opacity-[0.03] text-emerald-900 dark:text-emerald-100 pointer-events-none transform rotate-12"><Activity className="h-24 w-24" /></div>
         </Card>
       </div>
+
+      <EventSummaryCards events={result.data?.event_summaries || []} />
 
       {/* ======================================================= */}
       {/* ROW 2 – Attendee Type Chart + Upcoming Conferences      */}
