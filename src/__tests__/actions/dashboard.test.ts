@@ -48,10 +48,25 @@ describe('dashboard actions', () => {
             total_participants: 2,
             total_conferences: 3,
             total_rooms: 4,
+            exhibitors_printed_count: 0,
+            exhibitors_not_printed_count: 0,
+            registrations_printed_count: 0,
+            registrations_not_printed_count: 0,
             attendee_types: [],
           },
           recent_participants: [],
           conferences: [],
+          event_summaries: [
+            {
+              event_uuid: 'event-a',
+              event_code: 'EVENT_A',
+              event_name: 'Event A',
+              is_active: true,
+              total_participants: 200,
+              total_exhibitors: 90,
+              total_conferences: 20,
+            },
+          ],
         },
       },
     })
@@ -66,10 +81,25 @@ describe('dashboard actions', () => {
           total_participants: 2,
           total_conferences: 3,
           total_rooms: 4,
+          exhibitors_printed_count: 0,
+          exhibitors_not_printed_count: 0,
+          registrations_printed_count: 0,
+          registrations_not_printed_count: 0,
           attendee_types: [],
         },
         recent_participants: [],
         conferences: [],
+        event_summaries: [
+          {
+            event_uuid: 'event-a',
+            event_code: 'EVENT_A',
+            event_name: 'Event A',
+            is_active: true,
+            total_participants: 200,
+            total_exhibitors: 90,
+            total_conferences: 20,
+          },
+        ],
       },
     })
     expect(mockApiGet).toHaveBeenCalledWith('/v1/admin/project/dashboard', {
@@ -78,5 +108,19 @@ describe('dashboard actions', () => {
         'X-Project-UUID': 'project-123',
       },
     })
+  })
+
+  it('should default event summaries to an empty array', async () => {
+    mockCookies.mockResolvedValue({
+      get: jest.fn((name: string) =>
+        name === 'access_token' ? { value: 'token-123' } : undefined
+      ),
+    } as any)
+    mockApiGet.mockResolvedValue({ data: { data: {} } })
+
+    const result = await getDashboard('project-123')
+
+    expect(result.success).toBe(true)
+    expect(result.data?.event_summaries).toEqual([])
   })
 })

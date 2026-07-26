@@ -48,10 +48,21 @@ export interface DashboardConference {
   reserved_count: number
 }
 
+export interface DashboardEventSummary {
+  event_uuid: string
+  event_code: string
+  event_name: string
+  is_active: boolean
+  total_participants: number
+  total_exhibitors: number
+  total_conferences: number
+}
+
 export interface DashboardData {
   summary: DashboardSummary
   recent_participants: DashboardRecentParticipant[]
   conferences: DashboardConference[]
+  event_summaries: DashboardEventSummary[]
 }
 
 // ─── Action ───────────────────────────────────────────────────────────────────
@@ -80,7 +91,8 @@ export async function getDashboard(projectUuid?: string) {
         attendee_types: rawData.summary?.attendee_types || []
       },
       recent_participants: rawData.recent_participants || [],
-      conferences: rawData.conferences || []
+      conferences: rawData.conferences || [],
+      event_summaries: rawData.event_summaries || []
     }
 
     return { success: true, data: fallbackData }
