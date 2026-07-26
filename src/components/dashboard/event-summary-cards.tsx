@@ -10,6 +10,7 @@ import {
 
 type Props = {
   events: DashboardEventSummary[]
+  failed: boolean
 }
 
 const metrics = [
@@ -18,7 +19,7 @@ const metrics = [
   ['total_conferences', 'Conferences', Calendar],
 ] as const
 
-export function EventSummaryCards({ events }: Props) {
+export function EventSummaryCards({ events, failed }: Props) {
   return (
     <section className="space-y-4" aria-labelledby="event-overview-title">
       <div>
@@ -30,7 +31,13 @@ export function EventSummaryCards({ events }: Props) {
         </p>
       </div>
 
-      {events.length === 0 ? (
+      {failed ? (
+        <Card className="border-none">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Event summaries unavailable
+          </CardContent>
+        </Card>
+      ) : events.length === 0 ? (
         <Card className="border-none">
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             No events available

@@ -5,6 +5,7 @@ describe('EventSummaryCards', () => {
   it('renders active and inactive event totals', () => {
     render(
       <EventSummaryCards
+        failed={false}
         events={[
           {
             event_uuid: 'a',
@@ -38,8 +39,15 @@ describe('EventSummaryCards', () => {
   })
 
   it('renders an empty state', () => {
-    render(<EventSummaryCards events={[]} />)
+    render(<EventSummaryCards events={[]} failed={false} />)
 
     expect(screen.getByText('No events available')).toBeInTheDocument()
+  })
+
+  it('renders an unavailable state when the dashboard fails', () => {
+    render(<EventSummaryCards events={[]} failed />)
+
+    expect(screen.getByText('Event summaries unavailable')).toBeInTheDocument()
+    expect(screen.queryByText('No events available')).not.toBeInTheDocument()
   })
 })

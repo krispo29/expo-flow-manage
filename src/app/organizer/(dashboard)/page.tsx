@@ -150,7 +150,7 @@ export default async function Page(props: Props) {
         </Card>
       </div>
 
-      <EventSummaryCards events={result.data?.event_summaries || []} />
+      <EventSummaryCards events={result.data?.event_summaries || []} failed={failed} />
 
       {/* ======================================================= */}
       {/* ROW 2 – Attendee Type Chart + Upcoming Conferences      */}

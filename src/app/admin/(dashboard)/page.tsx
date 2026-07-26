@@ -187,7 +187,7 @@ export default async function Page(props: Props) {
         </Card>
       </div>
 
-      <EventSummaryCards events={result.data?.event_summaries || []} />
+      <EventSummaryCards events={result.data?.event_summaries || []} failed={failed} />
 
       <div className="order-3 grid gap-3 sm:gap-4 md:gap-6 lg:grid-cols-2">
         {printStatusData.map((item) => {
