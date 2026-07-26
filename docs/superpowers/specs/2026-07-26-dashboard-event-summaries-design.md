@@ -51,7 +51,7 @@ Counting must match the existing project totals:
 - Include active and inactive events.
 - Exclude soft-deleted events.
 - Return zero for an event with no matching records.
-- Order events by `order_index ASC`.
+- Order events by `order_index ASC, event_uuid ASC` for deterministic results.
 
 The Admin dashboard handler adds the resulting list to `DashboardResponse`.
 If the event-summary query fails, return an internal-server error instead of
