@@ -70,6 +70,7 @@ import {
   X,
   Copy,
   Check,
+  FileDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -107,6 +108,7 @@ export default function ExhibitorsPage() {
   const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
   const [testLoginPassword, setTestLoginPassword] = useState('')
   const [testingLogin, setTestingLogin] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -411,6 +413,31 @@ export default function ExhibitorsPage() {
     }
   }
 
+  async function handleExport() {
+    try {
+      setExporting(true)
+      const response = await fetch('/api/export/organizer-exhibitors')
+
+      if (!response.ok) throw new Error('Export failed')
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `exhibitors-${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      URL.revokeObjectURL(url)
+      link.remove()
+      toast.success('Exhibitors exported successfully')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to export exhibitors')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (!isHydrated || !isAuthenticated || !user) {
     return (
       <div className="flex justify-center p-8">
@@ -449,6 +476,21 @@ export default function ExhibitorsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isOrganizer && (
+            <Button
+              variant="outline"
+              className="rounded-full border-white/10 px-6 font-semibold hover:bg-white/10"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <FileDown className="mr-2 h-5 w-5 text-green-500" />
+              )}
+              {exporting ? 'Exporting...' : 'Export Excel'}
+            </Button>
+          )}
           {businessMatchingReadyEmailEnabled && showBusinessMatching && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
             <Button
               variant="outline"

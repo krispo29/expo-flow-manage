@@ -77,6 +77,12 @@ export async function GET(
     case 'exhibitors':
       endpoint = '/v1/admin/project/exhibitors/export-excel-exhibitor'
       break
+    case 'organizer-exhibitors':
+      if (!isOrganizer) {
+        return new NextResponse('Forbidden', { status: 403 })
+      }
+      endpoint = '/v1/organizer/exhibitors/export-excel'
+      break
     case 'participants':
       endpoint = `${baseEndpoint}/export-excel-participant`
       includeQuestionnaire = request.nextUrl.searchParams.get('include_questionnaire') === 'true'
@@ -90,15 +96,17 @@ export async function GET(
   let url = `${API_URL}${endpoint}`
   const queryParams = new URLSearchParams()
 
-  if (selectedEventUuid) {
-    queryParams.append('event_uuid', selectedEventUuid)
-  } else if (projectUuid && type !== 'conference-summary') {
-    queryParams.append('event_uuid', projectUuid)
-  }
+  if (type !== 'organizer-exhibitors') {
+    if (selectedEventUuid) {
+      queryParams.append('event_uuid', selectedEventUuid)
+    } else if (projectUuid && type !== 'conference-summary') {
+      queryParams.append('event_uuid', projectUuid)
+    }
 
-  // Organizer endpoints often need project_uuid explicitly in query
-  if (isOrganizer && projectUuid) {
-    queryParams.append('project_uuid', projectUuid)
+    // Organizer endpoints often need project_uuid explicitly in query
+    if (isOrganizer && projectUuid) {
+      queryParams.append('project_uuid', projectUuid)
+    }
   }
 
   if (type === 'participants') {

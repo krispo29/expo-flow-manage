@@ -1,12 +1,7 @@
 import { Building2, Calendar, Contact } from 'lucide-react'
 import type { DashboardEventSummary } from '@/app/actions/dashboard'
 import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 
 type Props = {
   events: DashboardEventSummary[]
@@ -44,44 +39,46 @@ export function EventSummaryCards({ events, failed }: Props) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+        <div className="grid gap-2.5">
           {events.map((event) => (
-            <Card key={event.event_uuid} className="border-none">
-              <CardHeader className="flex-row items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <CardTitle className="truncate text-base">
+            <Card
+              key={event.event_uuid}
+              className="border-none transition-colors hover:bg-accent/40"
+            >
+              <CardContent className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-3.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="truncate text-sm font-semibold sm:text-base">
                     {event.event_name}
-                  </CardTitle>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {event.event_code}
-                  </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={
-                    event.is_active
-                      ? 'border-primary/20 bg-primary/10 text-primary'
-                      : 'border-muted-foreground/20 text-muted-foreground'
-                  }
-                >
-                  {event.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              </CardHeader>
-              <CardContent className="grid grid-cols-3 gap-2">
-                {metrics.map(([field, label, Icon]) => (
-                  <div
-                    key={field}
-                    className="rounded-xl border border-white/10 bg-white/5 p-3"
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      event.is_active
+                        ? 'h-5 border-primary/20 bg-primary/10 px-2 text-[10px] font-medium text-primary shrink-0'
+                        : 'h-5 border-muted-foreground/20 px-2 text-[10px] font-medium text-muted-foreground shrink-0'
+                    }
                   >
-                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-muted-foreground">
-                      <Icon className="size-3" />
-                      {label}
+                    {event.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+
+                <div className="flex shrink-0 items-center justify-between gap-4 border-t border-white/5 pt-2 sm:justify-end sm:gap-6 sm:border-t-0 sm:pt-0">
+                  {metrics.map(([field, label, Icon]) => (
+                    <div key={field} className="flex items-center gap-2.5">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-muted-foreground">
+                        <Icon className="size-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-extrabold leading-none tracking-tight sm:text-base">
+                          {event[field].toLocaleString()}
+                        </div>
+                        <div className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+                          {label}
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-2 text-2xl font-extrabold tracking-tight">
-                      {event[field].toLocaleString()}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </CardContent>
             </Card>
           ))}
