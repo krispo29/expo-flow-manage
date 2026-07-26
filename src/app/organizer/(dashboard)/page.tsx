@@ -21,6 +21,7 @@ import { getDashboard } from "@/app/actions/dashboard"
 import type { DashboardConference } from "@/app/actions/dashboard"
 import { formatDistanceToNow } from "date-fns"
 import { AttendeeTypeChart } from "@/components/dashboard/attendee-type-chart"
+import { EventSummaryCards } from "@/components/dashboard/event-summary-cards"
 import { redirect } from "next/navigation"
 
 type Props = {
@@ -66,6 +67,8 @@ export default async function Page(props: Props) {
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Dashboard Overview</h2>
         <p className="text-muted-foreground font-medium">Welcome back. Here is what is happening with your project.</p>
       </div>
+
+      <EventSummaryCards events={result.data?.event_summaries || []} />
 
       {/* ======================================================= */}
       {/* ROW 1 – Key Metric Cards                               */}
