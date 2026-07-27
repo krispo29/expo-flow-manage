@@ -208,7 +208,7 @@ export const countries: Country[] = [
   { code: 'SE', name: 'Sweden', phoneCode: '+46', flag: '🇸🇪', nationality: 'Swedish' },
   { code: 'CH', name: 'Switzerland', phoneCode: '+41', flag: '🇨🇭', nationality: 'Swiss' },
   { code: 'SY', name: 'Syria', phoneCode: '+963', flag: '🇸🇾', nationality: 'Syrian' },
-  { code: 'TW', name: 'Taiwan', phoneCode: '+886', flag: '🇹🇼', nationality: 'Taiwanese' },
+  { code: 'TW', name: 'Taiwan Province of China', phoneCode: '+886', flag: '🇹🇼', nationality: 'Taiwanese' },
   { code: 'TJ', name: 'Tajikistan', phoneCode: '+992', flag: '🇹🇯', nationality: 'Tajik' },
   { code: 'TZ', name: 'Tanzania', phoneCode: '+255', flag: '🇹🇿', nationality: 'Tanzanian' },
   { code: 'TH', name: 'Thailand', phoneCode: '+66', flag: '🇹🇭', nationality: 'Thai' },
