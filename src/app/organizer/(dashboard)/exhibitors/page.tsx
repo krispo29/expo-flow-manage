@@ -530,8 +530,8 @@ export default function ExhibitorsPage() {
               Send Business Matching is Ready!
             </DialogTitle>
             <DialogDescription>
-              Send the Business Matching is Ready! email to the first staff
-              member of {pendingBusinessMatchingReadyExhibitors.length}{' '}
+              Send the Business Matching is Ready! email to{' '}
+              {pendingBusinessMatchingReadyExhibitors.length} eligible
               exhibitors.
             </DialogDescription>
           </DialogHeader>
