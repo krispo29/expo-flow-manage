@@ -433,6 +433,28 @@ export async function sendExhibitorCredentials(
   }
 }
 
+export async function sendPendingBusinessMatchingReadyEmails(
+  projectUuid: string,
+  exhibitorUuids: string[]
+) {
+  try {
+    await requireProjectContext(projectUuid)
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.post(
+      '/v1/admin/project/exhibitors/send_pending_business_matching_ready_emails',
+      { exhibitor_uuids: exhibitorUuids },
+      { headers, timeout: 90000 }
+    )
+    return { success: true, ...response.data.data }
+  } catch (error: unknown) {
+    console.error('Error sending Business Matching ready emails:', error)
+    return {
+      success: false,
+      error: 'Failed to send Business Matching ready emails',
+    }
+  }
+}
+
 // GET /v1/admin/project/exhibitors/:id/members (Get Members subset)
 export async function getExhibitorMembers(
   projectUuid: string,

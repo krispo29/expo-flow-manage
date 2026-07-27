@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, type Exhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, sendPendingBusinessMatchingReadyEmails, testLoginExhibitor, type Exhibitor } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
+import { businessMatchingReadyEmailEnabled, isBusinessMatchingEnabled } from '@/lib/features'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -74,6 +75,8 @@ export default function ExhibitorsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
+  const [businessMatchingReadyDialogOpen, setBusinessMatchingReadyDialogOpen] = useState(false)
+  const [sendingBusinessMatchingReadyEmails, setSendingBusinessMatchingReadyEmails] = useState(false)
   const [targetEmail, setTargetEmail] = useState('')
 
   const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
@@ -140,6 +143,13 @@ export default function ExhibitorsPage() {
 
     return matchesSearch && matchesCompany && matchesUsername && matchesEvent && matchesStatus
   })
+
+  const showBusinessMatching = isBusinessMatchingEnabled(projectId || undefined)
+  const pendingBusinessMatchingReadyExhibitors = exhibitors.filter(
+    (item) =>
+      !item.isBusinessMatchingReadyEmailSent &&
+      item.canSendBusinessMatchingReadyEmail
+  )
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredExhibitors.length / itemsPerPage)
@@ -255,6 +265,28 @@ export default function ExhibitorsPage() {
       setEmailDialogOpen(false)
     } else {
       toast.error('Failed to send credentials')
+    }
+  }
+
+  async function handleSendBusinessMatchingReadyEmails() {
+    if (!projectId || pendingBusinessMatchingReadyExhibitors.length === 0) return
+
+    setSendingBusinessMatchingReadyEmails(true)
+    try {
+      const result = await sendPendingBusinessMatchingReadyEmails(
+        projectId,
+        pendingBusinessMatchingReadyExhibitors.map((item) => item.id)
+      )
+      if (result.success) {
+        toast.success(`Business Matching emails sent: ${result.sent_count || 0}`)
+        if (result.skipped_count) toast.error(`Skipped: ${result.skipped_count}`)
+        setBusinessMatchingReadyDialogOpen(false)
+        fetchExhibitors()
+      } else {
+        toast.error(result.error || 'Failed to send Business Matching emails')
+      }
+    } finally {
+      setSendingBusinessMatchingReadyEmails(false)
     }
   }
 
@@ -386,6 +418,24 @@ export default function ExhibitorsPage() {
               Export Excel
             </Button>
           )}
+          {businessMatchingReadyEmailEnabled &&
+            showBusinessMatching &&
+            !isOrganizer &&
+            pendingBusinessMatchingReadyExhibitors.length > 0 && (
+              <Button
+                variant="outline"
+                className="rounded-full px-6 font-semibold"
+                onClick={() => setBusinessMatchingReadyDialogOpen(true)}
+                disabled={sendingBusinessMatchingReadyEmails}
+              >
+                {sendingBusinessMatchingReadyEmails ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <Mail className="mr-2 h-5 w-5" />
+                )}
+                Send Business Matching Ready ({pendingBusinessMatchingReadyExhibitors.length})
+              </Button>
+            )}
           <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
             <Button className="btn-aurora rounded-full px-6 font-semibold">
               <Plus className="mr-2 h-5 w-5" /> Add Exhibitor
@@ -816,6 +866,48 @@ export default function ExhibitorsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {businessMatchingReadyEmailEnabled && showBusinessMatching && !isOrganizer && (
+        <Dialog
+          open={businessMatchingReadyDialogOpen}
+          onOpenChange={setBusinessMatchingReadyDialogOpen}
+        >
+          <DialogContent className="glass rounded-3xl border-white/10 shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl">
+                Send Business Matching is Ready!
+              </DialogTitle>
+              <DialogDescription>
+                Send the Business Matching is Ready! email to{' '}
+                {pendingBusinessMatchingReadyExhibitors.length} eligible
+                exhibitors.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                className="rounded-full px-6"
+                onClick={() => setBusinessMatchingReadyDialogOpen(false)}
+                disabled={sendingBusinessMatchingReadyEmails}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="btn-aurora rounded-full px-6"
+                onClick={handleSendBusinessMatchingReadyEmails}
+                disabled={sendingBusinessMatchingReadyEmails}
+              >
+                {sendingBusinessMatchingReadyEmails ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="mr-2 h-4 w-4" />
+                )}
+                Send Emails
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Dialogs with Glass Styling */}
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
