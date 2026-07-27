@@ -253,6 +253,7 @@ const countryValueAliases: Record<string, string> = {
   'korea, republic of': 'KR',
   'republic of korea': 'KR',
   'south korea': 'KR',
+  taiwan: 'TW',
   'viet nam': 'VN',
   netherlands: 'NL',
   holland: 'NL',

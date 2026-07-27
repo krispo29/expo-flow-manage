@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import axios from 'axios'
 import api, { getErrorMessage } from '@/lib/api'
 import { isTokenExpiredError } from '@/lib/auth-helpers'
+import { getCountryNameFromValue } from '@/lib/countries'
 import { getServerAuthHeaders, requireServerAuthHeaders } from '@/lib/server-auth'
 
 export interface Project {
@@ -122,6 +123,18 @@ const isDeprecatedDutchAntillesCountry = (country: Country) =>
   normalizeApiOptionValue(country.nationality) === 'dutch antillean'
 
 const normalizeProjectCountry = (country: Country): Country => {
+  if (
+    country.code === 'TW' ||
+    normalizeApiOptionValue(country.name) === 'taiwan'
+  ) {
+    return {
+      ...country,
+      code: 'TW',
+      name: getCountryNameFromValue('TW'),
+      nationality: country.nationality || 'Taiwanese',
+    }
+  }
+
   if (
     country.code === 'NL' ||
     normalizeApiOptionValue(country.name) === 'netherlands'

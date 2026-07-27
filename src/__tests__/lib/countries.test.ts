@@ -144,6 +144,9 @@ describe('country value helpers', () => {
     expect(findCountryByCodeOrName('Netherlands')?.code).toBe('NL')
     expect(getCountryCodeFromValue('Netherlands')).toBe('NL')
     expect(getCountryNameFromValue('Netherlands')).toBe('The Netherlands')
+    expect(findCountryByCodeOrName('Taiwan')?.code).toBe('TW')
+    expect(getCountryCodeFromValue('Taiwan')).toBe('TW')
+    expect(getCountryNameFromValue('Taiwan')).toBe('Taiwan Province of China')
   })
 
   it('should resolve phone country codes from API variants', () => {
