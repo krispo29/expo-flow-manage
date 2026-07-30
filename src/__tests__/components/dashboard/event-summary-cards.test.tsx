@@ -15,6 +15,10 @@ describe('EventSummaryCards', () => {
             total_participants: 1200,
             total_exhibitors: 90,
             total_conferences: 20,
+            daily_attendance: [
+              { date: '2026-09-02', local: 1234, oversea: 56 },
+              { date: '2026-09-03', local: 789, oversea: 10 },
+            ],
           },
           {
             event_uuid: 'b',
@@ -36,6 +40,16 @@ describe('EventSummaryCards', () => {
     expect(screen.getByText('Inactive')).toBeInTheDocument()
     expect(screen.getByText('1,200')).toBeInTheDocument()
     expect(screen.getAllByText('0')).toHaveLength(3)
+    expect(screen.getAllByText('Date')).toHaveLength(2)
+    expect(screen.getAllByText('Local')).toHaveLength(2)
+    expect(screen.getAllByText('Oversea')).toHaveLength(2)
+    expect(screen.getByText('2026-09-02')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-03')).toBeInTheDocument()
+    expect(screen.getByText('1,234')).toBeInTheDocument()
+    expect(screen.getByText('56')).toBeInTheDocument()
+    expect(screen.getByText('789')).toBeInTheDocument()
+    expect(screen.getByText('10')).toBeInTheDocument()
+    expect(screen.getByText('No attendance data')).toBeInTheDocument()
   })
 
   it('renders an empty state', () => {

@@ -48,6 +48,12 @@ export interface DashboardConference {
   reserved_count: number
 }
 
+export interface DashboardDailyAttendance {
+  date: string
+  local: number
+  oversea: number
+}
+
 export interface DashboardEventSummary {
   event_uuid: string
   event_code: string
@@ -56,6 +62,7 @@ export interface DashboardEventSummary {
   total_participants: number
   total_exhibitors: number
   total_conferences: number
+  daily_attendance?: DashboardDailyAttendance[]
 }
 
 export interface DashboardData {

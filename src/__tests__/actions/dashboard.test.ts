@@ -65,6 +65,9 @@ describe('dashboard actions', () => {
               total_participants: 200,
               total_exhibitors: 90,
               total_conferences: 20,
+              daily_attendance: [
+                { date: '2026-09-02', local: 1234, oversea: 56 },
+              ],
             },
           ],
         },
@@ -98,10 +101,16 @@ describe('dashboard actions', () => {
             total_participants: 200,
             total_exhibitors: 90,
             total_conferences: 20,
+            daily_attendance: [
+              { date: '2026-09-02', local: 1234, oversea: 56 },
+            ],
           },
         ],
       },
     })
+    expect(result.data?.event_summaries[0].daily_attendance).toEqual([
+      { date: '2026-09-02', local: 1234, oversea: 56 },
+    ])
     expect(mockApiGet).toHaveBeenCalledWith('/v1/admin/project/dashboard', {
       headers: {
         Authorization: 'Bearer token-123',
