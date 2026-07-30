@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Display each event's API-provided daily local and overseas attendance in the shared Dashboard Event Overview.
+**Goal:** Display each event's API-provided daily local and overseas attendance in the shared Dashboard Event Overview without consuming space until requested.
 
-**Architecture:** Extend the existing event summary TypeScript contract with one optional array, then render that array inside the existing shared `EventSummaryCards`. The existing dashboard action and component already serve both Admin and Organizer dashboards, so no page or endpoint changes are needed.
+**Architecture:** Extend the existing event summary TypeScript contract with one optional array, then render that array inside the existing shared `EventSummaryCards`. Wrap each completed table in a native closed-by-default `details`/`summary` disclosure so every event toggles independently without React state. The existing dashboard action and component already serve both Admin and Organizer dashboards, so no page or endpoint changes are needed.
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS, existing table primitives, Jest, Testing Library
 
@@ -13,7 +13,7 @@
 - Keep the API date string unchanged as `YYYY-MM-DD`.
 - Treat missing `daily_attendance` as an empty array.
 - Use `toLocaleString()` for attendance counts.
-- Add no dependency, sorting, filtering, pagination, chart, total, or expandable state.
+- Add no dependency, sorting, filtering, pagination, chart, total, or React state.
 - Preserve existing Event Overview unavailable and no-events states.
 
 ---
@@ -212,3 +212,110 @@ git diff -- src/app/actions/dashboard.ts src/components/dashboard/event-summary-
 ```
 
 Expected: only the optional contract, table rendering, and focused fixtures/assertions changed.
+
+### Task 3: Hide each attendance table behind a native toggle
+
+**Files:**
+- Modify: `src/components/dashboard/event-summary-cards.tsx`
+- Test: `src/__tests__/components/dashboard/event-summary-cards.test.tsx`
+
+**Interfaces:**
+- Consumes: the existing table rendered per `DashboardEventSummary`
+- Produces: an independent closed-by-default native disclosure per event with visual `Show attendance` and `Hide attendance` labels
+
+- [ ] **Step 1: Add a failing independent-toggle test**
+
+Import `fireEvent` and add:
+
+```tsx
+it('toggles each attendance table independently', () => {
+  render(
+    <EventSummaryCards
+      failed={false}
+      events={[
+        {
+          event_uuid: 'a',
+          event_code: 'EVENT_A',
+          event_name: 'Event A',
+          is_active: true,
+          total_participants: 1,
+          total_exhibitors: 1,
+          total_conferences: 1,
+        },
+        {
+          event_uuid: 'b',
+          event_code: 'EVENT_B',
+          event_name: 'Event B',
+          is_active: true,
+          total_participants: 1,
+          total_exhibitors: 1,
+          total_conferences: 1,
+        },
+      ]}
+    />
+  )
+
+  const showLabels = screen.getAllByText('Show attendance')
+  const firstSummary = showLabels[0].closest('summary')!
+  const firstDisclosure = firstSummary.closest('details')!
+  const secondDisclosure = showLabels[1].closest('details')!
+
+  expect(firstDisclosure).not.toHaveAttribute('open')
+  expect(secondDisclosure).not.toHaveAttribute('open')
+  expect(firstSummary).toHaveTextContent('Hide attendance')
+
+  fireEvent.click(firstSummary)
+  expect(firstDisclosure).toHaveAttribute('open')
+  expect(secondDisclosure).not.toHaveAttribute('open')
+
+  fireEvent.click(firstSummary)
+  expect(firstDisclosure).not.toHaveAttribute('open')
+})
+```
+
+- [ ] **Step 2: Run the focused component test and verify it fails**
+
+Run:
+
+```powershell
+npx jest src/__tests__/components/dashboard/event-summary-cards.test.tsx --runInBand
+```
+
+Expected: FAIL because `Show attendance` does not exist.
+
+- [ ] **Step 3: Wrap the existing table in the native disclosure**
+
+```tsx
+<details className="group">
+  <summary className="cursor-pointer list-none text-sm font-medium text-primary">
+    <span className="group-open:hidden">Show attendance</span>
+    <span className="hidden group-open:inline">Hide attendance</span>
+  </summary>
+  <div className="mt-3">
+    {/* existing Table remains unchanged here */}
+  </div>
+</details>
+```
+
+Do not add `open`, React state, event handlers, or a new component.
+
+- [ ] **Step 4: Run focused verification**
+
+Run:
+
+```powershell
+npx jest src/__tests__/components/dashboard/event-summary-cards.test.tsx --runInBand
+npx tsc --noEmit
+```
+
+Expected: component suite PASS and TypeScript exits with code 0.
+
+- [ ] **Step 5: Review the scoped diff**
+
+Run:
+
+```powershell
+git diff -- src/components/dashboard/event-summary-cards.tsx src/__tests__/components/dashboard/event-summary-cards.test.tsx
+```
+
+Expected: only the native disclosure wrapper and its focused test changed.
