@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { EventSummaryCards } from '@/components/dashboard/event-summary-cards'
 
 describe('EventSummaryCards', () => {
@@ -63,5 +63,49 @@ describe('EventSummaryCards', () => {
 
     expect(screen.getByText('Event summaries unavailable')).toBeInTheDocument()
     expect(screen.queryByText('No events available')).not.toBeInTheDocument()
+  })
+
+  it('toggles each attendance table independently', () => {
+    render(
+      <EventSummaryCards
+        failed={false}
+        events={[
+          {
+            event_uuid: 'a',
+            event_code: 'EVENT_A',
+            event_name: 'Event A',
+            is_active: true,
+            total_participants: 1,
+            total_exhibitors: 1,
+            total_conferences: 1,
+          },
+          {
+            event_uuid: 'b',
+            event_code: 'EVENT_B',
+            event_name: 'Event B',
+            is_active: true,
+            total_participants: 1,
+            total_exhibitors: 1,
+            total_conferences: 1,
+          },
+        ]}
+      />
+    )
+
+    const showLabels = screen.getAllByText('Show attendance')
+    const firstSummary = showLabels[0].closest('summary')!
+    const firstDisclosure = firstSummary.closest('details')!
+    const secondDisclosure = showLabels[1].closest('details')!
+
+    expect(firstDisclosure).not.toHaveAttribute('open')
+    expect(secondDisclosure).not.toHaveAttribute('open')
+    expect(firstSummary).toHaveTextContent('Hide attendance')
+
+    fireEvent.click(firstSummary)
+    expect(firstDisclosure).toHaveAttribute('open')
+    expect(secondDisclosure).not.toHaveAttribute('open')
+
+    fireEvent.click(firstSummary)
+    expect(firstDisclosure).not.toHaveAttribute('open')
   })
 })

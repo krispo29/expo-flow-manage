@@ -1,6 +1,7 @@
 import { Building2, Calendar, Contact } from 'lucide-react'
 import type { DashboardEventSummary } from '@/app/actions/dashboard'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
@@ -90,48 +91,66 @@ export function EventSummaryCards({ events, failed }: Props) {
                   </div>
                 </div>
 
-                <Table
-                  aria-label={`Daily attendance for ${event.event_name}`}
-                  className="text-xs"
-                >
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="h-9 px-3">Date</TableHead>
-                      <TableHead className="h-9 px-3 text-right">
-                        Local
-                      </TableHead>
-                      <TableHead className="h-9 px-3 text-right">
-                        Oversea
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {event.daily_attendance?.length ? (
-                      event.daily_attendance.map((attendance) => (
-                        <TableRow key={attendance.date}>
-                          <TableCell className="p-3">
-                            {attendance.date}
-                          </TableCell>
-                          <TableCell className="p-3 text-right">
-                            {attendance.local.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="p-3 text-right">
-                            {attendance.oversea.toLocaleString()}
-                          </TableCell>
+                <details className="group">
+                  <summary
+                    className={buttonVariants({
+                      variant: 'outline',
+                      size: 'xs',
+                      className:
+                        'cursor-pointer list-none [&::-webkit-details-marker]:hidden',
+                    })}
+                  >
+                    <span className="group-open:hidden">Show attendance</span>
+                    <span className="hidden group-open:inline">
+                      Hide attendance
+                    </span>
+                  </summary>
+
+                  <div className="mt-3">
+                    <Table
+                      aria-label={`Daily attendance for ${event.event_name}`}
+                      className="text-xs"
+                    >
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="h-9 px-3">Date</TableHead>
+                          <TableHead className="h-9 px-3 text-right">
+                            Local
+                          </TableHead>
+                          <TableHead className="h-9 px-3 text-right">
+                            Oversea
+                          </TableHead>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell
-                          colSpan={3}
-                          className="p-3 text-center text-muted-foreground"
-                        >
-                          No attendance data
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {event.daily_attendance?.length ? (
+                          event.daily_attendance.map((attendance) => (
+                            <TableRow key={attendance.date}>
+                              <TableCell className="p-3">
+                                {attendance.date}
+                              </TableCell>
+                              <TableCell className="p-3 text-right">
+                                {attendance.local.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="p-3 text-right">
+                                {attendance.oversea.toLocaleString()}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={3}
+                              className="p-3 text-center text-muted-foreground"
+                            >
+                              No attendance data
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </details>
               </CardContent>
             </Card>
           ))}
