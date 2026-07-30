@@ -27,8 +27,12 @@ another API request.
 
 ## UI
 
-Keep the current event name, status, and total metrics. Add a compact table
-below them inside each event card with these columns:
+Keep the current event name, status, and total metrics. Add a native
+`details`/`summary` disclosure below them inside each event card. It is closed
+by default, its summary is styled as a button, and its label changes between
+`Show attendance` and `Hide attendance`.
+
+Inside the disclosure, show a compact table with these columns:
 
 - `Date`
 - `Local`
@@ -45,6 +49,9 @@ Use the existing shared `EventSummaryCards` component so the change appears on
 both Admin and Organizer dashboards. Use the project's existing table
 primitives and add no dependency or new component abstraction.
 
+Use the native disclosure element instead of React state so the shared
+component remains server-compatible and keyboard-accessible.
+
 ## Error Handling
 
 Preserve the existing Event Overview unavailable and no-events states. Define
@@ -59,6 +66,9 @@ Focused frontend tests verify:
 - Multiple daily attendance rows render under their event.
 - Local and overseas counts use locale number formatting.
 - Missing or empty attendance data renders `No attendance data`.
+- Two attendance disclosures start closed; opening one leaves the other
+  closed, changes its label to `Hide attendance`, and activating it again
+  closes only that disclosure.
 - Existing active/inactive, no-events, and unavailable states remain intact.
 
 ## Files
@@ -77,6 +87,8 @@ Focused frontend tests verify:
 ## Acceptance Criteria
 
 - Every event card displays its daily attendance table.
+- Every attendance table is hidden by default and can be shown or hidden
+  independently.
 - Each API attendance item displays the correct date, local count, and overseas
   count.
 - Both Admin and Organizer dashboards receive the change through the shared
