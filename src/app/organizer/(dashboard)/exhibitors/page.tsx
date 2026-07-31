@@ -491,7 +491,7 @@ export default function ExhibitorsPage() {
               {exporting ? 'Exporting...' : 'Export Excel'}
             </Button>
           )}
-          {/* {businessMatchingReadyEmailEnabled && showBusinessMatching && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
+          {businessMatchingReadyEmailEnabled && showBusinessMatching && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
             <Button
               variant="outline"
               className="rounded-full px-6 font-semibold"
@@ -505,7 +505,7 @@ export default function ExhibitorsPage() {
               )}
               Send Business Matching Ready ({pendingBusinessMatchingReadyExhibitors.length})
             </Button>
-          )} */}
+          )}
           <Link
             href={
               isOrganizer

@@ -418,7 +418,7 @@ export default function ExhibitorsPage() {
               Export Excel
             </Button>
           )}
-          {/* {businessMatchingReadyEmailEnabled &&
+          {businessMatchingReadyEmailEnabled &&
             showBusinessMatching &&
             !isOrganizer &&
             pendingBusinessMatchingReadyExhibitors.length > 0 && (
@@ -435,7 +435,7 @@ export default function ExhibitorsPage() {
                 )}
                 Send Business Matching Ready ({pendingBusinessMatchingReadyExhibitors.length})
               </Button>
-            )} */}
+            )}
           <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
             <Button className="btn-aurora rounded-full px-6 font-semibold">
               <Plus className="mr-2 h-5 w-5" /> Add Exhibitor
