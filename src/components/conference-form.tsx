@@ -280,6 +280,18 @@ export function ConferenceForm({ projectId, conference, userRole }: Readonly<Con
                 <Input id="title" name="title" defaultValue={conference?.title} placeholder="e.g. Future of AgriTech 2024" className="h-11" required allowThai />
               </div>
 
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="session_owner">Session Owner</Label>
+                <Input
+                  id="session_owner"
+                  name="session_owner"
+                  defaultValue={conference?.session_owner ?? ''}
+                  placeholder="e.g. ExpoFlow Team"
+                  className="h-11"
+                  allowThai
+                />
+              </div>
+
               <div className="space-y-4 md:col-span-2">
                 <div className="flex items-center justify-between border-b pb-2">
                   <div>

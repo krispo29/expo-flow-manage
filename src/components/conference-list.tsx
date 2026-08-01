@@ -444,6 +444,13 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
                               )}
                             </div>
 
+                            {conference.session_owner?.trim() && (
+                              <div className="rounded-2xl border border-white/5 bg-white/5 p-3">
+                                <p className="font-bold text-[10px] uppercase tracking-widest text-primary/60">Session Owner</p>
+                                <p className="text-sm font-bold text-foreground break-all">{conference.session_owner}</p>
+                              </div>
+                            )}
+
                             {conference.detail && (
                               <div className="mt-4 pt-4 border-t border-dashed border-white/10">
                                 <p className="font-bold text-[10px] text-primary/40 uppercase tracking-widest mb-2">Description</p>
@@ -574,6 +581,15 @@ export function ConferenceList({ conferences: initialConferences, projectId, use
               <div className="space-y-8 py-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
+                    {previewConference.session_owner?.trim() && (
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Session Owner</p>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                          <p className="text-sm font-bold break-all">{previewConference.session_owner}</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-3">
                       <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">Status & Type</p>
                         <div className="flex flex-wrap gap-2">

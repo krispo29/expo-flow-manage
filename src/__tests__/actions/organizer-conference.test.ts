@@ -51,6 +51,7 @@ describe('organizer conference actions', () => {
       formData.append('quota', '100')
       formData.append('conference_type', 'public')
       formData.append('charge_type', 'paid')
+      formData.append('session_owner', 'ExpoFlow Team')
       formData.append('speakers', JSON.stringify([{ speaker_name: 'John Speaker' }]))
 
       mockApiPost.mockResolvedValue({ data: { code: 201 } })
@@ -60,7 +61,7 @@ describe('organizer conference actions', () => {
       expect(result).toEqual({ success: true })
       expect(mockApiPost).toHaveBeenCalledWith(
         '/v1/organizer/conferences',
-        expect.objectContaining({ charge_type: 'paid' }),
+        expect.objectContaining({ charge_type: 'paid', session_owner: 'ExpoFlow Team' }),
         expect.any(Object)
       )
     })
@@ -72,6 +73,7 @@ describe('organizer conference actions', () => {
       formData.append('title', 'Updated Conference')
       formData.append('conference_type', 'private')
       formData.append('charge_type', 'free')
+      formData.append('session_owner', 'Organizer Team')
       formData.append('speakers', JSON.stringify([{ speaker_name: 'Jane Speaker' }]))
 
       mockApiPut.mockResolvedValue({ data: { code: 200 } })
@@ -81,7 +83,7 @@ describe('organizer conference actions', () => {
       expect(result).toEqual({ success: true })
       expect(mockApiPut).toHaveBeenCalledWith(
         '/v1/organizer/conferences/conf-1',
-        expect.objectContaining({ charge_type: 'free' }),
+        expect.objectContaining({ charge_type: 'free', session_owner: 'Organizer Team' }),
         expect.any(Object)
       )
     })

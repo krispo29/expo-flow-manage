@@ -86,6 +86,7 @@ export interface Conference {
   remaining_seats: number
   conference_type: 'public' | 'private'
   charge_type?: 'free' | 'paid'
+  session_owner?: string
   reserved_count: number
   status: string
   is_active?: boolean
@@ -376,6 +377,7 @@ export async function createConference(formData: FormData) {
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
     const chargeType = (formData.get('charge_type') as string) || 'free'
+    const sessionOwner = (formData.get('session_owner') as string) || ''
     const isActive = parseIsActive(formData.get('is_active'))
     const detail = formData.get('detail') as string
 
@@ -394,6 +396,7 @@ export async function createConference(formData: FormData) {
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
       charge_type: chargeType,
+      session_owner: sessionOwner,
       is_active: isActive,
       detail: detail || undefined,
     }
@@ -429,6 +432,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
     const quota = formData.get('quota') as string
     const conferenceType = formData.get('conference_type') as string
     const chargeType = (formData.get('charge_type') as string) || 'free'
+    const sessionOwner = (formData.get('session_owner') as string) || ''
     const isActive = parseIsActive(formData.get('is_active'))
     const detail = formData.get('detail') as string
 
@@ -448,6 +452,7 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
       quota: quota ? Number.parseInt(quota, 10) : 0,
       conference_type: conferenceType,
       charge_type: chargeType,
+      session_owner: sessionOwner,
       is_active: isActive,
       detail: detail || undefined,
     }
