@@ -832,6 +832,7 @@ export function ParticipantList({
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Participant Information</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company / Org</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status / Email</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">BM Ready Email</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
                 {showFilters && (
@@ -890,6 +891,7 @@ export function ParticipantList({
                         </SelectContent>
                       </Select>
                     </TableHead>
+                    <TableHead className="py-2" />
                     <TableHead className="py-2 text-right pr-6">
                        <Button 
                         variant="ghost" 
@@ -906,7 +908,7 @@ export function ParticipantList({
               <TableBody>
                 {currentParticipants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={8} className="text-center py-24 italic text-muted-foreground font-medium">
                       No participants found matching your matrix.
                     </TableCell>
                   </TableRow>
@@ -965,6 +967,25 @@ export function ParticipantList({
                             </div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {p.bm_visitor_ready_email_status === 'sent' ? (
+                          <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[9px] font-bold">
+                            ✓ Sent
+                          </Badge>
+                        ) : p.bm_visitor_ready_email_status === 'failed' ? (
+                          <Badge className="bg-red-500/20 text-red-500 border-red-500/30 text-[9px] font-bold" title={p.bm_visitor_ready_email_error || 'Failed'}>
+                            ✕ Failed
+                          </Badge>
+                        ) : p.bm_visitor_ready_email_status === 'sending' ? (
+                          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] font-bold">
+                            ⏳ Sending
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground/60 text-[9px]">
+                            Pending
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-1.5">

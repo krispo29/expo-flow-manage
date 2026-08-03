@@ -5,6 +5,7 @@ import { AttendanceLogs } from '@/components/attendance-logs'
 import { PrintLogs } from '@/components/print-logs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cookies } from 'next/headers'
+import { BMVisitorReadyCampaignCard } from '@/components/bm-visitor-ready-campaign-card'
 
 export default async function ParticipantsPage({
   searchParams,
@@ -33,6 +34,8 @@ export default async function ParticipantsPage({
           </p>
         </div>
       </div>
+
+      <BMVisitorReadyCampaignCard projectId={projectId} />
 
       <Tabs defaultValue="participants" className="w-full space-y-6">
         <div className="w-full overflow-x-auto scrollbar-hide">

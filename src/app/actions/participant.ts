@@ -67,6 +67,9 @@ export interface Participant {
   residence_country?: string
   attendee_type?: string
   attendee_type_name?: string
+  bm_visitor_ready_email_status?: string
+  bm_visitor_ready_email_sent_at?: string
+  bm_visitor_ready_email_error?: string
 }
 
 export interface ParticipantDetail extends Participant {
