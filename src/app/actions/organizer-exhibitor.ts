@@ -92,6 +92,12 @@ export async function getOrganizerExhibitors() {
         item.is_business_matching_ready_email_sent,
       canSendBusinessMatchingReadyEmail:
         item.can_send_business_matching_ready_email,
+      business_matching_ready_email_status:
+        item.business_matching_ready_email_status,
+      business_matching_ready_email_sent_at:
+        item.business_matching_ready_email_sent_at,
+      business_matching_ready_email_error:
+        item.business_matching_ready_email_error,
     }))
 
     return { success: true, exhibitors: mappedExhibitors }
@@ -328,28 +334,6 @@ export async function sendMailCredentialOrganizerExhibitor(
   } catch (error: any) {
     console.error('Error sending organizer exhibitor credentials:', error)
     return { success: false, error: 'Failed to send credentials' }
-  }
-}
-
-export async function sendPendingBusinessMatchingReadyEmailsOrganizerExhibitor(
-  exhibitorUuids: string[]
-) {
-  try {
-    const { headers } = await getOrganizerAuthHeaders()
-    const response = await api.post(
-      '/v1/organizer/exhibitors/send_pending_business_matching_ready_emails',
-      {
-        exhibitor_uuids: exhibitorUuids,
-      },
-      { headers, timeout: 90000 }
-    )
-    return { success: true, ...response.data.data }
-  } catch (error: any) {
-    console.error(
-      'Error sending Business Matching ready emails:',
-      error
-    )
-    return { success: false, error: 'Failed to send Business Matching ready emails' }
   }
 }
 

@@ -275,4 +275,29 @@ export async function printProjectStaffBadge(projectUuid: string, staffId: strin
   }
 }
 
+// GET /v1/admin/project/staff/{staff_uuid}/event-permissions
+export async function getProjectStaffEventPermissions(projectUuid: string, staffUuid: string) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const response = await api.get(`/v1/admin/project/staff/${staffUuid}/event-permissions`, { headers })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error fetching staff event permissions:', error)
+    return { success: false, error: 'Failed to fetch staff event permissions' }
+  }
+}
+
+// PUT /v1/admin/project/staff/{staff_uuid}/event-permissions
+export async function updateProjectStaffEventPermissions(projectUuid: string, staffUuid: string, eventUuids: string[]) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    const payload = { event_uuids: eventUuids }
+    const response = await api.put(`/v1/admin/project/staff/${staffUuid}/event-permissions`, payload, { headers })
+    return { success: true, data: response.data.data }
+  } catch (error: any) {
+    console.error('Error updating staff event permissions:', error)
+    const errMsg = error.response?.data?.message || 'Failed to update staff event permissions'
+    return { success: false, error: errMsg }
+  }
+}
 

@@ -39,6 +39,9 @@ export interface Exhibitor {
   isQuotaFull?: boolean
   isBusinessMatchingReadyEmailSent?: boolean
   canSendBusinessMatchingReadyEmail?: boolean
+  business_matching_ready_email_status?: string
+  business_matching_ready_email_sent_at?: string
+  business_matching_ready_email_error?: string
   inviteCode?: string
   projectId?: string
   password?: string
@@ -148,6 +151,12 @@ export async function getExhibitors(projectUuid: string) {
         item.is_business_matching_ready_email_sent,
       canSendBusinessMatchingReadyEmail:
         item.can_send_business_matching_ready_email,
+      business_matching_ready_email_status:
+        item.business_matching_ready_email_status,
+      business_matching_ready_email_sent_at:
+        item.business_matching_ready_email_sent_at,
+      business_matching_ready_email_error:
+        item.business_matching_ready_email_error,
     }))
 
     return { success: true, exhibitors: mappedExhibitors }
@@ -430,28 +439,6 @@ export async function sendExhibitorCredentials(
   } catch (error: any) {
     console.error('Error sending credentials:', error)
     return { success: false, error: 'Failed to send credentials' }
-  }
-}
-
-export async function sendPendingBusinessMatchingReadyEmails(
-  projectUuid: string,
-  exhibitorUuids: string[]
-) {
-  try {
-    await requireProjectContext(projectUuid)
-    const headers = await getAuthHeaders(projectUuid)
-    const response = await api.post(
-      '/v1/admin/project/exhibitors/send_pending_business_matching_ready_emails',
-      { exhibitor_uuids: exhibitorUuids },
-      { headers, timeout: 90000 }
-    )
-    return { success: true, ...response.data.data }
-  } catch (error: unknown) {
-    console.error('Error sending Business Matching ready emails:', error)
-    return {
-      success: false,
-      error: 'Failed to send Business Matching ready emails',
-    }
   }
 }
 

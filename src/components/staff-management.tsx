@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
 import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
 import { getCountryCodeFromValue } from '@/lib/countries'
@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Loader2, GripVertical, Mail, Power } from 'lucide-react'
+import { Plus, Pencil, Loader2, GripVertical, Mail, Power, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface StaffManagementProps {
@@ -46,6 +46,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   const isOrganizer = userRole === 'ORGANIZER'
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,6 +56,28 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
   const [targetEmail, setTargetEmail] = useState('')
   const [sendingEmail, setSendingEmail] = useState(false)
+
+  const filteredStaffList = useMemo(() => {
+    if (!searchQuery.trim()) return staffList
+    const query = searchQuery.toLowerCase().trim()
+    return staffList.filter((staff) => {
+      const fullName = `${staff.title || ''} ${staff.firstName || ''} ${staff.lastName || ''}`.toLowerCase()
+      const staffId = (staff.registrationCode || staff.id || '').toLowerCase()
+      const position = (staff.position || '').toLowerCase()
+      const email = (staff.email || '').toLowerCase()
+      const mobile = (staff.mobile || staff.phone || '').toLowerCase()
+      const company = (staff.companyName || '').toLowerCase()
+
+      return (
+        fullName.includes(query) ||
+        staffId.includes(query) ||
+        position.includes(query) ||
+        email.includes(query) ||
+        mobile.includes(query) ||
+        company.includes(query)
+      )
+    })
+  }, [staffList, searchQuery])
 
 
   // Note: Using a simpler form management here instead of react-hook-form for speed/simplicity on this sub-component,
@@ -215,7 +238,20 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
       }
 
       if (result.success) {
-        toast.success(editingStaff ? 'Staff updated' : 'Staff added')
+        if (editingStaff) {
+          toast.success('Staff updated')
+        } else {
+          const emailTrimmed = formData.email?.trim()
+          if (emailTrimmed) {
+            toast.success('Staff added', {
+              description: `Business Matching email will be sent to ${emailTrimmed} in the next scheduled batch.`,
+            })
+          } else {
+            toast.success('Staff added', {
+              description: 'Add a staff email to enable Business Matching auto-send.',
+            })
+          }
+        }
         setIsDialogOpen(false)
         fetchStaff()
       } else {
@@ -301,11 +337,23 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle>Staff Members</CardTitle>
-        <Button onClick={() => handleOpenDialog()} size="sm" disabled={exhibitor?.isQuotaFull || exhibitor?.is_quota_full}>
-          <Plus className="mr-2 h-4 w-4" /> Add Staff
-        </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search staff members..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button onClick={() => handleOpenDialog()} size="sm" disabled={exhibitor?.isQuotaFull || exhibitor?.is_quota_full}>
+            <Plus className="mr-2 h-4 w-4" /> Add Staff
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -315,6 +363,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         ) : staffList.length === 0 ? (
           <div className="text-center p-4 text-muted-foreground">
             No staff members added yet.
+          </div>
+        ) : filteredStaffList.length === 0 ? (
+          <div className="text-center p-4 text-muted-foreground">
+            No staff members found matching &quot;{searchQuery}&quot;.
           </div>
         ) : (
           <Table>
@@ -331,7 +383,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
               </TableRow>
             </TableHeader>
             <TableBody>
-              {staffList.map((staff) => (
+              {filteredStaffList.map((staff) => (
                 <TableRow key={staff.id}>
                   <TableCell>
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />

@@ -31,8 +31,10 @@ import {
 import { Label } from "@/components/ui/label"
 import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Building2, ShieldCheck, Power, Filter, X, Copy, Check } from 'lucide-react'
 import {
-  createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes
+  createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes,
+  getProjectStaffEventPermissions, updateProjectStaffEventPermissions
 } from '@/app/actions/staff'
+import { getEvents } from '@/app/actions/settings'
 import { countries, getCountryNameFromValue } from '@/lib/countries'
 import { toast } from 'sonner'
 import { printBadge } from '@/utils/print-badge'
@@ -105,6 +107,14 @@ export function StaffList({
     company: '',
     isActive: 'all'
   })
+
+  // Permission State
+  const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false)
+  const [selectedStaffForPermission, setSelectedStaffForPermission] = useState<Staff | null>(null)
+  const [events, setEvents] = useState<any[]>([])
+  const [allowAllEvents, setAllowAllEvents] = useState(false)
+  const [selectedEventUuids, setSelectedEventUuids] = useState<string[]>([])
+  const [loadingPermissions, setLoadingPermissions] = useState(false)
 
   useEffect(() => {
     getStaffTypes(projectId).then(res => {
@@ -266,6 +276,52 @@ export function StaffList({
     } else {
       toast.error(result.error || 'Failed to delete staff')
     }
+  }
+
+  async function openPermissions(staff: Staff) {
+    setSelectedStaffForPermission(staff)
+    setIsPermissionDialogOpen(true)
+    setLoadingPermissions(true)
+    try {
+      const [eventsRes, permRes] = await Promise.all([
+        getEvents(projectId),
+        getProjectStaffEventPermissions(projectId, staff.staff_uuid)
+      ])
+      
+      if (eventsRes.success) setEvents(eventsRes.events || [])
+      
+      if (permRes.success && permRes.data) {
+        setAllowAllEvents(permRes.data.allow_all)
+        setSelectedEventUuids(permRes.data.event_uuids || [])
+      } else {
+        setAllowAllEvents(true)
+        setSelectedEventUuids([])
+      }
+    } catch (e) {
+      toast.error('Failed to load permissions')
+    }
+    setLoadingPermissions(false)
+  }
+
+  async function handleSavePermissions() {
+    if (!selectedStaffForPermission) return
+    setLoading(true)
+    const payloadEventUuids = allowAllEvents ? [] : selectedEventUuids
+    const res = await updateProjectStaffEventPermissions(projectId, selectedStaffForPermission.staff_uuid, payloadEventUuids)
+    setLoading(false)
+    if (res.success) {
+      toast.success('Permissions updated successfully')
+      setIsPermissionDialogOpen(false)
+    } else {
+      toast.error(res.error || 'Failed to update permissions')
+    }
+  }
+
+  const toggleEventSelection = (eventUuid: string, checked: boolean | string) => {
+    setSelectedEventUuids(prev => {
+      if (checked) return [...prev, eventUuid]
+      return prev.filter(id => id !== eventUuid)
+    })
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -574,6 +630,9 @@ export function StaffList({
                     <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10 hover:bg-primary/10 hover:text-primary" onClick={() => onPrintClick(p)} title="Print Badge">
                       <Printer className="h-4 w-4" />
                     </Button>
+                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-white/5 border-white/10 hover:bg-primary/10 hover:text-primary" onClick={() => openPermissions(p)} title="Manage Permissions">
+                      <ShieldCheck className="h-4 w-4" />
+                    </Button>
                     <div className="flex-1" />
                     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10" onClick={() => openEdit(p)}>
                       <Pencil className="h-4 w-4" />
@@ -735,6 +794,9 @@ export function StaffList({
                         <div className="flex justify-end gap-1.5">
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" onClick={() => onPrintClick(p)} title="Print Badge">
                             <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10 group-hover:scale-110 transition-all duration-300" onClick={() => openPermissions(p)} title="Manage Permissions">
+                            <ShieldCheck className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10 group-hover:scale-110 transition-all duration-300" onClick={() => openEdit(p)}>
                             <Pencil className="h-4 w-4" />
@@ -908,6 +970,81 @@ export function StaffList({
             <Button variant="destructive" className="rounded-2xl h-12 flex-1 font-bold text-xs uppercase tracking-widest" onClick={confirmDelete} disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
+        <DialogContent className="glass sm:max-w-[540px] border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-4 sm:p-8 bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <ShieldCheck className="h-6 w-6 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <DialogTitle className="text-2xl font-display">Staff Permissions</DialogTitle>
+                <DialogDescription>
+                  Manage event scanning permissions for <span className="font-bold text-primary">{selectedStaffForPermission?.first_name} {selectedStaffForPermission?.last_name}</span>.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="p-4 sm:p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            {loadingPermissions ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setAllowAllEvents(!allowAllEvents)}>
+                  <Checkbox 
+                    id="allow_all" 
+                    checked={allowAllEvents} 
+                    onCheckedChange={(checked) => setAllowAllEvents(!!checked)} 
+                    className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                  />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="allow_all" className="text-base font-bold cursor-pointer">Allow All Events</Label>
+                    <p className="text-sm text-muted-foreground">This staff can scan attendees for any event in the project.</p>
+                  </div>
+                </div>
+
+                {!allowAllEvents && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Specific Events</Label>
+                    {events.length === 0 ? (
+                      <div className="text-sm italic text-muted-foreground">No events found in this project.</div>
+                    ) : (
+                      <div className="grid gap-3">
+                        {events.map(event => (
+                          <label key={event.event_uuid} className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                            <Checkbox 
+                              checked={selectedEventUuids.includes(event.event_uuid)}
+                              onCheckedChange={(checked) => toggleEventSelection(event.event_uuid, checked)}
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-bold group-hover:text-primary transition-colors">{event.event_name}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="p-4 sm:p-8 bg-white/5 border-t border-white/10 sm:justify-between gap-3 flex-col-reverse sm:flex-row">
+            <Button type="button" variant="ghost" onClick={() => setIsPermissionDialogOpen(false)} className="hover:bg-white/10 rounded-2xl h-11 px-6 font-bold w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button onClick={handleSavePermissions} disabled={loading || loadingPermissions} className="btn-aurora rounded-2xl h-11 px-8 font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Permissions
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -15,13 +15,8 @@ import {
   toggleStatusOrganizerExhibitor,
   forceResetPasswordOrganizerExhibitor,
   sendMailCredentialOrganizerExhibitor,
-  sendPendingBusinessMatchingReadyEmailsOrganizerExhibitor,
   testLoginOrganizerExhibitor,
 } from '@/app/actions/organizer-exhibitor'
-import {
-  businessMatchingReadyEmailEnabled,
-  isBusinessMatchingEnabled,
-} from '@/lib/features'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import {
@@ -89,20 +84,16 @@ export default function ExhibitorsPage() {
   const { user, isAuthenticated, isHydrated } = useAuthStore()
   const projectId = searchParams.get('projectId') || user?.projectId
   const isOrganizer = user?.role === 'ORGANIZER'
-  const showBusinessMatching = isBusinessMatchingEnabled(projectId)
 
   const [exhibitors, setExhibitors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [businessMatchingReadyDialogOpen, setBusinessMatchingReadyDialogOpen] =
-    useState(false)
   const [selectedExhibitor, setSelectedExhibitor] = useState<any>(null)
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
-  const [sendingBusinessMatchingReadyEmails, setSendingBusinessMatchingReadyEmails] = useState(false)
   const [targetEmail, setTargetEmail] = useState('')
 
   const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
@@ -193,12 +184,6 @@ export default function ExhibitorsPage() {
       matchesStatus
     )
   })
-
-  const pendingBusinessMatchingReadyExhibitors = exhibitors.filter(
-    (item) =>
-      !item.isBusinessMatchingReadyEmailSent &&
-      item.canSendBusinessMatchingReadyEmail
-  )
 
   // Calculate pagination based on FILTERED data
   const totalPages = Math.ceil(filteredExhibitors.length / itemsPerPage)
@@ -323,28 +308,6 @@ export default function ExhibitorsPage() {
       setEmailDialogOpen(false)
     } else {
       toast.error('Failed to send credentials')
-    }
-  }
-
-  async function handleSendBusinessMatchingReadyEmails() {
-    if (pendingBusinessMatchingReadyExhibitors.length === 0) return
-
-    setSendingBusinessMatchingReadyEmails(true)
-    try {
-      const result = await sendPendingBusinessMatchingReadyEmailsOrganizerExhibitor(
-        pendingBusinessMatchingReadyExhibitors.map((item) => item.id)
-      )
-
-      if (result.success) {
-        toast.success(`Business Matching emails sent: ${result.sent_count || 0}`)
-        if (result.skipped_count) toast.error(`Skipped: ${result.skipped_count}`)
-        setBusinessMatchingReadyDialogOpen(false)
-        fetchExhibitors()
-      } else {
-        toast.error('Failed to send Business Matching emails')
-      }
-    } finally {
-      setSendingBusinessMatchingReadyEmails(false)
     }
   }
 
@@ -491,21 +454,6 @@ export default function ExhibitorsPage() {
               {exporting ? 'Exporting...' : 'Export Excel'}
             </Button>
           )}
-          {businessMatchingReadyEmailEnabled && showBusinessMatching && isOrganizer && pendingBusinessMatchingReadyExhibitors.length > 0 && (
-            <Button
-              variant="outline"
-              className="rounded-full px-6 font-semibold"
-              onClick={() => setBusinessMatchingReadyDialogOpen(true)}
-              disabled={sendingBusinessMatchingReadyEmails}
-            >
-              {sendingBusinessMatchingReadyEmails ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Mail className="mr-2 h-5 w-5" />
-              )}
-              Send Business Matching Ready ({pendingBusinessMatchingReadyExhibitors.length})
-            </Button>
-          )}
           <Link
             href={
               isOrganizer
@@ -519,46 +467,6 @@ export default function ExhibitorsPage() {
           </Link>
         </div>
       </div>
-
-      {businessMatchingReadyEmailEnabled && showBusinessMatching && <Dialog
-        open={businessMatchingReadyDialogOpen}
-        onOpenChange={setBusinessMatchingReadyDialogOpen}
-      >
-        <DialogContent className="glass rounded-3xl border-white/10 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">
-              Send Business Matching is Ready!
-            </DialogTitle>
-            <DialogDescription>
-              Send the Business Matching is Ready! email to{' '}
-              {pendingBusinessMatchingReadyExhibitors.length} eligible
-              exhibitors.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-full px-6"
-              onClick={() => setBusinessMatchingReadyDialogOpen(false)}
-              disabled={sendingBusinessMatchingReadyEmails}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="btn-aurora rounded-full px-6"
-              onClick={handleSendBusinessMatchingReadyEmails}
-              disabled={sendingBusinessMatchingReadyEmails}
-            >
-              {sendingBusinessMatchingReadyEmails ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Mail className="mr-2 h-4 w-4" />
-              )}
-              Send email
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>}
 
       <Card className="glass shadow-primary/5 shadow-xl">
         <CardHeader className="border-b border-white/10 bg-white/5">

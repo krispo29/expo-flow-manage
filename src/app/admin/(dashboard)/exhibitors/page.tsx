@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, sendPendingBusinessMatchingReadyEmails, testLoginExhibitor, type Exhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, type Exhibitor } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
-import { businessMatchingReadyEmailEnabled, isBusinessMatchingEnabled } from '@/lib/features'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X, FileDown, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { BMExhibitorReadyCampaignCard } from '@/components/bm-exhibitor-ready-campaign-card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { copyTextToClipboard } from '@/lib/clipboard'
@@ -75,8 +76,6 @@ export default function ExhibitorsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
-  const [businessMatchingReadyDialogOpen, setBusinessMatchingReadyDialogOpen] = useState(false)
-  const [sendingBusinessMatchingReadyEmails, setSendingBusinessMatchingReadyEmails] = useState(false)
   const [targetEmail, setTargetEmail] = useState('')
 
   const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
@@ -268,28 +267,6 @@ export default function ExhibitorsPage() {
     }
   }
 
-  async function handleSendBusinessMatchingReadyEmails() {
-    if (!projectId || pendingBusinessMatchingReadyExhibitors.length === 0) return
-
-    setSendingBusinessMatchingReadyEmails(true)
-    try {
-      const result = await sendPendingBusinessMatchingReadyEmails(
-        projectId,
-        pendingBusinessMatchingReadyExhibitors.map((item) => item.id)
-      )
-      if (result.success) {
-        toast.success(`Business Matching emails sent: ${result.sent_count || 0}`)
-        if (result.skipped_count) toast.error(`Skipped: ${result.skipped_count}`)
-        setBusinessMatchingReadyDialogOpen(false)
-        fetchExhibitors()
-      } else {
-        toast.error(result.error || 'Failed to send Business Matching emails')
-      }
-    } finally {
-      setSendingBusinessMatchingReadyEmails(false)
-    }
-  }
-
   async function handleResetPassword() {
     if (!selectedExhibitor) return
     if (newPassword.length < 6) {
@@ -418,24 +395,6 @@ export default function ExhibitorsPage() {
               Export Excel
             </Button>
           )}
-          {businessMatchingReadyEmailEnabled &&
-            showBusinessMatching &&
-            !isOrganizer &&
-            pendingBusinessMatchingReadyExhibitors.length > 0 && (
-              <Button
-                variant="outline"
-                className="rounded-full px-6 font-semibold"
-                onClick={() => setBusinessMatchingReadyDialogOpen(true)}
-                disabled={sendingBusinessMatchingReadyEmails}
-              >
-                {sendingBusinessMatchingReadyEmails ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Mail className="mr-2 h-5 w-5" />
-                )}
-                Send Business Matching Ready ({pendingBusinessMatchingReadyExhibitors.length})
-              </Button>
-            )}
           <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
             <Button className="btn-aurora rounded-full px-6 font-semibold">
               <Plus className="mr-2 h-5 w-5" /> Add Exhibitor
@@ -443,6 +402,14 @@ export default function ExhibitorsPage() {
           </Link>
         </div>
       </div>
+
+      {projectId && (
+        <BMExhibitorReadyCampaignCard 
+          projectId={projectId} 
+          readyCount={pendingBusinessMatchingReadyExhibitors.length} 
+          onBatchExecuted={fetchExhibitors} 
+        />
+      )}
 
       <Card className="glass shadow-xl shadow-primary/5">
         <CardHeader className="bg-white/5 border-b border-white/10">
@@ -639,6 +606,7 @@ export default function ExhibitorsPage() {
                       <TableHead className="font-bold">Event & Booth</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold text-center">Quota</TableHead>
+                      <TableHead className="font-bold text-center">BM Ready Email</TableHead>
                       <TableHead className="text-right font-bold pr-6">Actions</TableHead>
                     </TableRow>
                     {showFilters && (
@@ -681,6 +649,7 @@ export default function ExhibitorsPage() {
                           </Select>
                         </TableHead>
                         <TableHead className="py-2"></TableHead>
+                        <TableHead className="py-2"></TableHead>
                         <TableHead className="py-2 text-right pr-6">
                            <Button 
                             variant="ghost" 
@@ -697,7 +666,7 @@ export default function ExhibitorsPage() {
                   <TableBody>
                     {filteredExhibitors.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-20 text-muted-foreground italic">
+                        <TableCell colSpan={8} className="text-center py-20 text-muted-foreground italic">
                           {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
                         </TableCell>
                       </TableRow>
@@ -755,6 +724,42 @@ export default function ExhibitorsPage() {
                                 </div>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {item.isBusinessMatchingReadyEmailSent || item.business_matching_ready_email_status === 'sent' ? (
+                              <Badge 
+                                className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[9px] font-bold"
+                                title={item.business_matching_ready_email_sent_at ? `Sent at ${new Date(item.business_matching_ready_email_sent_at).toLocaleString()}` : 'Email sent successfully'}
+                              >
+                                ✓ Sent
+                              </Badge>
+                            ) : item.business_matching_ready_email_status === 'failed' ? (
+                              <Badge 
+                                className="bg-red-500/20 text-red-500 border-red-500/30 text-[9px] font-bold" 
+                                title={item.business_matching_ready_email_error || 'Email sending failed'}
+                              >
+                                ✕ Failed
+                              </Badge>
+                            ) : item.business_matching_ready_email_status === 'sending' ? (
+                              <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 text-[9px] font-bold">
+                                ⏳ Sending
+                              </Badge>
+                            ) : item.canSendBusinessMatchingReadyEmail ? (
+                              <Badge 
+                                className="bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[9px] font-bold"
+                                title="Staff email registered. Will be sent in the next auto-batch."
+                              >
+                                ⚡ Ready for batch
+                              </Badge>
+                            ) : (
+                              <Badge 
+                                variant="outline" 
+                                className="text-muted-foreground/70 border-amber-500/30 bg-amber-500/5 text-[9px] font-medium"
+                                title="Requires at least 1 registered staff email to enable auto-email sending"
+                              >
+                                Needs staff email
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right pr-6">
                             <div className="flex justify-end gap-1.5">
@@ -866,48 +871,6 @@ export default function ExhibitorsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {businessMatchingReadyEmailEnabled && showBusinessMatching && !isOrganizer && (
-        <Dialog
-          open={businessMatchingReadyDialogOpen}
-          onOpenChange={setBusinessMatchingReadyDialogOpen}
-        >
-          <DialogContent className="glass rounded-3xl border-white/10 shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="font-display text-2xl">
-                Send Business Matching is Ready!
-              </DialogTitle>
-              <DialogDescription>
-                Send the Business Matching is Ready! email to{' '}
-                {pendingBusinessMatchingReadyExhibitors.length} eligible
-                exhibitors.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                className="rounded-full px-6"
-                onClick={() => setBusinessMatchingReadyDialogOpen(false)}
-                disabled={sendingBusinessMatchingReadyEmails}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="btn-aurora rounded-full px-6"
-                onClick={handleSendBusinessMatchingReadyEmails}
-                disabled={sendingBusinessMatchingReadyEmails}
-              >
-                {sendingBusinessMatchingReadyEmails ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Mail className="mr-2 h-4 w-4" />
-                )}
-                Send Emails
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Dialogs with Glass Styling */}
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>

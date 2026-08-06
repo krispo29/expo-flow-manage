@@ -5,12 +5,12 @@ import { Clock, Loader2, Mail, Pause, Play, RefreshCw, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
-  type BMVisitorCampaignData,
-  getBMVisitorCampaignStatus,
-  pauseBMVisitorCampaign,
-  startBMVisitorCampaign,
-  triggerBMVisitorCampaignBatchNow,
-} from '@/app/actions/bm-visitor-campaign'
+  type BMExhibitorReadyCampaignStatus,
+  getBMExhibitorCampaignStatus,
+  pauseBMExhibitorCampaign,
+  startBMExhibitorCampaign,
+  triggerBMExhibitorCampaignBatchNow,
+} from '@/app/actions/bm-exhibitor-campaign'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,27 +21,29 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
-interface BMVisitorReadyCampaignCardProps {
+interface BMExhibitorReadyCampaignCardProps {
   projectId: string
+  readyCount?: number
+  onBatchExecuted?: () => void
 }
 
 const THAILAB2026_PROJECT_ID = '07626a19-001d-4675-addd-3a92e3f46d47'
 
-export function BMVisitorReadyCampaignCard({ projectId }: BMVisitorReadyCampaignCardProps) {
+export function BMExhibitorReadyCampaignCard({ projectId, readyCount, onBatchExecuted }: BMExhibitorReadyCampaignCardProps) {
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
-  const [campaign, setCampaign] = useState<BMVisitorCampaignData | null>(null)
+  const [campaign, setCampaign] = useState<BMExhibitorReadyCampaignStatus | null>(null)
   const [status, setStatus] = useState<string>('idle')
   const [timeLeft, setTimeLeft] = useState<string>('')
 
   const fetchStatus = useCallback(async () => {
     if (projectId !== THAILAB2026_PROJECT_ID) return
     setLoading(true)
-    const result = await getBMVisitorCampaignStatus(projectId)
+    const result = await getBMExhibitorCampaignStatus(projectId)
     setLoading(false)
     if (result.success && result.data) {
-      setStatus(result.data.status || (result.data.campaign as any)?.status || 'idle')
-      setCampaign(result.data.campaign || (result.data as any) || null)
+      setStatus(result.data.status || (result.data as any).Status || 'idle')
+      setCampaign(result.data)
     }
   }, [projectId])
 
@@ -89,11 +91,12 @@ export function BMVisitorReadyCampaignCard({ projectId }: BMVisitorReadyCampaign
 
   const handleStart = async () => {
     setActionLoading(true)
-    const res = await startBMVisitorCampaign(projectId, 50, 10)
+    const res = await startBMExhibitorCampaign(projectId, 50, 10)
     setActionLoading(false)
     if (res.success) {
-      toast.success('Scheduled campaign started! Sends 50 emails every 10 mins.')
+      toast.success('Scheduled exhibitor campaign started! Sends 50 emails every 10 mins.')
       fetchStatus()
+      if (onBatchExecuted) onBatchExecuted()
     } else {
       toast.error(res.error || 'Failed to start campaign')
     }
@@ -101,10 +104,10 @@ export function BMVisitorReadyCampaignCard({ projectId }: BMVisitorReadyCampaign
 
   const handlePause = async () => {
     setActionLoading(true)
-    const res = await pauseBMVisitorCampaign(projectId)
+    const res = await pauseBMExhibitorCampaign(projectId)
     setActionLoading(false)
     if (res.success) {
-      toast.warning('Scheduled campaign paused.')
+      toast.warning('Scheduled exhibitor campaign paused.')
       fetchStatus()
     } else {
       toast.error(res.error || 'Failed to pause campaign')
@@ -113,11 +116,12 @@ export function BMVisitorReadyCampaignCard({ projectId }: BMVisitorReadyCampaign
 
   const handleTriggerBatch = async () => {
     setActionLoading(true)
-    const res = await triggerBMVisitorCampaignBatchNow(projectId)
+    const res = await triggerBMExhibitorCampaignBatchNow(projectId)
     setActionLoading(false)
     if (res.success) {
       toast.success('Batch queued! The worker will execute sending immediately.')
       fetchStatus()
+      if (onBatchExecuted) onBatchExecuted()
     } else {
       toast.error(res.error || 'Failed to trigger batch')
     }
@@ -149,7 +153,7 @@ export function BMVisitorReadyCampaignCard({ projectId }: BMVisitorReadyCampaign
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg font-bold">
-              Business Matching Visitor Ready Email Schedule
+              Business Matching Exhibitor Ready Email Schedule
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
@@ -166,9 +170,16 @@ export function BMVisitorReadyCampaignCard({ projectId }: BMVisitorReadyCampaign
       <CardContent className="space-y-4">
         {/* Progress Bar */}
         <div className="space-y-1.5">
-          <div className="flex justify-between text-xs font-semibold">
+          <div className="flex flex-wrap items-center justify-between text-xs font-semibold gap-2">
             <span>Progress: {totalSent.toLocaleString()} / {totalEligible.toLocaleString()} sent</span>
-            <span>{progressPercent}%</span>
+            <div className="flex items-center gap-2">
+              {typeof readyCount === 'number' && (
+                <Badge className="bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold px-2 py-0.5">
+                  ⚡ Ready for next batch: {readyCount.toLocaleString()}
+                </Badge>
+              )}
+              <span>{progressPercent}%</span>
+            </div>
           </div>
           <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden">
             <div
