@@ -35,10 +35,21 @@ interface ApiResponse<T> {
   data: T
 }
 
+export interface FailedCampaignRecord {
+  uuid: string
+  name: string
+  contact_info: string
+}
+
+export interface BMExhibitorCampaignStatusResponse {
+  campaign: BMExhibitorReadyCampaignStatus | null
+  failed_logs?: FailedCampaignRecord[]
+}
+
 export async function getBMExhibitorCampaignStatus(projectId: string) {
   try {
     const headers = await requireServerAuthHeaders({ projectUuid: projectId })
-    const res = await api.get<ApiResponse<BMExhibitorReadyCampaignStatus>>(
+    const res = await api.get<ApiResponse<BMExhibitorCampaignStatusResponse | BMExhibitorReadyCampaignStatus>>(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/status?project_uuid=${projectId}`,
       { headers }
     )
@@ -92,4 +103,34 @@ export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
     console.error('Error triggering BM Exhibitor campaign batch:', error)
     return { success: false, error: error.message || 'Failed to trigger batch' }
   }
+}
+
+export async function sendTestBMExhibitorCampaign(projectId: string, email: string) {
+	try {
+		const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+		const res = await api.post<ApiResponse<void>>(
+			`/v1/admin/project/business_matching_exhibitor_ready_campaign/send_test?project_uuid=${projectId}`,
+			{ email },
+			{ headers }
+		)
+		return { success: true, message: res.data.message || 'Test email sent successfully' }
+	} catch (error: any) {
+		console.error('Error sending test BM Exhibitor campaign email:', error)
+		return { success: false, error: error.message || 'Failed to send test email' }
+	}
+}
+
+export async function retryFailedBMExhibitorCampaign(projectId: string) {
+	try {
+		const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+		const res = await api.post<ApiResponse<{ retried_count: number }>>(
+			`/v1/admin/project/business_matching_exhibitor_ready_campaign/retry_failed?project_uuid=${projectId}`,
+			{},
+			{ headers }
+		)
+		return { success: true, count: res.data.data.retried_count, message: res.data.message || 'Successfully queued failed emails for retry' }
+	} catch (error: any) {
+		console.error('Error retrying failed BM Exhibitor campaign emails:', error)
+		return { success: false, error: error.message || 'Failed to retry failed emails' }
+	}
 }

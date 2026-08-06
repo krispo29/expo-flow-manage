@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, type Exhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, sendIndividualBusinessMatching, type Exhibitor } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
 import { isBusinessMatchingEnabled } from '@/lib/features'
@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X, FileDown, Copy, Check } from 'lucide-react'
+import { Plus, Pencil, KeyRound, Loader2, Mail, Power, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, LogIn, CheckCircle2, XCircle, Filter, X, FileDown, Copy, Check, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { BMExhibitorReadyCampaignCard } from '@/components/bm-exhibitor-ready-campaign-card'
 import { Badge } from '@/components/ui/badge'
@@ -76,6 +76,7 @@ export default function ExhibitorsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
+  const [sendingQuickEmail, setSendingQuickEmail] = useState<string | null>(null)
   const [targetEmail, setTargetEmail] = useState('')
 
   const [testLoginDialogOpen, setTestLoginDialogOpen] = useState(false)
@@ -264,6 +265,21 @@ export default function ExhibitorsPage() {
       setEmailDialogOpen(false)
     } else {
       toast.error('Failed to send credentials')
+    }
+  }
+
+  async function handleIndividualQuickSend(exhibitorId: string) {
+    if (isOrganizer || !projectId) return
+    
+    setSendingQuickEmail(exhibitorId)
+    const result = await sendIndividualBusinessMatching(projectId, exhibitorId)
+    setSendingQuickEmail(null)
+    
+    if (result.success) {
+      toast.success('Quick send email dispatched successfully')
+      fetchExhibitors() // refresh list to see updated status
+    } else {
+      toast.error(result.error || 'Failed to send individual email')
     }
   }
 
@@ -783,6 +799,23 @@ export default function ExhibitorsPage() {
                                 <Mail className="h-4 w-4" />
                               </Button>
                             
+                              {!isOrganizer && projectId && isBusinessMatchingEnabled(projectId) && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-all duration-300" 
+                                  title="Quick Send BM Email" 
+                                  onClick={() => handleIndividualQuickSend(item.id)}
+                                  disabled={sendingQuickEmail === item.id}
+                                >
+                                  {sendingQuickEmail === item.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              )}
+
                               <Link href={isOrganizer ? `/admin/exhibitors/${item.id}` : `/admin/exhibitors/${item.id}?projectId=${projectId}`}>
                                 <Button 
                                   variant="ghost" 

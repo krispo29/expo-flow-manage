@@ -31,14 +31,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X, Copy, Check } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X, Copy, Check, Send } from 'lucide-react'
 import { 
   type Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
   type AttendeeType,
   resendEmailConfirmation, getMyReservations, reserveConference, cancelConferenceReservation,
-  printParticipantBadge, remindEmailConfirmation
+  printParticipantBadge, remindEmailConfirmation, sendIndividualBusinessMatchingVisitor
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
@@ -108,6 +109,7 @@ export function ParticipantList({
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set())
   const [remindingEmail, setRemindingEmail] = useState(false)
+  const [sendingQuickEmail, setSendingQuickEmail] = useState<string | null>(null)
   const attendeeTypeOptions = useMemo(
     () => [...attendeeTypes]
       .filter(type => type.type_code)
@@ -210,6 +212,20 @@ export function ParticipantList({
     setSelectedParticipantIds(new Set())
   }
   
+  const handleIndividualQuickSend = async (registrationUuid: string) => {
+    if (!projectId) return;
+    
+    setSendingQuickEmail(registrationUuid)
+    const result = await sendIndividualBusinessMatchingVisitor(projectId, registrationUuid)
+    setSendingQuickEmail(null)
+    
+    if (result.success) {
+      toast.success('Quick send email dispatched successfully')
+      window.location.reload() // Or could use a router.refresh() if available
+    } else {
+      toast.error(result.error || 'Failed to send individual email')
+    }
+  }
 
   // Conference Dialog State
   const [isConfDialogOpen, setIsConfDialogOpen] = useState(false)
@@ -998,6 +1014,22 @@ export function ParticipantList({
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" onClick={() => onPrintClick(p)} title="Print Badge">
                             <Printer className="h-4 w-4" />
                           </Button>
+                          {projectId && isBusinessMatchingEnabled(projectId) && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 group-hover:scale-110 transition-all duration-300" 
+                              title="Quick Send BM Email" 
+                              onClick={() => handleIndividualQuickSend(p.registration_uuid)}
+                              disabled={sendingQuickEmail === p.registration_uuid}
+                            >
+                              {sendingQuickEmail === p.registration_uuid ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10 group-hover:scale-110 transition-all duration-300" onClick={() => openEdit(p)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -1441,3 +1473,4 @@ export function ParticipantList({
     </div>
   )
 }
+

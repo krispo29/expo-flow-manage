@@ -523,3 +523,23 @@ export async function testLoginExhibitor(projectUuid: string, data: any) {
     return { success: false, error: errMsg }
   }
 }
+// POST /v1/admin/project/business-matching/exhibitor/send_individual
+export async function sendIndividualBusinessMatching(
+  projectUuid: string,
+  exhibitorId: string
+) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    await api.post(
+      '/v1/admin/project/business-matching/exhibitor/send_individual',
+      { uuid: exhibitorId },
+      { headers }
+    )
+    revalidatePath('/admin/exhibitors')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error sending individual business matching:', error)
+    const errMsg = error.response?.data?.message || 'Failed to send individual business matching email'
+    return { success: false, error: errMsg }
+  }
+}

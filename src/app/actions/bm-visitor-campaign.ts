@@ -4,7 +4,6 @@ import api, { getErrorMessage } from '@/lib/api'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
 import { revalidatePath } from 'next/cache'
 
-const THAILAB2026_PROJECT_ID = '07626a19-001d-4675-addd-3a92e3f46d47'
 
 export interface BMVisitorCampaignData {
   campaign_uuid: string
@@ -20,9 +19,16 @@ export interface BMVisitorCampaignData {
   next_run_at: string | null
 }
 
+export interface FailedCampaignRecord {
+  uuid: string
+  name: string
+  contact_info: string
+}
+
 export interface BMVisitorCampaignStatusResponse {
   status: string
   campaign: BMVisitorCampaignData | null
+  failed_logs?: FailedCampaignRecord[]
 }
 
 export interface BMVisitorCampaignBatchResponse {
@@ -43,9 +49,7 @@ async function getAuthHeaders(projectUuid?: string) {
 }
 
 export async function getBMVisitorCampaignStatus(projectId: string) {
-  if (projectId !== THAILAB2026_PROJECT_ID) {
-    return { success: false, error: 'Campaign is only available for THAILAB2026' }
-  }
+
 
   try {
     const headers = await getAuthHeaders(projectId)
@@ -61,10 +65,6 @@ export async function getBMVisitorCampaignStatus(projectId: string) {
 }
 
 export async function startBMVisitorCampaign(projectId: string, batchSize = 50, intervalMinutes = 10) {
-  if (projectId !== THAILAB2026_PROJECT_ID) {
-    return { success: false, error: 'Campaign is only available for THAILAB2026' }
-  }
-
   try {
     const headers = await getAuthHeaders(projectId)
     const response = await api.post<ApiResponse<BMVisitorCampaignStatusResponse>>(
@@ -85,10 +85,6 @@ export async function startBMVisitorCampaign(projectId: string, batchSize = 50, 
 }
 
 export async function pauseBMVisitorCampaign(projectId: string) {
-  if (projectId !== THAILAB2026_PROJECT_ID) {
-    return { success: false, error: 'Campaign is only available for THAILAB2026' }
-  }
-
   try {
     const headers = await getAuthHeaders(projectId)
     const response = await api.post<ApiResponse<{ status: string }>>(
@@ -105,10 +101,6 @@ export async function pauseBMVisitorCampaign(projectId: string) {
 }
 
 export async function triggerBMVisitorCampaignBatchNow(projectId: string) {
-  if (projectId !== THAILAB2026_PROJECT_ID) {
-    return { success: false, error: 'Campaign is only available for THAILAB2026' }
-  }
-
   try {
     const headers = await getAuthHeaders(projectId)
     const response = await api.post<ApiResponse<BMVisitorCampaignBatchResponse>>(
@@ -120,6 +112,36 @@ export async function triggerBMVisitorCampaignBatchNow(projectId: string) {
     return { success: true, data: response.data.data }
   } catch (error: unknown) {
     console.error('Error triggering BM visitor campaign batch:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+export async function sendTestBMVisitorCampaign(projectId: string, email: string) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+    const response = await api.post<ApiResponse<void>>(
+      `/v1/admin/project/business_matching_visitor_ready_campaign/send_test?project_uuid=${projectId}`,
+      { email },
+      { headers }
+    )
+    return { success: true, message: response.data.message || 'Test email sent successfully' }
+  } catch (error: unknown) {
+    console.error('Error sending test BM visitor campaign email:', error)
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+export async function retryFailedBMVisitorCampaign(projectId: string) {
+  try {
+    const headers = await getAuthHeaders(projectId)
+    const response = await api.post<ApiResponse<{ retried_count: number }>>(
+      `/v1/admin/project/business_matching_visitor_ready_campaign/retry_failed?project_uuid=${projectId}`,
+      {},
+      { headers }
+    )
+    return { success: true, count: response.data.data.retried_count, message: response.data.message || 'Successfully queued failed emails for retry' }
+  } catch (error: unknown) {
+    console.error('Error retrying failed BM visitor campaign emails:', error)
     return { success: false, error: getErrorMessage(error) }
   }
 }
