@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, sendIndividualBusinessMatching, seedTestExhibitorsAndStaff, type Exhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, sendIndividualBusinessMatching, type Exhibitor } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
 import { isBusinessMatchingEnabled } from '@/lib/features'
@@ -400,24 +400,6 @@ export default function ExhibitorsPage() {
           <p className="text-muted-foreground mt-1">Manage and monitor all exhibitors in the system.</p>
         </div>
         <div className="flex items-center gap-2">
-          {!isOrganizer && projectId && (
-            <Button 
-              variant="outline" 
-              className="rounded-full px-6 font-semibold glass border-white/10 hover:bg-white/10"
-              onClick={async () => {
-                const toastId = toast.loading('Seeding test exhibitors...')
-                const res = await seedTestExhibitorsAndStaff(projectId)
-                if (res.success) {
-                  toast.success('Test exhibitors seeded successfully', { id: toastId })
-                  fetchExhibitors()
-                } else {
-                  toast.error(res.error || 'Failed to seed exhibitors', { id: toastId })
-                }
-              }}
-            >
-              <Plus className="mr-2 h-5 w-5 text-blue-500" /> Seed Test Ex
-            </Button>
-          )}
           {!isOrganizer && (
             <Button 
               variant="outline" 
