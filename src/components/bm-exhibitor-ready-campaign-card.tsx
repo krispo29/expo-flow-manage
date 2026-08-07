@@ -77,7 +77,7 @@ export function BMExhibitorReadyCampaignCard({ projectId, readyCount, onBatchExe
   useEffect(() => {
     const rawC = campaign as any
     const targetNextRun = campaign?.next_run_at || rawC?.NextRunAt || rawC?.next_run_at || null
-    if (!targetNextRun || (status !== 'active' && status !== 'sending')) {
+    if (!targetNextRun || (status !== 'active' && status !== 'sending' && status !== 'completed')) {
       setTimeLeft('')
       return
     }
@@ -202,6 +202,12 @@ export function BMExhibitorReadyCampaignCard({ projectId, readyCount, onBatchExe
 
         {/* Right side: Badge + Actions */}
         <div className="flex items-center gap-2 shrink-0">
+          {timeLeft && (
+            <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Clock className="w-3 h-3 animate-pulse text-emerald-500" />
+              {timeLeft.includes('Sending') ? 'Sending...' : timeLeft}
+            </span>
+          )}
           {getStatusBadge()}
           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); fetchStatus(); }} disabled={loading}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
