@@ -275,7 +275,8 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
                       min={1} max={500} 
                       value={batchSize} 
                       onChange={(e) => setBatchSize(parseInt(e.target.value) || 50)} 
-                      className="h-8 w-20 text-xs text-center font-semibold bg-background"
+                      disabled={status !== 'idle' && status !== 'paused'}
+                      className="h-8 w-20 text-xs text-center font-semibold bg-background disabled:opacity-60 cursor-not-allowed"
                     />
                   </div>
                   <div className="text-muted-foreground text-xs font-bold pt-4">:</div>
@@ -296,7 +297,8 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
                       min={1} max={60} 
                       value={intervalMinutes} 
                       onChange={(e) => setIntervalMinutes(parseInt(e.target.value) || 10)} 
-                      className="h-8 w-20 text-xs text-center font-semibold bg-background"
+                      disabled={status !== 'idle' && status !== 'paused'}
+                      className="h-8 w-20 text-xs text-center font-semibold bg-background disabled:opacity-60 cursor-not-allowed"
                     />
                   </div>
                 </div>
