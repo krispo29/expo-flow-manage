@@ -1014,7 +1014,8 @@ export function ParticipantList({
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-primary/10 hover:text-primary group-hover:scale-110 transition-all duration-300" onClick={() => onPrintClick(p)} title="Print Badge">
                             <Printer className="h-4 w-4" />
                           </Button>
-                          {projectId && isBusinessMatchingEnabled(projectId) && (
+                          {/* Quick Send BM Email - Hidden for now */}
+                          {/* {projectId && isBusinessMatchingEnabled(projectId) && (
                             <Button 
                               variant="ghost" 
                               size="icon" 
@@ -1029,7 +1030,7 @@ export function ParticipantList({
                                 <Send className="h-4 w-4" />
                               )}
                             </Button>
-                          )}
+                          )} */}
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-white/10 group-hover:scale-110 transition-all duration-300" onClick={() => openEdit(p)}>
                             <Pencil className="h-4 w-4" />
                           </Button>

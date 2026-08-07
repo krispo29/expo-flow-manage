@@ -799,7 +799,8 @@ export default function ExhibitorsPage() {
                                 <Mail className="h-4 w-4" />
                               </Button>
                             
-                              {!isOrganizer && projectId && isBusinessMatchingEnabled(projectId) && (
+                              {/* Quick Send BM Email - Hidden for now */}
+                              {/* {!isOrganizer && projectId && isBusinessMatchingEnabled(projectId) && (
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
@@ -814,7 +815,7 @@ export default function ExhibitorsPage() {
                                     <Send className="h-4 w-4" />
                                   )}
                                 </Button>
-                              )}
+                              )} */}
 
                               <Link href={isOrganizer ? `/admin/exhibitors/${item.id}` : `/admin/exhibitors/${item.id}?projectId=${projectId}`}>
                                 <Button 
