@@ -297,7 +297,7 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
 
                 {/* Buttons Group */}
                 <div className="flex items-center gap-2">
-                  {status !== 'active' && status !== 'sending' ? (
+                  {status === 'idle' || status === 'paused' ? (
                     <Button
                       size="sm"
                       className="h-9 px-4 font-bold text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
