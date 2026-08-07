@@ -1,4 +1,5 @@
 import { getAllAttendeeTypes, getParticipants } from '@/app/actions/participant'
+import { getEvents } from '@/app/actions/settings'
 import { ParticipantList } from '@/components/participant-list'
 import { cookies } from 'next/headers'
 
@@ -12,12 +13,14 @@ export default async function OrganizerParticipantsPage({
   const projectId = resolvedSearchParams.projectId || cookieStore.get('project_uuid')?.value || '';
 
   // Fetch all participants and attendee type metadata for client-side filtering/printing.
-  const [participantsResult, attendeeTypesResult] = await Promise.all([
+  const [participantsResult, attendeeTypesResult, eventsResult] = await Promise.all([
     getParticipants(projectId),
     getAllAttendeeTypes(projectId),
+    getEvents(projectId),
   ]);
   const participants = participantsResult.data || [];
   const attendeeTypes = attendeeTypesResult.data || [];
+  const events = eventsResult.events || [];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -35,6 +38,7 @@ export default async function OrganizerParticipantsPage({
           participants={participants} 
           projectId={projectId}
           attendeeTypes={attendeeTypes}
+          events={events}
         />
       </div>
     </div>
