@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/card'
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, Clock, Loader2, Mail, Pause, Play, RefreshCw, Send, Settings2, Zap } from 'lucide-react'
+import { ChevronDown, Clock, Info, Loader2, Mail, Pause, Play, RefreshCw, Send, Settings2, Zap } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface BMVisitorReadyCampaignCardProps {
   projectId: string
@@ -167,11 +168,12 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
   }
 
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      className="border border-border/80 bg-card/60 backdrop-blur-md shadow-xs mb-6 rounded-xl overflow-hidden transition-all duration-200"
-    >
+    <TooltipProvider>
+      <Collapsible
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        className="border border-border/80 bg-card/60 backdrop-blur-md shadow-xs mb-6 rounded-xl overflow-hidden transition-all duration-200"
+      >
       {/* Compact Header Bar */}
       <div className="px-4 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
         {/* Left side: Icon + Title */}
@@ -251,7 +253,17 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
                 {/* Inputs Group */}
                 <div className="flex items-center gap-2 bg-muted/40 p-1.5 rounded-lg border border-border/50">
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Batch Size</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                      Batch Size
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Number of emails to send per batch (Recommended: 50)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </label>
                     <Input 
                       type="number" 
                       min={1} max={500} 
@@ -262,7 +274,17 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
                   </div>
                   <div className="text-muted-foreground text-xs font-bold pt-4">:</div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Interval (min)</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                      Interval (min)
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Interval between each batch in minutes (Recommended: 10)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </label>
                     <Input 
                       type="number" 
                       min={1} max={60} 
@@ -298,16 +320,23 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
                     </Button>
                   )}
 
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-9 px-3 text-xs font-bold gap-1.5"
-                    onClick={handleTriggerBatch}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />}
-                    Send 1 Batch Now
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-9 px-3 text-xs font-bold gap-1.5"
+                        onClick={handleTriggerBatch}
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />}
+                        Send 1 Batch Now
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Send 1 batch immediately based on the configured Batch Size</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </div>
@@ -332,6 +361,14 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5 text-primary" />
                   Send Test Email
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help ml-1" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Send a test email to the specified address to verify delivery and format</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </span>
                 <div className="flex items-center gap-2">
                   <Input 
@@ -406,6 +443,7 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
 
         </div>
       </CollapsibleContent>
-    </Collapsible>
+      </Collapsible>
+    </TooltipProvider>
   )
 }
