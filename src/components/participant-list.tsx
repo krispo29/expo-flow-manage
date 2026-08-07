@@ -992,7 +992,11 @@ export function ParticipantList({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {p.bm_visitor_ready_email_status === 'sent' ? (
+                        {p.attendee_type_code === 'EX' ? (
+                          <Badge variant="outline" className="text-muted-foreground/60 text-[9px]">
+                            Sent via Exhibitor
+                          </Badge>
+                        ) : p.bm_visitor_ready_email_status === 'sent' ? (
                           <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[9px] font-bold">
                             ✓ Sent
                           </Badge>
