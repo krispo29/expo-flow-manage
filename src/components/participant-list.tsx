@@ -39,6 +39,7 @@ import {
   printParticipantBadge, remindEmailConfirmation, sendIndividualBusinessMatchingVisitor
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
+import { type Event } from '@/app/actions/settings'
 import { isBusinessMatchingEnabled } from '@/lib/features'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
@@ -97,12 +98,14 @@ interface ParticipantListProps {
   participants: Participant[]
   projectId: string
   attendeeTypes: AttendeeType[]
+  events: Event[]
 }
 
 export function ParticipantList({ 
   participants, 
   projectId, 
   attendeeTypes,
+  events,
 }: ParticipantListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
@@ -245,6 +248,7 @@ export function ParticipantList({
   const [title, setTitle] = useState('Mr.')
   const [residenceCountry, setResidenceCountry] = useState('VN')
   const [mobileCountryCode, setMobileCountryCode] = useState('VN')
+  const [selectedEvent, setSelectedEvent] = useState(events[0]?.event_uuid || '')
   
   const onPrintClick = async (p: Participant) => {
     const printPromise = (async () => {
@@ -403,6 +407,7 @@ export function ParticipantList({
     setTitle('Mr.')
     setResidenceCountry('VN')
     setMobileCountryCode('VN')
+    setSelectedEvent(events[0]?.event_uuid || '')
     setIsDialogOpen(true)
   }
 
@@ -421,12 +426,14 @@ export function ParticipantList({
       setMobileCountryCode(
         getCountryCodeFromPhoneCodeOrValue(result.data.mobile_country_code, residenceCountryCode)
       )
+      setSelectedEvent(result.data.event_uuid || events[0]?.event_uuid || '')
     } else {
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
       setTitle(p.title || 'Mr.')
       setResidenceCountry('VN')
       setMobileCountryCode('VN')
+      setSelectedEvent(events[0]?.event_uuid || '')
     }
     setIsDialogOpen(true)
   }
@@ -1100,9 +1107,23 @@ export function ParticipantList({
             </div>
           </DialogHeader>
           <form ref={formRef} onSubmit={handleSubmit} className="min-h-0 flex flex-1 flex-col overflow-hidden">
-            <input type="hidden" name="event_uuid" value="6109decb-d4e4-44e2-bb16-22eb0548e414" />
             
             <div className="min-h-0 flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-8">
+              <div className="space-y-2.5 sm:col-span-3">
+                <Label htmlFor="event_uuid" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Event *</Label>
+                <Select name="event_uuid" value={selectedEvent} onValueChange={setSelectedEvent} required>
+                  <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
+                    <SelectValue placeholder="Select Event" />
+                  </SelectTrigger>
+                  <SelectContent className="glass border-white/10">
+                    {events.map(event => (
+                      <SelectItem key={event.event_uuid} value={event.event_uuid}>
+                        {event.event_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2.5">
                 <Label htmlFor="attendee_type_code" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Profile Category</Label>
                 <Select name="attendee_type_code" value={attendeeType} onValueChange={setAttendeeType} required>
