@@ -77,7 +77,7 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
   useEffect(() => {
     const rawC = campaign as any
     const targetNextRun = campaign?.next_run_at || rawC?.NextRunAt || rawC?.next_run_at || null
-    if (!targetNextRun || status !== 'active') {
+    if (!targetNextRun || (status !== 'active' && status !== 'sending')) {
       setTimeLeft('')
       return
     }
@@ -297,7 +297,7 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
 
                 {/* Buttons Group */}
                 <div className="flex items-center gap-2">
-                  {status !== 'active' ? (
+                  {status !== 'active' && status !== 'sending' ? (
                     <Button
                       size="sm"
                       className="h-9 px-4 font-bold text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
@@ -343,15 +343,15 @@ export function BMVisitorReadyCampaignCard({ projectId, readyCount, onBatchExecu
 
             {/* Right Box: Countdown & Test Dispatcher (Span 5) */}
             <div className="lg:col-span-5 flex flex-col justify-between gap-3">
-              {/* Next Run Countdown Timer (if active) */}
-              {status === 'active' && (
+              {/* Next Run Countdown Timer (if active or sending) */}
+              {(status === 'active' || status === 'sending') && (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 animate-pulse text-emerald-600" />
-                    <span className="text-xs font-bold">Next Batch in:</span>
+                    <span className="text-xs font-bold">{status === 'sending' ? 'Sending Batch...' : 'Next Batch in:'}</span>
                   </div>
                   <div className="font-mono text-sm font-extrabold bg-background/80 px-2.5 py-0.5 rounded border border-emerald-500/30">
-                    {timeLeft || '10:00'}
+                    {status === 'sending' ? '00:00' : (timeLeft || '10:00')}
                   </div>
                 </div>
               )}
