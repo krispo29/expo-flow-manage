@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, sendIndividualBusinessMatching, type Exhibitor } from '@/app/actions/exhibitor'
+import { getExhibitors, toggleStatusExhibitor, forcePasswordResetExhibitor, sendExhibitorCredentials, testLoginExhibitor, sendIndividualBusinessMatching, seedTestExhibitorsAndStaff, type Exhibitor } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitors, toggleStatusOrganizerExhibitor, forceResetPasswordOrganizerExhibitor, sendMailCredentialOrganizerExhibitor, testLoginOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
 import { isBusinessMatchingEnabled } from '@/lib/features'
@@ -83,6 +83,7 @@ export default function ExhibitorsPage() {
   const [testLoginPassword, setTestLoginPassword] = useState('')
   const [testingLogin, setTestingLogin] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [seeding, setSeeding] = useState(false)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -372,6 +373,22 @@ export default function ExhibitorsPage() {
     }
   }
 
+  const handleSeed = async () => {
+    if (!projectId) {
+      toast.error('Project ID is missing')
+      return
+    }
+    setSeeding(true)
+    const res = await seedTestExhibitorsAndStaff(projectId)
+    setSeeding(false)
+    if (res.success) {
+      toast.success('Successfully created 3 test exhibitors and staff members!')
+      fetchExhibitors()
+    } else {
+      toast.error(res.error || 'Failed to seed test exhibitors')
+    }
+  }
+
   if (!isHydrated || !isAuthenticated || !user) {
     return (
       <div className="flex justify-center p-8">
@@ -401,15 +418,26 @@ export default function ExhibitorsPage() {
         </div>
         <div className="flex items-center gap-2">
           {!isOrganizer && (
-            <Button 
-              variant="outline" 
-              className="rounded-full px-6 font-semibold glass border-white/10 hover:bg-white/10"
-              onClick={handleExport}
-              disabled={exporting}
-            >
-              {exporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <FileDown className="mr-2 h-5 w-5 text-green-500" />}
-              Export Excel
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                className="rounded-full px-4 font-semibold glass border-white/10 hover:bg-white/10"
+                onClick={handleSeed}
+                disabled={seeding}
+              >
+                {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4 text-blue-400" />}
+                Seed 3 Test Exhibitors
+              </Button>
+              <Button 
+                variant="outline" 
+                className="rounded-full px-6 font-semibold glass border-white/10 hover:bg-white/10"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                {exporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <FileDown className="mr-2 h-5 w-5 text-green-500" />}
+                Export Excel
+              </Button>
+            </>
           )}
           <Link href={isOrganizer ? `/admin/exhibitors/new` : `/admin/exhibitors/new?projectId=${projectId}`}>
             <Button className="btn-aurora rounded-full px-6 font-semibold">

@@ -6,6 +6,8 @@ import { requireProjectContext } from '@/lib/authorization'
 import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
 import { isBusinessMatchingEnabled } from '@/lib/features'
+import { getEvents } from '@/app/actions/settings'
+import { createStaff } from '@/app/actions/staff'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid: string) {
@@ -541,5 +543,97 @@ export async function sendIndividualBusinessMatching(
     console.error('Error sending individual business matching:', error)
     const errMsg = error.response?.data?.message || 'Failed to send individual business matching email'
     return { success: false, error: errMsg }
+  }
+}
+
+export async function seedTestExhibitorsAndStaff(projectUuid: string) {
+  try {
+    const eventsRes = await getEvents(projectUuid)
+    if (!eventsRes.success || !eventsRes.events || eventsRes.events.length === 0) {
+      return { success: false, error: 'No active event found for this project.' }
+    }
+    const eventId = eventsRes.events[0].event_uuid
+
+    const timestamp = Date.now().toString().slice(-4)
+    const testConfigs = [
+      {
+        companyName: 'Test Exhibitor 1',
+        contactPerson: 'Krisanatorn Staff',
+        email: 'krisanatorn39@gmail.com',
+        firstName: 'Krisanatorn',
+        lastName: 'Staff 1',
+        username: `ex_test1_${timestamp}`
+      },
+      {
+        companyName: 'Test Exhibitor 2',
+        contactPerson: 'Krispo Staff',
+        email: 'krispo.work@gmail.com',
+        firstName: 'Krispo',
+        lastName: 'Staff 2',
+        username: `ex_test2_${timestamp}`
+      },
+      {
+        companyName: 'Test Exhibitor 3',
+        contactPerson: 'Timestamp Staff',
+        email: 'timesstamp@gmail.com',
+        firstName: 'Timestamp',
+        lastName: 'Staff 3',
+        username: `ex_test3_${timestamp}`
+      }
+    ]
+
+    const results = []
+
+    for (const config of testConfigs) {
+      // 1. Create Exhibitor
+      const exRes = await createExhibitor(projectUuid, {
+        eventId,
+        companyName: config.companyName,
+        contactPerson: config.contactPerson,
+        email: config.email,
+        username: config.username,
+        password: 'Password123!',
+        quota: 10,
+        overQuota: 0,
+        companyProfile: `Test Profile for ${config.companyName}`,
+        companyLogo: '',
+        productHighlights: []
+      })
+
+      if (!exRes.success || !exRes.exhibitor) {
+        results.push({ email: config.email, success: false, error: exRes.error || 'Failed to create exhibitor' })
+        continue
+      }
+
+      const exhibitorId = (exRes.exhibitor as any).exhibitor_uuid || exRes.exhibitor.id
+
+      // 2. Create Staff
+      const staffRes = await createStaff(projectUuid, {
+        exhibitorId,
+        title: 'Mr.',
+        firstName: config.firstName,
+        lastName: config.lastName,
+        position: 'Exhibitor Staff',
+        mobile: '0812345678',
+        email: config.email,
+        companyName: config.companyName,
+        companyCountry: 'Thailand',
+        staffTypeCode: 'EXHIBITOR'
+      })
+
+      results.push({
+        companyName: config.companyName,
+        email: config.email,
+        exhibitorSuccess: true,
+        staffSuccess: staffRes.success,
+        error: staffRes.error
+      })
+    }
+
+    revalidatePath('/admin/exhibitors')
+    return { success: true, results }
+  } catch (error: any) {
+    console.error('Error seeding test exhibitors:', error)
+    return { success: false, error: error.message || 'Failed to seed test exhibitors' }
   }
 }
