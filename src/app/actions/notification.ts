@@ -73,8 +73,9 @@ export async function markNotificationRead(
 ) {
   try {
     const headers = await getHeaders(projectUuid)
-    await api.get(
+    await api.patch(
       `/v1/admin/project/notifications/${encodeURIComponent(notificationUuid)}/read`,
+      undefined,
       { headers }
     )
     revalidatePath('/admin/notifications')
