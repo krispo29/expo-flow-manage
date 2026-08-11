@@ -107,6 +107,7 @@ export function ParticipantList({
   attendeeTypes,
   events,
 }: ParticipantListProps) {
+  const showBusinessMatching = isBusinessMatchingEnabled(projectId)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | ParticipantDetail | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -855,7 +856,7 @@ export function ParticipantList({
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Participant Information</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Company / Org</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status / Email</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">BM Ready Email</TableHead>
+                  {showBusinessMatching && <TableHead className="font-bold text-[10px] uppercase tracking-widest">BM Ready Email</TableHead>}
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
                 {showFilters && (
@@ -914,7 +915,7 @@ export function ParticipantList({
                         </SelectContent>
                       </Select>
                     </TableHead>
-                    <TableHead className="py-2" />
+                    {showBusinessMatching && <TableHead className="py-2" />}
                     <TableHead className="py-2 text-right pr-6">
                        <Button 
                         variant="ghost" 
@@ -931,7 +932,7 @@ export function ParticipantList({
               <TableBody>
                 {currentParticipants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-24 italic text-muted-foreground font-medium">
+                    <TableCell colSpan={showBusinessMatching ? 8 : 7} className="text-center py-24 italic text-muted-foreground font-medium">
                       No participants found matching your matrix.
                     </TableCell>
                   </TableRow>
@@ -991,7 +992,7 @@ export function ParticipantList({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      {showBusinessMatching && <TableCell>
                         {p.attendee_type_code === 'EX' ? (
                           <Badge variant="outline" className="text-muted-foreground/60 text-[9px]">
                             Sent via Exhibitor
@@ -1013,7 +1014,7 @@ export function ParticipantList({
                             Pending
                           </Badge>
                         )}
-                      </TableCell>
+                      </TableCell>}
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-1.5">
                           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/5 border border-white/10 hover:bg-purple-500/10 hover:text-purple-500 group-hover:scale-110 transition-all duration-300" onClick={() => handleOpenEmailDialog(p)} title="Resend Email">

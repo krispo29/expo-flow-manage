@@ -3,6 +3,7 @@
 import api, { getErrorMessage } from '@/lib/api'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
 import { revalidatePath } from 'next/cache'
+import { requireBusinessMatchingEnabled } from '@/lib/features'
 
 
 export interface BMVisitorCampaignData {
@@ -45,6 +46,7 @@ interface ApiResponse<T> {
 }
 
 async function getAuthHeaders(projectUuid?: string) {
+  requireBusinessMatchingEnabled(projectUuid || '')
   return requireServerAuthHeaders({ projectUuid })
 }
 

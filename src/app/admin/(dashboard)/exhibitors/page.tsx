@@ -419,7 +419,7 @@ export default function ExhibitorsPage() {
         </div>
       </div>
 
-      {projectId && (
+      {showBusinessMatching && projectId && (
         <BMExhibitorReadyCampaignCard 
           projectId={projectId} 
           readyCount={pendingBusinessMatchingReadyExhibitors.length} 
@@ -622,7 +622,7 @@ export default function ExhibitorsPage() {
                       <TableHead className="font-bold">Event & Booth</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold text-center">Quota</TableHead>
-                      <TableHead className="font-bold text-center">BM Ready Email</TableHead>
+                      {showBusinessMatching && <TableHead className="font-bold text-center">BM Ready Email</TableHead>}
                       <TableHead className="text-right font-bold pr-6">Actions</TableHead>
                     </TableRow>
                     {showFilters && (
@@ -664,7 +664,7 @@ export default function ExhibitorsPage() {
                             </SelectContent>
                           </Select>
                         </TableHead>
-                        <TableHead className="py-2"></TableHead>
+                        {showBusinessMatching && <TableHead className="py-2"></TableHead>}
                         <TableHead className="py-2"></TableHead>
                         <TableHead className="py-2 text-right pr-6">
                            <Button 
@@ -682,7 +682,7 @@ export default function ExhibitorsPage() {
                   <TableBody>
                     {filteredExhibitors.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-20 text-muted-foreground italic">
+                        <TableCell colSpan={showBusinessMatching ? 8 : 7} className="text-center py-20 text-muted-foreground italic">
                           {searchQuery ? "No results matching your search terms." : "No exhibitors found."}
                         </TableCell>
                       </TableRow>
@@ -741,7 +741,7 @@ export default function ExhibitorsPage() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-center">
+                          {showBusinessMatching && <TableCell className="text-center">
                             {item.isBusinessMatchingReadyEmailSent || item.business_matching_ready_email_status === 'sent' ? (
                               <Badge 
                                 className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[9px] font-bold"
@@ -776,7 +776,7 @@ export default function ExhibitorsPage() {
                                 Needs staff email
                               </Badge>
                             )}
-                          </TableCell>
+                          </TableCell>}
                           <TableCell className="text-right pr-6">
                             <div className="flex justify-end gap-1.5">
                               <Button 

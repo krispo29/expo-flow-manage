@@ -2,6 +2,12 @@
 
 import api from '@/lib/api'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
+import { requireBusinessMatchingEnabled } from '@/lib/features'
+
+async function getCampaignAuthHeaders(projectId: string) {
+  requireBusinessMatchingEnabled(projectId)
+  return requireServerAuthHeaders({ projectUuid: projectId })
+}
 
 export interface BMExhibitorReadyCampaignStatus {
   campaign_uuid?: string
@@ -48,7 +54,7 @@ export interface BMExhibitorCampaignStatusResponse {
 
 export async function getBMExhibitorCampaignStatus(projectId: string) {
   try {
-    const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+    const headers = await getCampaignAuthHeaders(projectId)
     const res = await api.get<ApiResponse<BMExhibitorCampaignStatusResponse | BMExhibitorReadyCampaignStatus>>(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/status?project_uuid=${projectId}`,
       { headers }
@@ -62,7 +68,7 @@ export async function getBMExhibitorCampaignStatus(projectId: string) {
 
 export async function startBMExhibitorCampaign(projectId: string, batchSize = 50, intervalMinutes = 10) {
   try {
-    const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+    const headers = await getCampaignAuthHeaders(projectId)
     const res = await api.post<ApiResponse<BMExhibitorReadyCampaignStatus>>(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/start?project_uuid=${projectId}`,
       { batch_size: batchSize, interval_minutes: intervalMinutes },
@@ -77,7 +83,7 @@ export async function startBMExhibitorCampaign(projectId: string, batchSize = 50
 
 export async function pauseBMExhibitorCampaign(projectId: string) {
   try {
-    const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+    const headers = await getCampaignAuthHeaders(projectId)
     const res = await api.post<ApiResponse<BMExhibitorReadyCampaignStatus>>(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/pause?project_uuid=${projectId}`,
       {},
@@ -92,7 +98,7 @@ export async function pauseBMExhibitorCampaign(projectId: string) {
 
 export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
   try {
-    const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+    const headers = await getCampaignAuthHeaders(projectId)
     const res = await api.post<ApiResponse<{ sent: number; failed: number; campaign: BMExhibitorReadyCampaignStatus }>>(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/trigger_batch?project_uuid=${projectId}`,
       {},
@@ -107,7 +113,7 @@ export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
 
 export async function sendTestBMExhibitorCampaign(projectId: string, email: string) {
 	try {
-		const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+		const headers = await getCampaignAuthHeaders(projectId)
 		const res = await api.post<ApiResponse<void>>(
 			`/v1/admin/project/business_matching_exhibitor_ready_campaign/send_test?project_uuid=${projectId}`,
 			{ email },
@@ -122,7 +128,7 @@ export async function sendTestBMExhibitorCampaign(projectId: string, email: stri
 
 export async function retryFailedBMExhibitorCampaign(projectId: string) {
 	try {
-		const headers = await requireServerAuthHeaders({ projectUuid: projectId })
+		const headers = await getCampaignAuthHeaders(projectId)
 		const res = await api.post<ApiResponse<{ retried_count: number }>>(
 			`/v1/admin/project/business_matching_exhibitor_ready_campaign/retry_failed?project_uuid=${projectId}`,
 			{},

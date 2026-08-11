@@ -6,3 +6,9 @@ export const businessMatchingReadyEmailEnabled = true
 export function isBusinessMatchingEnabled(projectId?: string) {
   return projectId === THAILAB2026_PROJECT_UUID
 }
+
+export function requireBusinessMatchingEnabled(projectId: string) {
+  if (!isBusinessMatchingEnabled(projectId)) {
+    throw new Error('Business Matching Ready Email is available only for THAILAB2026')
+  }
+}

@@ -7,6 +7,7 @@ import { PrintLogs } from '@/components/print-logs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cookies } from 'next/headers'
 import { BMVisitorReadyCampaignCard } from '@/components/bm-visitor-ready-campaign-card'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 
 export default async function ParticipantsPage({
   searchParams,
@@ -26,6 +27,7 @@ export default async function ParticipantsPage({
   const participants = participantsResult.data || [];
   const attendeeTypes = attendeeTypesResult.data || [];
   const events = eventsResult.events || [];
+  const showBusinessMatching = isBusinessMatchingEnabled(projectId)
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -38,7 +40,7 @@ export default async function ParticipantsPage({
         </div>
       </div>
 
-      <BMVisitorReadyCampaignCard projectId={projectId} />
+      {showBusinessMatching && <BMVisitorReadyCampaignCard projectId={projectId} />}
 
       <Tabs defaultValue="participants" className="w-full space-y-6">
         <div className="w-full overflow-x-auto scrollbar-hide">
