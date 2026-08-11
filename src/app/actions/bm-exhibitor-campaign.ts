@@ -47,15 +47,29 @@ export interface FailedCampaignRecord {
   contact_info: string
 }
 
+export interface BMCampaignDeliverySummary {
+  total: number
+  email_ready: number
+  sent: number
+  queued: number
+  failed: number
+  missing_contact: number
+}
+
 export interface BMExhibitorCampaignStatusResponse {
   campaign: BMExhibitorReadyCampaignStatus | null
   failed_logs?: FailedCampaignRecord[]
+  delivery_summary?: BMCampaignDeliverySummary
 }
 
 export async function getBMExhibitorCampaignStatus(projectId: string) {
   try {
     const headers = await getCampaignAuthHeaders(projectId)
-    const res = await api.get<ApiResponse<BMExhibitorCampaignStatusResponse | BMExhibitorReadyCampaignStatus>>(
+    const res = await api.get<
+      ApiResponse<
+        BMExhibitorCampaignStatusResponse | BMExhibitorReadyCampaignStatus
+      >
+    >(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/status?project_uuid=${projectId}`,
       { headers }
     )
@@ -66,7 +80,11 @@ export async function getBMExhibitorCampaignStatus(projectId: string) {
   }
 }
 
-export async function startBMExhibitorCampaign(projectId: string, batchSize = 50, intervalMinutes = 10) {
+export async function startBMExhibitorCampaign(
+  projectId: string,
+  batchSize = 50,
+  intervalMinutes = 10
+) {
   try {
     const headers = await getCampaignAuthHeaders(projectId)
     const res = await api.post<ApiResponse<BMExhibitorReadyCampaignStatus>>(
@@ -77,7 +95,10 @@ export async function startBMExhibitorCampaign(projectId: string, batchSize = 50
     return { success: true, data: res.data.data }
   } catch (error: any) {
     console.error('Error starting BM Exhibitor campaign:', error)
-    return { success: false, error: error.message || 'Failed to start campaign' }
+    return {
+      success: false,
+      error: error.message || 'Failed to start campaign',
+    }
   }
 }
 
@@ -92,14 +113,23 @@ export async function pauseBMExhibitorCampaign(projectId: string) {
     return { success: true, data: res.data.data }
   } catch (error: any) {
     console.error('Error pausing BM Exhibitor campaign:', error)
-    return { success: false, error: error.message || 'Failed to pause campaign' }
+    return {
+      success: false,
+      error: error.message || 'Failed to pause campaign',
+    }
   }
 }
 
 export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
   try {
     const headers = await getCampaignAuthHeaders(projectId)
-    const res = await api.post<ApiResponse<{ sent: number; failed: number; campaign: BMExhibitorReadyCampaignStatus }>>(
+    const res = await api.post<
+      ApiResponse<{
+        sent: number
+        failed: number
+        campaign: BMExhibitorReadyCampaignStatus
+      }>
+    >(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/trigger_batch?project_uuid=${projectId}`,
       {},
       { headers, timeout: 120000 }
@@ -111,32 +141,49 @@ export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
   }
 }
 
-export async function sendTestBMExhibitorCampaign(projectId: string, email: string) {
-	try {
-		const headers = await getCampaignAuthHeaders(projectId)
-		const res = await api.post<ApiResponse<void>>(
-			`/v1/admin/project/business_matching_exhibitor_ready_campaign/send_test?project_uuid=${projectId}`,
-			{ email },
-			{ headers }
-		)
-		return { success: true, message: res.data.message || 'Test email sent successfully' }
-	} catch (error: any) {
-		console.error('Error sending test BM Exhibitor campaign email:', error)
-		return { success: false, error: error.message || 'Failed to send test email' }
-	}
+export async function sendTestBMExhibitorCampaign(
+  projectId: string,
+  email: string
+) {
+  try {
+    const headers = await getCampaignAuthHeaders(projectId)
+    const res = await api.post<ApiResponse<void>>(
+      `/v1/admin/project/business_matching_exhibitor_ready_campaign/send_test?project_uuid=${projectId}`,
+      { email },
+      { headers }
+    )
+    return {
+      success: true,
+      message: res.data.message || 'Test email sent successfully',
+    }
+  } catch (error: any) {
+    console.error('Error sending test BM Exhibitor campaign email:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to send test email',
+    }
+  }
 }
 
 export async function retryFailedBMExhibitorCampaign(projectId: string) {
-	try {
-		const headers = await getCampaignAuthHeaders(projectId)
-		const res = await api.post<ApiResponse<{ retried_count: number }>>(
-			`/v1/admin/project/business_matching_exhibitor_ready_campaign/retry_failed?project_uuid=${projectId}`,
-			{},
-			{ headers }
-		)
-		return { success: true, count: res.data.data.retried_count, message: res.data.message || 'Successfully queued failed emails for retry' }
-	} catch (error: any) {
-		console.error('Error retrying failed BM Exhibitor campaign emails:', error)
-		return { success: false, error: error.message || 'Failed to retry failed emails' }
-	}
+  try {
+    const headers = await getCampaignAuthHeaders(projectId)
+    const res = await api.post<ApiResponse<{ retried_count: number }>>(
+      `/v1/admin/project/business_matching_exhibitor_ready_campaign/retry_failed?project_uuid=${projectId}`,
+      {},
+      { headers }
+    )
+    return {
+      success: true,
+      count: res.data.data.retried_count,
+      message:
+        res.data.message || 'Successfully queued failed emails for retry',
+    }
+  } catch (error: any) {
+    console.error('Error retrying failed BM Exhibitor campaign emails:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to retry failed emails',
+    }
+  }
 }
