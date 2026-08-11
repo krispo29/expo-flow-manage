@@ -156,6 +156,7 @@ describe('country value helpers', () => {
     expect(findCountryByPhoneCodeOrValue('Korea')?.phoneCode).toBe('+82')
     expect(getCountryCodeFromPhoneCodeOrValue('Korea')).toBe('KR')
     expect(getCountryCodeFromPhoneCodeOrValue('', 'KR')).toBe('KR')
+    expect(getCountryCodeFromPhoneCodeOrValue('', '')).toBe('')
   })
 
   it('should resolve country names from codes', () => {
@@ -171,6 +172,7 @@ describe('country value helpers', () => {
   it('should fall back safely when values are empty or unknown', () => {
     expect(getCountryNameFromValue('')).toBe('Thailand')
     expect(getCountryCodeFromValue('')).toBe('TH')
+    expect(getCountryCodeFromValue('', '')).toBe('')
     expect(getCountryNameFromValue('Neverland')).toBe('Neverland')
     expect(getCountryCodeFromValue('Neverland')).toBe('TH')
   })

@@ -421,19 +421,19 @@ export function ParticipantList({
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
       setTitle(result.data.title || 'Mr.')
-      const residenceCountryCode = getCountryCodeFromValue(result.data.residence_country, 'VN')
+      const residenceCountryCode = getCountryCodeFromValue(result.data.residence_country, '')
       setResidenceCountry(residenceCountryCode)
 
       setMobileCountryCode(
-        getCountryCodeFromPhoneCodeOrValue(result.data.mobile_country_code, residenceCountryCode)
+        getCountryCodeFromPhoneCodeOrValue(result.data.mobile_country_code, '')
       )
       setSelectedEvent(result.data.event_uuid || events[0]?.event_uuid || '')
     } else {
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
       setTitle(p.title || 'Mr.')
-      setResidenceCountry('VN')
-      setMobileCountryCode('VN')
+      setResidenceCountry(getCountryCodeFromValue(p.residence_country, ''))
+      setMobileCountryCode('')
       setSelectedEvent(events[0]?.event_uuid || '')
     }
     setIsDialogOpen(true)
@@ -1170,7 +1170,7 @@ export function ParticipantList({
                 <Input id="email" name="email" type="email" placeholder="john.doe@example.com" defaultValue={selectedParticipant?.email || ''} required className="h-12 bg-white/5 border-white/10 rounded-xl" />
               </div>
               <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Country Code *</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Mobile Country Code *</Label>
                 <CountrySelector
                   value={mobileCountryCode}
                   onChange={setMobileCountryCode}
