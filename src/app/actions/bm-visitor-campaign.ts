@@ -5,7 +5,6 @@ import { requireServerAuthHeaders } from '@/lib/server-auth'
 import { revalidatePath } from 'next/cache'
 import { requireBusinessMatchingEnabled } from '@/lib/features'
 
-
 export interface BMVisitorCampaignData {
   campaign_uuid: string
   project_uuid: string
@@ -26,10 +25,20 @@ export interface FailedCampaignRecord {
   contact_info: string
 }
 
+export interface BMCampaignDeliverySummary {
+  total: number
+  email_ready: number
+  sent: number
+  queued: number
+  failed: number
+  missing_contact: number
+}
+
 export interface BMVisitorCampaignStatusResponse {
   status: string
   campaign: BMVisitorCampaignData | null
   failed_logs?: FailedCampaignRecord[]
+  delivery_summary?: BMCampaignDeliverySummary
 }
 
 export interface BMVisitorCampaignBatchResponse {
@@ -51,11 +60,11 @@ async function getAuthHeaders(projectUuid?: string) {
 }
 
 export async function getBMVisitorCampaignStatus(projectId: string) {
-
-
   try {
     const headers = await getAuthHeaders(projectId)
-    const response = await api.get<ApiResponse<BMVisitorCampaignStatusResponse>>(
+    const response = await api.get<
+      ApiResponse<BMVisitorCampaignStatusResponse>
+    >(
       `/v1/admin/project/business_matching_visitor_ready_campaign/status?project_uuid=${projectId}`,
       { headers }
     )
@@ -66,10 +75,16 @@ export async function getBMVisitorCampaignStatus(projectId: string) {
   }
 }
 
-export async function startBMVisitorCampaign(projectId: string, batchSize = 50, intervalMinutes = 10) {
+export async function startBMVisitorCampaign(
+  projectId: string,
+  batchSize = 50,
+  intervalMinutes = 10
+) {
   try {
     const headers = await getAuthHeaders(projectId)
-    const response = await api.post<ApiResponse<BMVisitorCampaignStatusResponse>>(
+    const response = await api.post<
+      ApiResponse<BMVisitorCampaignStatusResponse>
+    >(
       '/v1/admin/project/business_matching_visitor_ready_campaign/start',
       {
         project_uuid: projectId,
@@ -105,7 +120,9 @@ export async function pauseBMVisitorCampaign(projectId: string) {
 export async function triggerBMVisitorCampaignBatchNow(projectId: string) {
   try {
     const headers = await getAuthHeaders(projectId)
-    const response = await api.post<ApiResponse<BMVisitorCampaignBatchResponse>>(
+    const response = await api.post<
+      ApiResponse<BMVisitorCampaignBatchResponse>
+    >(
       '/v1/admin/project/business_matching_visitor_ready_campaign/trigger_batch',
       { project_uuid: projectId },
       { headers }
@@ -118,7 +135,10 @@ export async function triggerBMVisitorCampaignBatchNow(projectId: string) {
   }
 }
 
-export async function sendTestBMVisitorCampaign(projectId: string, email: string) {
+export async function sendTestBMVisitorCampaign(
+  projectId: string,
+  email: string
+) {
   try {
     const headers = await getAuthHeaders(projectId)
     const response = await api.post<ApiResponse<void>>(
@@ -126,7 +146,10 @@ export async function sendTestBMVisitorCampaign(projectId: string, email: string
       { email },
       { headers }
     )
-    return { success: true, message: response.data.message || 'Test email sent successfully' }
+    return {
+      success: true,
+      message: response.data.message || 'Test email sent successfully',
+    }
   } catch (error: unknown) {
     console.error('Error sending test BM visitor campaign email:', error)
     return { success: false, error: getErrorMessage(error) }
@@ -141,7 +164,12 @@ export async function retryFailedBMVisitorCampaign(projectId: string) {
       {},
       { headers }
     )
-    return { success: true, count: response.data.data.retried_count, message: response.data.message || 'Successfully queued failed emails for retry' }
+    return {
+      success: true,
+      count: response.data.data.retried_count,
+      message:
+        response.data.message || 'Successfully queued failed emails for retry',
+    }
   } catch (error: unknown) {
     console.error('Error retrying failed BM visitor campaign emails:', error)
     return { success: false, error: getErrorMessage(error) }
