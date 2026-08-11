@@ -92,14 +92,14 @@ describe('EventSummaryCards', () => {
       />
     )
 
-    const showLabels = screen.getAllByText('Show attendance')
+    const showLabels = screen.getAllByText('On show Attendance')
     const firstSummary = showLabels[0].closest('summary')!
     const firstDisclosure = firstSummary.closest('details')!
     const secondDisclosure = showLabels[1].closest('details')!
 
     expect(firstDisclosure).not.toHaveAttribute('open')
     expect(secondDisclosure).not.toHaveAttribute('open')
-    expect(firstSummary).toHaveTextContent('Hide attendance')
+    expect(firstSummary).toHaveTextContent('On Hide Attendance')
 
     fireEvent.click(firstSummary)
     expect(firstDisclosure).toHaveAttribute('open')

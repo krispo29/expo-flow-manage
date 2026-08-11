@@ -100,9 +100,9 @@ export function EventSummaryCards({ events, failed }: Props) {
                         'cursor-pointer list-none [&::-webkit-details-marker]:hidden',
                     })}
                   >
-                    <span className="group-open:hidden">Show attendance</span>
+                    <span className="group-open:hidden">On show Attendance</span>
                     <span className="hidden group-open:inline">
-                      Hide attendance
+                      On Hide Attendance
                     </span>
                   </summary>
 
