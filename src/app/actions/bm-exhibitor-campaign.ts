@@ -120,7 +120,11 @@ export async function pauseBMExhibitorCampaign(projectId: string) {
   }
 }
 
-export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
+export async function triggerBMExhibitorCampaignBatchNow(
+  projectId: string,
+  batchSize: number,
+  intervalMinutes: number
+) {
   try {
     const headers = await getCampaignAuthHeaders(projectId)
     const res = await api.post<
@@ -131,7 +135,7 @@ export async function triggerBMExhibitorCampaignBatchNow(projectId: string) {
       }>
     >(
       `/v1/admin/project/business_matching_exhibitor_ready_campaign/trigger_batch?project_uuid=${projectId}`,
-      {},
+      { batch_size: batchSize, interval_minutes: intervalMinutes },
       { headers, timeout: 120000 }
     )
     return { success: true, data: res.data.data }

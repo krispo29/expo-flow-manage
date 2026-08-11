@@ -117,14 +117,22 @@ export async function pauseBMVisitorCampaign(projectId: string) {
   }
 }
 
-export async function triggerBMVisitorCampaignBatchNow(projectId: string) {
+export async function triggerBMVisitorCampaignBatchNow(
+  projectId: string,
+  batchSize: number,
+  intervalMinutes: number
+) {
   try {
     const headers = await getAuthHeaders(projectId)
     const response = await api.post<
       ApiResponse<BMVisitorCampaignBatchResponse>
     >(
       '/v1/admin/project/business_matching_visitor_ready_campaign/trigger_batch',
-      { project_uuid: projectId },
+      {
+        project_uuid: projectId,
+        batch_size: batchSize,
+        interval_minutes: intervalMinutes,
+      },
       { headers }
     )
     revalidatePath('/admin/participants')

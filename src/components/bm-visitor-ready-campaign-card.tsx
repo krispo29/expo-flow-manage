@@ -86,7 +86,16 @@ export function BMVisitorReadyCampaignCard({
       const resp = result.data as any
       setIsEnabled(true)
       setStatus(resp.campaign?.status || resp.status || resp.Status || 'idle')
-      setCampaign(resp.campaign || resp)
+      const currentCampaign = resp.campaign || resp
+      setCampaign(currentCampaign)
+      const savedBatchSize = currentCampaign?.batch_size ?? currentCampaign?.BatchSize
+      const savedIntervalMinutes = currentCampaign?.interval_minutes ?? currentCampaign?.IntervalMinutes
+      if (typeof savedBatchSize === 'number' && savedBatchSize > 0) {
+        setBatchSize(savedBatchSize)
+      }
+      if (typeof savedIntervalMinutes === 'number' && savedIntervalMinutes > 0) {
+        setIntervalMinutes(savedIntervalMinutes)
+      }
       if (resp.failed_logs) setFailedLogs(resp.failed_logs)
       setDeliverySummary(resp.delivery_summary || null)
     } else {
@@ -171,7 +180,11 @@ export function BMVisitorReadyCampaignCard({
 
   const handleTriggerBatch = async () => {
     setActionLoading(true)
-    const res = await triggerBMVisitorCampaignBatchNow(projectId)
+    const res = await triggerBMVisitorCampaignBatchNow(
+      projectId,
+      batchSize,
+      intervalMinutes
+    )
     setActionLoading(false)
     if (res.success) {
       toast.success(
@@ -391,7 +404,7 @@ export function BMVisitorReadyCampaignCard({
                         onChange={(e) =>
                           setBatchSize(parseInt(e.target.value) || 50)
                         }
-                        disabled={status !== 'idle' && status !== 'paused'}
+                        disabled={status === 'active' || status === 'sending'}
                         className="bg-background h-8 w-20 cursor-not-allowed text-center text-xs font-semibold disabled:opacity-60"
                       />
                     </div>
@@ -421,7 +434,7 @@ export function BMVisitorReadyCampaignCard({
                         onChange={(e) =>
                           setIntervalMinutes(parseInt(e.target.value) || 10)
                         }
-                        disabled={status !== 'idle' && status !== 'paused'}
+                        disabled={status === 'active' || status === 'sending'}
                         className="bg-background h-8 w-20 cursor-not-allowed text-center text-xs font-semibold disabled:opacity-60"
                       />
                     </div>
@@ -429,7 +442,7 @@ export function BMVisitorReadyCampaignCard({
 
                   {/* Buttons Group */}
                   <div className="flex items-center gap-2">
-                    {status === 'idle' || status === 'paused' ? (
+                  {status === 'idle' || status === 'paused' || status === 'completed' ? (
                       <Button
                         size="sm"
                         className="h-9 gap-1.5 bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
@@ -441,7 +454,7 @@ export function BMVisitorReadyCampaignCard({
                         ) : (
                           <Play className="h-3.5 w-3.5 fill-current" />
                         )}
-                        Start Schedule
+                      {status === 'completed' ? 'Resume Schedule' : 'Start Schedule'}
                       </Button>
                     ) : (
                       <Button
