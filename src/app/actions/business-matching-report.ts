@@ -99,11 +99,13 @@ async function getBusinessMatchingScope(input: BusinessMatchingReportInput): Pro
   const projects = (contextResponse.data?.data?.projects ?? []) as BusinessMatchingContextProject[]
   const project = projects.find((item) => item.project_uuid === projectUuid)
   const events = project?.events ?? []
-  const eventUuid = events.some((event) => event.event_uuid === input.eventId)
+  const eventUuid = !input.eventId || input.eventId === 'all'
+    ? 'all'
+    : events.some((event) => event.event_uuid === input.eventId)
     ? input.eventId
     : project?.default_event_uuid ?? events[0]?.event_uuid
 
-  if (!eventUuid) {
+  if (!eventUuid || (eventUuid === 'all' && events.length === 0)) {
     throw new Error('No Business Matching event is configured for this project')
   }
 
@@ -116,17 +118,20 @@ export async function getBusinessMatchingReport(
   try {
     const { projectUuid, eventUuid, events, headers } = await getBusinessMatchingScope(input)
 
-    const summaryResponse = await api.get('/v1/business-matching/admin/reports/summary', {
-      headers,
-      params: { project_uuid: projectUuid, event_uuid: eventUuid },
-    })
+    const summaries = await Promise.all((eventUuid === 'all' ? events.map((event) => event.event_uuid) : [eventUuid]).map(async (selectedEventUuid) => {
+      const response = await api.get('/v1/business-matching/admin/reports/summary', { headers, params: { project_uuid: projectUuid, event_uuid: selectedEventUuid } })
+      return response.data.data as BusinessMatchingSummary
+    }))
+    const summary = eventUuid === 'all'
+      ? { ...summaries[0], event_uuid: 'all', totals: summaries.reduce((totals, item) => Object.fromEntries(Object.entries(item.totals).map(([key, value]) => [key, (totals[key as keyof typeof totals] ?? 0) + (typeof value === 'number' ? value : 0)])) as BusinessMatchingSummary['totals'], {} as BusinessMatchingSummary['totals']) }
+      : summaries[0]
 
     return {
       success: true,
       projectUuid,
       eventUuid,
       events,
-      summary: summaryResponse.data.data as BusinessMatchingSummary,
+      summary,
     }
   } catch (error) {
     return { success: false, error: getErrorMessage(error), events: [] }
@@ -137,20 +142,10 @@ export async function getBusinessMatchingDetails(
   input: BusinessMatchingDetailsInput,
 ): Promise<BusinessMatchingDetailsResult> {
   try {
-    const { projectUuid, eventUuid, headers } = await getBusinessMatchingScope(input)
-    const response = await api.get(`/v1/business-matching/admin/reports/${input.type}`, {
-      headers,
-      params: {
-        project_uuid: projectUuid,
-        event_uuid: eventUuid,
-        status: input.status,
-        q: input.q,
-        limit: input.limit,
-        offset: input.offset,
-      },
-    })
-    const data = response.data?.data ?? {}
-    return { success: true, items: data.items ?? [], total: data.pagination?.total ?? 0 }
+    const { projectUuid, eventUuid, events, headers } = await getBusinessMatchingScope(input)
+    const responses = await Promise.all((eventUuid === 'all' ? events.map((event) => event.event_uuid) : [eventUuid]).map((selectedEventUuid) => api.get(`/v1/business-matching/admin/reports/${input.type}`, { headers, params: { project_uuid: projectUuid, event_uuid: selectedEventUuid, status: input.status, q: input.q, limit: eventUuid === 'all' ? 500 : input.limit, offset: eventUuid === 'all' ? 0 : input.offset } })))
+    const items = responses.flatMap((response) => response.data?.data?.items ?? [])
+    return { success: true, items: eventUuid === 'all' ? items.slice(input.offset ?? 0, (input.offset ?? 0) + (input.limit ?? 25)) : items, total: eventUuid === 'all' ? items.length : responses[0].data?.data?.pagination?.total ?? 0 }
   } catch (error) {
     return { success: false, error: getErrorMessage(error) }
   }
