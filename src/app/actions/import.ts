@@ -47,6 +47,7 @@ export interface ImportHistoryCode {
   email: string
   code: string
   company_name: string
+  status: string
 }
 
 type RawImportHistoryCode = Partial<Record<
@@ -63,7 +64,8 @@ type RawImportHistoryCode = Partial<Record<
   | 'staff_code'
   | 'member_code'
   | 'company_name'
-  | 'companyName',
+  | 'companyName'
+  | 'status',
   unknown
 >>
 
@@ -81,6 +83,7 @@ function normalizeImportHistoryCode(item: RawImportHistoryCode): ImportHistoryCo
     email: textValue(item.email ?? item.contact_email),
     code: textValue(item.code ?? item.registration_code ?? item.staff_code ?? item.member_code),
     company_name: textValue(item.company_name ?? item.companyName),
+    status: textValue(item.status),
   }
 }
 
@@ -129,7 +132,7 @@ export async function getImportHistories() {
 
 async function postImport(endpoint: string, formData: FormData) {
   const headers = await getAuthHeaders()
-  await api.post(endpoint, formData, {
+  return api.post(endpoint, formData, {
     headers: {
       ...headers,
       'Content-Type': 'multipart/form-data',
@@ -234,6 +237,22 @@ export async function importInviteCodes(formData: FormData) {
   } catch (error: unknown) {
     console.error('Error importing invite codes:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to import invite codes'
+    return { success: false, error: errorMessage }
+  }
+}
+
+export async function importPaymentCodePool(formData: FormData) {
+  try {
+    const response = await postImport('/v1/admin/project/import/payment-code-pool', formData)
+    const result = response.data?.data as { success?: boolean; import_uuid?: string } | undefined
+    revalidatePath('/admin/imports')
+    return {
+      success: result?.success === true,
+      importUuid: result?.import_uuid,
+    }
+  } catch (error: unknown) {
+    console.error('Error importing payment code pool:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to import payment code pool'
     return { success: false, error: errorMessage }
   }
 }

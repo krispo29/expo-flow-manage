@@ -18,6 +18,7 @@ import {
   importExhibitorMembers,
   importExhibitors,
   importInviteCodes,
+  importPaymentCodePool,
   importRegistrations,
   importStaff,
   type ImportEvent,
@@ -47,6 +48,7 @@ type ImportKind =
   | 'staff'
   | 'conferences'
   | 'invite-codes'
+  | 'payment-code-pool'
 
 const TEMPLATE_LINKS = {
   conferences: 'https://static.expoflow.co/template/Conference_Template.xlsx',
@@ -55,12 +57,14 @@ const TEMPLATE_LINKS = {
   inviteCodes: 'https://static.expoflow.co/template/Invite_Code_Template.xlsx',
   registrations: 'https://static.expoflow.co/template/Registration_Template.xlsx',
   staff: 'https://static.expoflow.co/template/Staff_Template.xlsx',
+  paymentCodePool: 'https://static.expoflow.co/template/Payment_Code_Pool_Template.xlsx',
 }
 
 const CODE_IMPORT_TYPE_LABELS: Record<string, string> = {
   registrations: 'Registration Codes',
   staff: 'Staff Codes',
   'exhibitor-members': 'Exhibitor Member Codes',
+  'payment-code-pool': 'Payment Codes',
 }
 
 const NO_EVENT_VALUE = '__no_event__'
@@ -94,6 +98,7 @@ function ImportsContent() {
     staff: null,
     conferences: null,
     'invite-codes': null,
+    'payment-code-pool': null,
   })
   const [loading, setLoading] = useState<Record<ImportKind, boolean>>({
     exhibitors: false,
@@ -102,6 +107,7 @@ function ImportsContent() {
     staff: false,
     conferences: false,
     'invite-codes': false,
+    'payment-code-pool': false,
   })
 
 
@@ -362,12 +368,19 @@ function ImportsContent() {
         case 'invite-codes':
           result = await importInviteCodes(formData)
           break
+        case 'payment-code-pool':
+          result = await importPaymentCodePool(formData)
+          break
       }
 
       if (result.success) {
         toast.success('Import completed successfully')
         setFile(kind, null)
         void fetchHistories()
+      } else if ('importUuid' in result && result.importUuid) {
+        toast.error('Import validation failed')
+        void fetchHistories()
+        void openErrorMessages({ import_uuid: result.importUuid, error_messages: [] } as unknown as ImportHistory)
       } else {
         toast.error(result.error || 'Import failed')
       }
@@ -624,6 +637,35 @@ function ImportsContent() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Import Payment Code Pool */}
+        <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                <Ticket className="h-5 w-5 text-cyan-500" />
+              </div>
+              <CardTitle className="text-lg font-display">Import Payment Code Pool</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+            <p className="text-xs text-muted-foreground">Project-wide; imports new codes as unused.</p>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx)</Label>
+              <Input type="file" accept=".xlsx" onChange={(e) => setFile('payment-code-pool', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-cyan-500/10 file:text-cyan-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
+            </div>
+            <div className="flex gap-2 mt-auto pt-4">
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('payment-code-pool')} disabled={loading['payment-code-pool']}>
+                {loading['payment-code-pool'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
+                <a href={TEMPLATE_LINKS.paymentCodePool} target="_blank" rel="noreferrer">
+                  <FileDown className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="glass shadow-xl shadow-primary/5 border-white/10 overflow-hidden">
@@ -666,9 +708,13 @@ function ImportsContent() {
                       </TableCell>
                       <TableCell>
                         <div className="max-w-[240px] truncate" title={h.original_file_name}>
-                          <a href={h.original_file_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-primary/80 hover:text-primary transition-colors">
-                            {h.original_file_name}
-                          </a>
+                          {normalizeImportType(h.import_type) === 'payment-code-pool' ? (
+                            <span className="text-sm font-bold">{h.original_file_name}</span>
+                          ) : (
+                            <a href={h.original_file_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-primary/80 hover:text-primary transition-colors">
+                              {h.original_file_name}
+                            </a>
+                          )}
                           <div className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-tighter mt-0.5">ROWS: {h.total_rows}</div>
                         </div>
                       </TableCell>
@@ -990,8 +1036,8 @@ function ImportsContent() {
               <Table>
                 <TableHeader className="sticky top-0 bg-background/50 backdrop-blur-md z-10 border-b border-white/10">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">Name</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Contact / Company</TableHead>
+                    <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-widest pl-8">{normalizeImportType(viewCodesImportType) === 'payment-code-pool' ? 'Code' : 'Name'}</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">{normalizeImportType(viewCodesImportType) === 'payment-code-pool' ? 'Status' : 'Contact / Company'}</TableHead>
                     <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-widest pr-8">Code</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1014,14 +1060,14 @@ function ImportsContent() {
                               {(d.first_name[0] || d.code[0] || '?')}{d.last_name[0] || ''}
                             </div>
                             <span className="font-bold text-sm group-hover:text-primary transition-colors">
-                              {[d.first_name, d.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                              {normalizeImportType(viewCodesImportType) === 'payment-code-pool' ? d.code : ([d.first_name, d.last_name].filter(Boolean).join(' ') || 'Unnamed')}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm font-medium italic">
                           <div className="flex items-center gap-2">
                             <Mail className="h-3 w-3 opacity-40" />
-                            {d.email || d.company_name || '-'}
+                            {normalizeImportType(viewCodesImportType) === 'payment-code-pool' ? d.status : (d.email || d.company_name || '-')}
                           </div>
                         </TableCell>
                         <TableCell className="pr-8">

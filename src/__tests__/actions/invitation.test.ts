@@ -8,7 +8,7 @@ import {
   updateInvitation,
 } from '@/app/actions/settings'
 import { exportOrganizerInvitations, getOrganizerInvitations } from '@/app/actions/organizer-invitation'
-import { importInviteCodes } from '@/app/actions/import'
+import { importInviteCodes, importPaymentCodePool } from '@/app/actions/import'
 
 jest.mock('@/lib/api', () => ({
   get: jest.fn(),
@@ -232,6 +232,25 @@ describe('invitation actions', () => {
     expect(formData.get('event_uuid')).toBe('')
     expect(mockApiPost).toHaveBeenCalledWith(
       '/v1/admin/project/import/invite-codes',
+      formData,
+      expect.any(Object),
+    )
+  })
+
+  it('imports payment codes without an event UUID and returns validation history', async () => {
+    mockApiPost.mockResolvedValue({
+      data: { data: { success: false, import_uuid: 'history-123' } },
+    } as never)
+    const formData = new FormData()
+    formData.append('file', new Blob(['test']), 'payment-codes.xlsx')
+
+    await expect(importPaymentCodePool(formData)).resolves.toEqual({
+      success: false,
+      importUuid: 'history-123',
+    })
+    expect(formData.get('event_uuid')).toBeNull()
+    expect(mockApiPost).toHaveBeenCalledWith(
+      '/v1/admin/project/import/payment-code-pool',
       formData,
       expect.any(Object),
     )
