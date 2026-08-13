@@ -197,6 +197,20 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
               <SidebarMenu>
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Business Matching"
+                      isActive={isActive(`${basePath}/business-matching`)}
+                    >
+                      <Link href={projectId ? `${basePath}/business-matching?projectId=${projectId}` : `${basePath}/business-matching`}>
+                        <Sparkles />
+                        <span>Business Matching</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
                       tooltip="Exhibitors" 
