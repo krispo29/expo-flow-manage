@@ -638,14 +638,14 @@ function ImportsContent() {
           </CardContent>
         </Card>
 
-        {/* Import Payment Code Pool */}
+        {/* Import Payment Code */}
         <Card className="glass shadow-xl shadow-primary/5 border-white/10 flex flex-col transition-all hover:shadow-primary/10">
           <CardHeader className="bg-white/5 border-b border-white/10">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
                 <Ticket className="h-5 w-5 text-cyan-500" />
               </div>
-              <CardTitle className="text-lg font-display">Import Payment Code Pool</CardTitle>
+              <CardTitle className="text-lg font-display">Import Payment Code</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
