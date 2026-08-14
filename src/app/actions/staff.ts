@@ -31,6 +31,7 @@ export interface Staff {
   companyTel?: string
   staff_type_code?: string
   residence_country?: string
+  is_business_matching?: boolean
 }
 
 // GET /v1/admin/project/exhibitors/staff
@@ -188,6 +189,7 @@ export async function createProjectStaff(projectUuid: string, data: any) {
       company_name: data.company_name,
       staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
       residence_country: data.residence_country,
+      is_business_matching: Boolean(data.is_business_matching),
     }
 
     const response = await api.post('/v1/admin/project/staff', payload, { headers })
@@ -235,6 +237,8 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
       company_name: data.company_name,
       staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
       residence_country: data.residence_country,
+      ...(data.is_business_matching !== undefined ? { is_business_matching: Boolean(data.is_business_matching) } : {}),
+      ...(data.is_active !== undefined ? { is_active: Boolean(data.is_active) } : {}),
     }
 
     const response = await api.put(`/v1/admin/project/staff/${staffId}`, payload, { headers })
@@ -300,4 +304,3 @@ export async function updateProjectStaffEventPermissions(projectUuid: string, st
     return { success: false, error: errMsg }
   }
 }
-

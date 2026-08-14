@@ -53,6 +53,7 @@ export interface Staff {
   staff_code: string
   staff_type_code: string
   is_active: boolean
+  is_business_matching?: boolean
   created_at: string
   updated_at: string | null
   residence_country?: string
@@ -79,6 +80,8 @@ export function StaffList({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
+  const isBusinessMatchingProject = projectId === '07626a19-001d-4675-addd-3a92e3f46d47'
+
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
@@ -91,6 +94,7 @@ export function StaffList({
   const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
   const [residenceCountry, setResidenceCountry] = useState('TH')
+  const [isBusinessMatching, setIsBusinessMatching] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '')
@@ -114,6 +118,7 @@ export function StaffList({
   const [events, setEvents] = useState<any[]>([])
   const [allowAllEvents, setAllowAllEvents] = useState(false)
   const [selectedEventUuids, setSelectedEventUuids] = useState<string[]>([])
+  const [allowBusinessMatching, setAllowBusinessMatching] = useState(false)
   const [loadingPermissions, setLoadingPermissions] = useState(false)
 
   useEffect(() => {
@@ -240,6 +245,7 @@ export function StaffList({
     setStaffType('ST')
     setTitle('Mr.')
     setResidenceCountry('TH')
+    setIsBusinessMatching(false)
     setIsDialogOpen(true)
   }
 
@@ -248,6 +254,7 @@ export function StaffList({
     const normalizedType = p.staff_type_code === 'ONSITE' ? 'ST' : p.staff_type_code === 'ORGANIZER' ? 'OR' : (p.staff_type_code || 'ST')
     setStaffType(normalizedType)
     setTitle(p.title || 'Mr.')
+    setIsBusinessMatching(Boolean(p.is_business_matching))
     
     // Map full name from API to country code for UI
     const countryCode = countries.find(c => c.name === p.residence_country)?.code || 'TH'
@@ -280,6 +287,7 @@ export function StaffList({
 
   async function openPermissions(staff: Staff) {
     setSelectedStaffForPermission(staff)
+    setAllowBusinessMatching(Boolean(staff.is_business_matching))
     setIsPermissionDialogOpen(true)
     setLoadingPermissions(true)
     try {
@@ -307,13 +315,25 @@ export function StaffList({
     if (!selectedStaffForPermission) return
     setLoading(true)
     const payloadEventUuids = allowAllEvents ? [] : selectedEventUuids
-    const res = await updateProjectStaffEventPermissions(projectId, selectedStaffForPermission.staff_uuid, payloadEventUuids)
+    const [permRes, staffUpdateRes] = await Promise.all([
+      updateProjectStaffEventPermissions(projectId, selectedStaffForPermission.staff_uuid, payloadEventUuids),
+      updateProjectStaff(projectId, selectedStaffForPermission.staff_uuid, {
+        title: selectedStaffForPermission.title,
+        first_name: selectedStaffForPermission.first_name,
+        last_name: selectedStaffForPermission.last_name,
+        company_name: selectedStaffForPermission.company_name,
+        staff_type_code: selectedStaffForPermission.staff_type_code,
+        residence_country: selectedStaffForPermission.residence_country,
+        is_business_matching: allowBusinessMatching,
+      })
+    ])
     setLoading(false)
-    if (res.success) {
+    if (permRes.success && staffUpdateRes.success) {
       toast.success('Permissions updated successfully')
       setIsPermissionDialogOpen(false)
+      router.refresh()
     } else {
-      toast.error(res.error || 'Failed to update permissions')
+      toast.error(permRes.error || staffUpdateRes.error || 'Failed to update permissions')
     }
   }
 
@@ -337,6 +357,7 @@ export function StaffList({
       staff_type_code: formData.get('staff_type_code'),
       // Map country code from UI to full name for API
       residence_country: countries.find(c => c.code === residenceCountry)?.name || 'Thailand',
+      is_business_matching: isBusinessMatching,
     }
 
     let result
@@ -585,7 +606,7 @@ export function StaffList({
                         <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
                           {p.title} {p.first_name} {p.last_name}
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <code className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
                           {p.staff_code && (
                             <Button
@@ -602,6 +623,11 @@ export function StaffList({
                             </Button>
                           )}
                           <Badge variant="secondary" className="bg-white/5 border-white/5 text-[9px] font-bold py-0">{p.staff_type_code}</Badge>
+                          {isBusinessMatchingProject && p.is_business_matching && (
+                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[9px] font-bold py-0">
+                              BM
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -768,7 +794,14 @@ export function StaffList({
                         <Badge variant="outline" className="font-bold text-[9px] border-white/10 uppercase bg-white/5">{p.staff_type_code}</Badge>
                       </TableCell>
                       <TableCell>
-                        <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{p.title} {p.first_name} {p.last_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{p.title} {p.first_name} {p.last_name}</p>
+                          {isBusinessMatchingProject && p.is_business_matching && (
+                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[9px] font-bold py-0 whitespace-nowrap">
+                              BM
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <p className="text-sm font-bold text-foreground/80">{p.company_name}</p>
@@ -932,6 +965,21 @@ export function StaffList({
                   required
                 />
               </div>
+
+              {isBusinessMatchingProject && (
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setIsBusinessMatching(!isBusinessMatching)}>
+                  <div className="space-y-1">
+                    <Label htmlFor="is_bm_input" className="text-xs font-bold uppercase tracking-wider text-primary/80 cursor-pointer">Business Matching Access</Label>
+                    <p className="text-xs text-muted-foreground">Grant permission to access Business Matching Redemption Desk (/business-matching-redeem)</p>
+                  </div>
+                  <Checkbox
+                    id="is_bm_input"
+                    checked={isBusinessMatching}
+                    onCheckedChange={(checked) => setIsBusinessMatching(!!checked)}
+                    className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                  />
+                </div>
+              )}
             </div>
 
             <DialogFooter className="shrink-0 border-t border-white/5 bg-background/90 p-4 backdrop-blur sm:p-6 sm:px-8 flex sm:flex-row gap-3">
@@ -1032,6 +1080,24 @@ export function StaffList({
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {isBusinessMatchingProject && (
+                  <div className="space-y-3 pt-3 border-t border-white/10">
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Business Matching Feature</Label>
+                    <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setAllowBusinessMatching(!allowBusinessMatching)}>
+                      <Checkbox 
+                        id="allow_bm" 
+                        checked={allowBusinessMatching} 
+                        onCheckedChange={(checked) => setAllowBusinessMatching(!!checked)} 
+                        className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                      />
+                      <div className="space-y-1 leading-none">
+                        <Label htmlFor="allow_bm" className="text-base font-bold cursor-pointer">Business Matching Redemption Desk</Label>
+                        <p className="text-sm text-muted-foreground">Allow staff to access /business-matching-redeem and verify redemption stamps.</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
