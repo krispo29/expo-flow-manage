@@ -967,18 +967,17 @@ export function StaffList({
               </div>
 
               {isBusinessMatchingProject && (
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setIsBusinessMatching(!isBusinessMatching)}>
-                  <div className="space-y-1">
-                    <Label htmlFor="is_bm_input" className="text-xs font-bold uppercase tracking-wider text-primary/80 cursor-pointer">Business Matching Access</Label>
+                <label className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                  <div className="space-y-1 pr-4 select-none">
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary/80 block">Business Matching Access</span>
                     <p className="text-xs text-muted-foreground">Grant permission to access Business Matching Redemption Desk (/business-matching-redeem)</p>
                   </div>
                   <Checkbox
-                    id="is_bm_input"
                     checked={isBusinessMatching}
-                    onCheckedChange={(checked) => setIsBusinessMatching(!!checked)}
+                    onCheckedChange={(checked) => setIsBusinessMatching(Boolean(checked))}
                     className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                   />
-                </div>
+                </label>
               )}
             </div>
 
@@ -1047,18 +1046,17 @@ export function StaffList({
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setAllowAllEvents(!allowAllEvents)}>
+                <label className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
                   <Checkbox 
-                    id="allow_all" 
                     checked={allowAllEvents} 
-                    onCheckedChange={(checked) => setAllowAllEvents(!!checked)} 
+                    onCheckedChange={(checked) => setAllowAllEvents(Boolean(checked))} 
                     className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                   />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="allow_all" className="text-base font-bold cursor-pointer">Allow All Events</Label>
+                  <div className="space-y-1 leading-none select-none">
+                    <span className="text-base font-bold block">Allow All Events</span>
                     <p className="text-sm text-muted-foreground">This staff can scan attendees for any event in the project.</p>
                   </div>
-                </div>
+                </label>
 
                 {!allowAllEvents && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -1086,18 +1084,17 @@ export function StaffList({
                 {isBusinessMatchingProject && (
                   <div className="space-y-3 pt-3 border-t border-white/10">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Business Matching Feature</Label>
-                    <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setAllowBusinessMatching(!allowBusinessMatching)}>
+                    <label className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
                       <Checkbox 
-                        id="allow_bm" 
                         checked={allowBusinessMatching} 
-                        onCheckedChange={(checked) => setAllowBusinessMatching(!!checked)} 
+                        onCheckedChange={(checked) => setAllowBusinessMatching(Boolean(checked))} 
                         className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                       />
-                      <div className="space-y-1 leading-none">
-                        <Label htmlFor="allow_bm" className="text-base font-bold cursor-pointer">Business Matching Redemption Desk</Label>
+                      <div className="space-y-1 leading-none select-none">
+                        <span className="text-base font-bold block">Business Matching Redemption Desk</span>
                         <p className="text-sm text-muted-foreground">Allow staff to access /business-matching-redeem and verify redemption stamps.</p>
                       </div>
-                    </div>
+                    </label>
                   </div>
                 )}
               </div>
