@@ -12,6 +12,7 @@ import {
   getImportEvents,
   getImportExhibitors,
   getImportHistory,
+  getImportHistoryErrors,
   getImportHistoryCodes,
   getImportHistories,
   importConferencesExcel,
@@ -129,7 +130,22 @@ function ImportsContent() {
   const [viewErrorUuid, setViewErrorUuid] = useState<string | null>(null)
   const [errorData, setErrorData] = useState<ImportHistory | null>(null)
   const [errorLoading, setErrorLoading] = useState(false)
-  const errorMessages = errorData?.error_messages ?? []
+  const [paymentErrorMessages, setPaymentErrorMessages] = useState<ImportHistory['error_messages']>([])
+  const errorMessages = paymentErrorMessages?.length ? paymentErrorMessages : errorData?.error_messages ?? []
+
+  const isActivePaymentImport = (history: ImportHistory) =>
+    normalizeImportType(history.import_type) === 'payment-code-pool' && ['queued', 'validating', 'importing'].includes(history.status || '')
+
+  const progressText = (history: ImportHistory) => {
+    if (history.status === 'validating') return `Validating ${history.validated_rows || 0} / ${history.total_rows || 0}`
+    if (history.status === 'importing') return `Importing ${history.imported_rows || 0} / ${history.total_rows || 0}`
+    return ''
+  }
+
+  const statusText = (status?: ImportHistory['status']) => ({
+    queued: 'Queued', validating: 'Validating', importing: 'Importing', completed: 'Completed',
+    completed_with_errors: 'Completed with errors', failed: 'Failed',
+  }[status || 'completed'] || 'Completed')
 
   const filteredCodes = useMemo(() => {
     const search = viewSearch.toLowerCase()
@@ -204,6 +220,12 @@ function ImportsContent() {
 
     void run()
   }, [])
+
+  useEffect(() => {
+    if (!histories.some(isActivePaymentImport)) return
+    const interval = window.setInterval(() => { void fetchHistories() }, 2000)
+    return () => window.clearInterval(interval)
+  }, [histories])
 
   const exhibitorOptions = useMemo(
     () =>
@@ -285,6 +307,17 @@ function ImportsContent() {
   const openErrorMessages = async (history: ImportHistory) => {
     setViewErrorUuid(history.import_uuid)
     setErrorData(history)
+    setErrorLoading(true)
+    setPaymentErrorMessages([])
+
+    if (normalizeImportType(history.import_type) === 'payment-code-pool') {
+      const res = await getImportHistoryErrors(history.import_uuid)
+      if (res.success) setPaymentErrorMessages(res.data)
+      else toast.error(res.error || 'Failed to fetch error messages')
+      setErrorLoading(false)
+      return
+    }
+
     setErrorLoading(false)
 
     if ((history.error_messages ?? []).length > 0) {
@@ -374,7 +407,7 @@ function ImportsContent() {
       }
 
       if (result.success) {
-        toast.success('Import completed successfully')
+        toast.success(kind === 'payment-code-pool' ? 'Payment code import queued' : 'Import completed successfully')
         setFile(kind, null)
         void fetchHistories()
       } else if ('importUuid' in result && result.importUuid) {
@@ -690,6 +723,7 @@ function ImportsContent() {
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest">File Identity</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Success</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Failed</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -716,10 +750,14 @@ function ImportsContent() {
                             </a>
                           )}
                           <div className="text-[10px] text-muted-foreground/40 font-mono uppercase tracking-tighter mt-0.5">ROWS: {h.total_rows}</div>
+                          {progressText(h) && <div className="text-[10px] text-cyan-500 font-bold mt-1">{progressText(h)}</div>}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="text-sm font-display font-black text-emerald-500">{h.success_count}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[9px] border-white/10">{statusText(h.status)}</Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={cn("text-sm font-display font-black", h.failed_count > 0 ? 'text-red-500' : 'text-muted-foreground/20')}>{h.failed_count}</span>
@@ -759,7 +797,7 @@ function ImportsContent() {
                             <Eye className="h-4 w-4" />
                           </Button>
 
-                          {canViewImportCodes(h.import_type) && (
+                          {canViewImportCodes(h.import_type) && !isActivePaymentImport(h) && (
                             <>
                               <Button
                                 variant="ghost"
@@ -903,6 +941,7 @@ function ImportsContent() {
           if (!open) {
             setViewErrorUuid(null)
             setErrorData(null)
+            setPaymentErrorMessages([])
             setErrorLoading(false)
           }
         }}
@@ -947,6 +986,7 @@ function ImportsContent() {
                       </Badge>
                     </div>
                     <p className="text-sm font-medium leading-relaxed text-foreground/80 break-words">
+                      {error.code && <span className="mr-2 font-mono font-bold text-rose-400">{error.code}</span>}
                       {error.detail}
                     </p>
                   </div>
@@ -967,6 +1007,7 @@ function ImportsContent() {
               onClick={() => {
                 setViewErrorUuid(null)
                 setErrorData(null)
+                setPaymentErrorMessages([])
                 setErrorLoading(false)
               }}
             >

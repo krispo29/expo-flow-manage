@@ -28,11 +28,15 @@ export interface ImportHistory {
   created_by: string
   created_at: string
   error_messages?: ImportErrorMessage[]
+  status?: 'queued' | 'validating' | 'importing' | 'completed' | 'completed_with_errors' | 'failed'
+  validated_rows?: number
+  imported_rows?: number
 }
 
 export interface ImportErrorMessage {
-  row: number
-  detail: string
+	row: number
+	detail: string
+	code?: string
 }
 
 export interface ImportExhibitor {
@@ -152,6 +156,18 @@ export async function getImportHistory(uuid: string) {
   }
 }
 
+export async function getImportHistoryErrors(uuid: string, page = 1, limit = 50) {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await api.get(`/v1/admin/project/import/histories/${uuid}/errors?page=${page}&limit=${limit}`, { headers })
+    const data = response.data?.data || {}
+    return { success: true, data: (data.items || []) as ImportErrorMessage[], total: Number(data.total || 0) }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch import errors'
+    return { success: false, error: errorMessage, data: [] as ImportErrorMessage[], total: 0 }
+  }
+}
+
 export async function getImportHistoryCodes(uuid: string, attendeeTypeCode?: string) {
   try {
     const headers = await getAuthHeaders()
@@ -252,7 +268,7 @@ export async function importPaymentCodePool(formData: FormData) {
     }
   } catch (error: unknown) {
     console.error('Error importing payment code pool:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to import payment code pool'
+    const errorMessage = error instanceof Error ? error.message : 'Failed to import payment code'
     return { success: false, error: errorMessage }
   }
 }
