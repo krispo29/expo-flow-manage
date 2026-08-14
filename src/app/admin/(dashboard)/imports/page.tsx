@@ -131,6 +131,8 @@ function ImportsContent() {
   const [errorData, setErrorData] = useState<ImportHistory | null>(null)
   const [errorLoading, setErrorLoading] = useState(false)
   const [paymentErrorMessages, setPaymentErrorMessages] = useState<ImportHistory['error_messages']>([])
+  const [paymentErrorPage, setPaymentErrorPage] = useState(1)
+  const [paymentErrorTotal, setPaymentErrorTotal] = useState(0)
   const errorMessages = paymentErrorMessages?.length ? paymentErrorMessages : errorData?.error_messages ?? []
 
   const isActivePaymentImport = (history: ImportHistory) =>
@@ -310,11 +312,21 @@ function ImportsContent() {
     setErrorLoading(true)
     setPaymentErrorMessages([])
 
-    if (normalizeImportType(history.import_type) === 'payment-code-pool') {
-      const res = await getImportHistoryErrors(history.import_uuid)
-      if (res.success) setPaymentErrorMessages(res.data)
-      else toast.error(res.error || 'Failed to fetch error messages')
+    const loadPaymentErrors = async (page: number) => {
+      setErrorLoading(true)
+      const res = await getImportHistoryErrors(history.import_uuid, page)
+      if (res.success) {
+        setPaymentErrorMessages(res.data)
+        setPaymentErrorPage(page)
+        setPaymentErrorTotal(res.total)
+      } else {
+        toast.error(res.error || 'Failed to fetch error messages')
+      }
       setErrorLoading(false)
+    }
+
+    if (normalizeImportType(history.import_type) === 'payment-code-pool') {
+      await loadPaymentErrors(1)
       return
     }
 
@@ -942,6 +954,8 @@ function ImportsContent() {
             setViewErrorUuid(null)
             setErrorData(null)
             setPaymentErrorMessages([])
+            setPaymentErrorPage(1)
+            setPaymentErrorTotal(0)
             setErrorLoading(false)
           }
         }}
@@ -1000,7 +1014,19 @@ function ImportsContent() {
             )}
           </div>
 
-          <DialogFooter className="p-6 bg-white/5 border-t border-white/10">
+          <DialogFooter className="p-6 bg-white/5 border-t border-white/10 flex gap-2">
+            {paymentErrorTotal > 50 && (
+              <div className="flex gap-2">
+                <Button variant="ghost" disabled={paymentErrorPage === 1 || errorLoading} onClick={async () => {
+                  const res = await getImportHistoryErrors(viewErrorUuid!, paymentErrorPage - 1)
+                  if (res.success) { setPaymentErrorMessages(res.data); setPaymentErrorPage(paymentErrorPage - 1) }
+                }}>Previous</Button>
+                <Button variant="ghost" disabled={paymentErrorPage * 50 >= paymentErrorTotal || errorLoading} onClick={async () => {
+                  const res = await getImportHistoryErrors(viewErrorUuid!, paymentErrorPage + 1)
+                  if (res.success) { setPaymentErrorMessages(res.data); setPaymentErrorPage(paymentErrorPage + 1) }
+                }}>Next</Button>
+              </div>
+            )}
             <Button
               variant="ghost"
               className="rounded-2xl h-11 w-full font-bold text-xs uppercase tracking-widest"
@@ -1008,6 +1034,8 @@ function ImportsContent() {
                 setViewErrorUuid(null)
                 setErrorData(null)
                 setPaymentErrorMessages([])
+                setPaymentErrorPage(1)
+                setPaymentErrorTotal(0)
                 setErrorLoading(false)
               }}
             >
