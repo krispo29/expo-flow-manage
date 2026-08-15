@@ -112,13 +112,12 @@ describe('StaffList Business Matching Toggle', () => {
     // Wait for Edit Staff dialog to open
     expect(screen.getByText('Edit Staff')).toBeInTheDocument()
 
-    // Find Business Matching Access toggle container
-    const bmLabel = screen.getByText('Business Matching Access')
-    const bmContainer = bmLabel.closest('div[role="button"]')
-    expect(bmContainer).toBeInTheDocument()
+    // Find Business Matching Access toggle checkbox
+    const bmCheckbox = document.getElementById('edit_staff_is_business_matching')
+    expect(bmCheckbox).toBeInTheDocument()
 
     // Click to untick
-    fireEvent.click(bmContainer!)
+    fireEvent.click(bmCheckbox!)
 
     // Submit form by clicking Update
     const updateButton = screen.getByRole('button', { name: /update/i })
@@ -151,13 +150,12 @@ describe('StaffList Business Matching Toggle', () => {
       expect(screen.getByText('Staff Permissions')).toBeInTheDocument()
     })
 
-    // Find Business Matching Feature toggle container
-    const bmDeskLabel = screen.getByText('Business Matching Redemption Desk')
-    const bmDeskContainer = bmDeskLabel.closest('div[role="button"]')
-    expect(bmDeskContainer).toBeInTheDocument()
+    // Find Business Matching Feature toggle
+    const bmCheckbox = document.getElementById('perm_allow_business_matching')
+    expect(bmCheckbox).toBeInTheDocument()
 
     // Click to untick
-    fireEvent.click(bmDeskContainer!)
+    fireEvent.click(bmCheckbox!)
 
     // Click Save Permissions
     const saveButton = screen.getByRole('button', { name: /save permissions/i })

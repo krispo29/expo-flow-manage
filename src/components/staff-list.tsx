@@ -973,16 +973,8 @@ export function StaffList({
               </div>
 
               {isBusinessMatchingProject && (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setIsBusinessMatching(prev => !prev)}
-                  onKeyDown={(e) => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      e.preventDefault()
-                      setIsBusinessMatching(prev => !prev)
-                    }
-                  }}
+                <label
+                  htmlFor="edit_staff_is_business_matching"
                   className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors select-none"
                 >
                   <div className="space-y-1 pr-4">
@@ -990,12 +982,12 @@ export function StaffList({
                     <p className="text-xs text-muted-foreground">Grant permission to access Business Matching Redemption Desk (/business-matching-redeem)</p>
                   </div>
                   <Checkbox
+                    id="edit_staff_is_business_matching"
                     checked={isBusinessMatching}
                     onCheckedChange={(checked) => setIsBusinessMatching(Boolean(checked))}
-                    onClick={(e) => e.stopPropagation()}
                     className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                   />
-                </div>
+                </label>
               )}
             </div>
 
@@ -1064,29 +1056,21 @@ export function StaffList({
               </div>
             ) : (
               <div className="space-y-6">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setAllowAllEvents(prev => !prev)}
-                  onKeyDown={(e) => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      e.preventDefault()
-                      setAllowAllEvents(prev => !prev)
-                    }
-                  }}
+                <label
+                  htmlFor="perm_allow_all_events"
                   className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors select-none"
                 >
                   <Checkbox 
+                    id="perm_allow_all_events"
                     checked={allowAllEvents} 
                     onCheckedChange={(checked) => setAllowAllEvents(Boolean(checked))} 
-                    onClick={(e) => e.stopPropagation()}
                     className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                   />
                   <div className="space-y-1 leading-none">
                     <span className="text-base font-bold block">Allow All Events</span>
                     <p className="text-sm text-muted-foreground">This staff can scan attendees for any event in the project.</p>
                   </div>
-                </div>
+                </label>
 
                 {!allowAllEvents && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -1096,28 +1080,20 @@ export function StaffList({
                     ) : (
                       <div className="grid gap-3">
                         {events.map(event => (
-                          <div
+                          <label
                             key={event.event_uuid}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => toggleEventSelection(event.event_uuid, !selectedEventUuids.includes(event.event_uuid))}
-                            onKeyDown={(e) => {
-                              if (e.key === ' ' || e.key === 'Enter') {
-                                e.preventDefault()
-                                toggleEventSelection(event.event_uuid, !selectedEventUuids.includes(event.event_uuid))
-                              }
-                            }}
+                            htmlFor={`perm_event_${event.event_uuid}`}
                             className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group select-none"
                           >
                             <Checkbox 
+                              id={`perm_event_${event.event_uuid}`}
                               checked={selectedEventUuids.includes(event.event_uuid)}
                               onCheckedChange={(checked) => toggleEventSelection(event.event_uuid, checked)}
-                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="flex-1">
                               <p className="text-sm font-bold group-hover:text-primary transition-colors">{event.event_name}</p>
                             </div>
-                          </div>
+                          </label>
                         ))}
                       </div>
                     )}
@@ -1127,29 +1103,21 @@ export function StaffList({
                 {isBusinessMatchingProject && (
                   <div className="space-y-3 pt-3 border-t border-white/10">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Business Matching Feature</Label>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setAllowBusinessMatching(prev => !prev)}
-                      onKeyDown={(e) => {
-                        if (e.key === ' ' || e.key === 'Enter') {
-                          e.preventDefault()
-                          setAllowBusinessMatching(prev => !prev)
-                        }
-                      }}
+                    <label
+                      htmlFor="perm_allow_business_matching"
                       className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors select-none"
                     >
                       <Checkbox 
+                        id="perm_allow_business_matching"
                         checked={allowBusinessMatching} 
                         onCheckedChange={(checked) => setAllowBusinessMatching(Boolean(checked))} 
-                        onClick={(e) => e.stopPropagation()}
                         className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                       />
                       <div className="space-y-1 leading-none">
                         <span className="text-base font-bold block">Business Matching Redemption Desk</span>
                         <p className="text-sm text-muted-foreground">Allow staff to access /business-matching-redeem and verify redemption stamps.</p>
                       </div>
-                    </div>
+                    </label>
                   </div>
                 )}
               </div>
