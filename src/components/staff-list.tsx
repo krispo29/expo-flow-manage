@@ -318,12 +318,12 @@ export function StaffList({
     const [permRes, staffUpdateRes] = await Promise.all([
       updateProjectStaffEventPermissions(projectId, selectedStaffForPermission.staff_uuid, payloadEventUuids),
       updateProjectStaff(projectId, selectedStaffForPermission.staff_uuid, {
-        title: selectedStaffForPermission.title,
+        title: selectedStaffForPermission.title || 'Mr.',
         first_name: selectedStaffForPermission.first_name,
         last_name: selectedStaffForPermission.last_name,
-        company_name: selectedStaffForPermission.company_name,
+        company_name: selectedStaffForPermission.company_name || '',
         staff_type_code: selectedStaffForPermission.staff_type_code,
-        residence_country: selectedStaffForPermission.residence_country,
+        residence_country: selectedStaffForPermission.residence_country || 'Thailand',
         is_business_matching: allowBusinessMatching,
       })
     ])
@@ -349,14 +349,20 @@ export function StaffList({
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    const submittedTitle = title || (formData.get('title') as string) || 'Mr.'
+    const submittedFirstName = ((formData.get('first_name') as string) || selectedStaff?.first_name || '').trim()
+    const submittedLastName = ((formData.get('last_name') as string) || selectedStaff?.last_name || '').trim()
+    const submittedCompany = ((formData.get('company_name') as string) || selectedStaff?.company_name || '').trim()
+    const submittedStaffTypeCode = (formData.get('staff_type_code') as string) || staffType || selectedStaff?.staff_type_code || 'ST'
+    const submittedResidenceCountry = countries.find(c => c.code === residenceCountry)?.name || selectedStaff?.residence_country || 'Thailand'
+
     const commonData = {
-      title: formData.get('title'),
-      first_name: formData.get('first_name'),
-      last_name: formData.get('last_name'),
-      company_name: formData.get('company_name'),
-      staff_type_code: formData.get('staff_type_code'),
-      // Map country code from UI to full name for API
-      residence_country: countries.find(c => c.code === residenceCountry)?.name || 'Thailand',
+      title: submittedTitle,
+      first_name: submittedFirstName,
+      last_name: submittedLastName,
+      company_name: submittedCompany,
+      staff_type_code: submittedStaffTypeCode,
+      residence_country: submittedResidenceCountry,
       is_business_matching: isBusinessMatching,
     }
 
@@ -366,7 +372,7 @@ export function StaffList({
     } else {
       const data = {
         ...commonData,
-        staff_type_code: formData.get('staff_type_code'),
+        staff_type_code: submittedStaffTypeCode,
       }
       result = await createProjectStaff(projectId, data)
     }
@@ -967,17 +973,29 @@ export function StaffList({
               </div>
 
               {isBusinessMatchingProject && (
-                <label className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                  <div className="space-y-1 pr-4 select-none">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setIsBusinessMatching(prev => !prev)}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault()
+                      setIsBusinessMatching(prev => !prev)
+                    }
+                  }}
+                  className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors select-none"
+                >
+                  <div className="space-y-1 pr-4">
                     <span className="text-xs font-bold uppercase tracking-wider text-primary/80 block">Business Matching Access</span>
                     <p className="text-xs text-muted-foreground">Grant permission to access Business Matching Redemption Desk (/business-matching-redeem)</p>
                   </div>
                   <Checkbox
                     checked={isBusinessMatching}
                     onCheckedChange={(checked) => setIsBusinessMatching(Boolean(checked))}
+                    onClick={(e) => e.stopPropagation()}
                     className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                   />
-                </label>
+                </div>
               )}
             </div>
 
@@ -1046,17 +1064,29 @@ export function StaffList({
               </div>
             ) : (
               <div className="space-y-6">
-                <label className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setAllowAllEvents(prev => !prev)}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault()
+                      setAllowAllEvents(prev => !prev)
+                    }
+                  }}
+                  className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors select-none"
+                >
                   <Checkbox 
                     checked={allowAllEvents} 
                     onCheckedChange={(checked) => setAllowAllEvents(Boolean(checked))} 
+                    onClick={(e) => e.stopPropagation()}
                     className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                   />
-                  <div className="space-y-1 leading-none select-none">
+                  <div className="space-y-1 leading-none">
                     <span className="text-base font-bold block">Allow All Events</span>
                     <p className="text-sm text-muted-foreground">This staff can scan attendees for any event in the project.</p>
                   </div>
-                </label>
+                </div>
 
                 {!allowAllEvents && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -1066,15 +1096,28 @@ export function StaffList({
                     ) : (
                       <div className="grid gap-3">
                         {events.map(event => (
-                          <label key={event.event_uuid} className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                          <div
+                            key={event.event_uuid}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => toggleEventSelection(event.event_uuid, !selectedEventUuids.includes(event.event_uuid))}
+                            onKeyDown={(e) => {
+                              if (e.key === ' ' || e.key === 'Enter') {
+                                e.preventDefault()
+                                toggleEventSelection(event.event_uuid, !selectedEventUuids.includes(event.event_uuid))
+                              }
+                            }}
+                            className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group select-none"
+                          >
                             <Checkbox 
                               checked={selectedEventUuids.includes(event.event_uuid)}
                               onCheckedChange={(checked) => toggleEventSelection(event.event_uuid, checked)}
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="flex-1">
                               <p className="text-sm font-bold group-hover:text-primary transition-colors">{event.event_name}</p>
                             </div>
-                          </label>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -1084,17 +1127,29 @@ export function StaffList({
                 {isBusinessMatchingProject && (
                   <div className="space-y-3 pt-3 border-t border-white/10">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Business Matching Feature</Label>
-                    <label className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setAllowBusinessMatching(prev => !prev)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault()
+                          setAllowBusinessMatching(prev => !prev)
+                        }
+                      }}
+                      className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors select-none"
+                    >
                       <Checkbox 
                         checked={allowBusinessMatching} 
                         onCheckedChange={(checked) => setAllowBusinessMatching(Boolean(checked))} 
+                        onClick={(e) => e.stopPropagation()}
                         className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                       />
-                      <div className="space-y-1 leading-none select-none">
+                      <div className="space-y-1 leading-none">
                         <span className="text-base font-bold block">Business Matching Redemption Desk</span>
                         <p className="text-sm text-muted-foreground">Allow staff to access /business-matching-redeem and verify redemption stamps.</p>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 )}
               </div>

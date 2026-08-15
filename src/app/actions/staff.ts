@@ -231,12 +231,14 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
   try {
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
-      title: data.title,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      company_name: data.company_name,
-      staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
-      residence_country: data.residence_country,
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.first_name !== undefined ? { first_name: data.first_name } : {}),
+      ...(data.last_name !== undefined ? { last_name: data.last_name } : {}),
+      ...(data.company_name !== undefined ? { company_name: data.company_name } : {}),
+      ...(data.staff_type_code !== undefined ? {
+        staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code
+      } : {}),
+      ...(data.residence_country !== undefined ? { residence_country: data.residence_country } : {}),
       ...(data.is_business_matching !== undefined ? { is_business_matching: Boolean(data.is_business_matching) } : {}),
       ...(data.is_active !== undefined ? { is_active: Boolean(data.is_active) } : {}),
     }
