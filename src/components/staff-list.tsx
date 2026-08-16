@@ -979,7 +979,7 @@ export function StaffList({
                 >
                   <div className="space-y-1 pr-4">
                     <span className="text-xs font-bold uppercase tracking-wider text-primary/80 block">Business Matching Access</span>
-                    <p className="text-xs text-muted-foreground">Grant permission to access Business Matching Redemption Desk (/business-matching-redeem)</p>
+                    <p className="text-xs text-muted-foreground">Grant permission to access Business Matching Redemption Desk</p>
                   </div>
                   <Checkbox
                     id="edit_staff_is_business_matching"
