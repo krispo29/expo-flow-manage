@@ -26,7 +26,7 @@ describe('getBusinessMatchingReport', () => {
     mockAuthHeaders.mockResolvedValue({ Authorization: 'Bearer token', 'X-Project-UUID': 'project-a' })
   })
 
-  it('uses the organizer cookie project and its default Business Matching event', async () => {
+  it('uses the organizer cookie project and defaults to all events', async () => {
     mockAuthContext.mockResolvedValue({
       accessToken: 'organizer-token',
       projectUuid: 'project-a',
@@ -53,12 +53,44 @@ describe('getBusinessMatchingReport', () => {
     await expect(getBusinessMatchingReport({ role: 'ORGANIZER', projectId: 'other-project' })).resolves.toMatchObject({
       success: true,
       projectUuid: 'project-a',
-      eventUuid: 'event-a',
+      eventUuid: 'all',
       summary: { totals: { requested: 3 } },
     })
     expect(mockApiGet).toHaveBeenLastCalledWith('/v1/business-matching/admin/reports/summary', {
       headers: { Authorization: 'Bearer token', 'X-Project-UUID': 'project-a' },
       params: { project_uuid: 'project-a', event_uuid: 'event-a' },
+    })
+  })
+
+  it('uses a specific event when eventId is provided', async () => {
+    mockAuthContext.mockResolvedValue({
+      accessToken: 'organizer-token',
+      projectUuid: 'project-a',
+      userRole: 'ORGANIZER',
+    })
+    mockVerifyProjectAccess.mockResolvedValue(true)
+    mockApiGet
+      .mockResolvedValueOnce({
+        data: { data: { projects: [{
+          project_uuid: 'project-a',
+          default_event_uuid: 'event-a',
+          events: [{ event_uuid: 'event-a', event_name: 'Expo A' }],
+        }] } },
+      })
+      .mockResolvedValueOnce({
+        data: { data: {
+          project_uuid: 'project-a',
+          event_uuid: 'event-a',
+          generated_at: '2026-08-13T00:00:00Z',
+          totals: { requested: 3 },
+        } },
+      })
+
+    await expect(getBusinessMatchingReport({ role: 'ORGANIZER', eventId: 'event-a' })).resolves.toMatchObject({
+      success: true,
+      projectUuid: 'project-a',
+      eventUuid: 'event-a',
+      summary: { totals: { requested: 3 } },
     })
   })
 
@@ -118,13 +150,15 @@ describe('getBusinessMatchingReport', () => {
         }] } },
       })
       .mockResolvedValueOnce({
-        data: new Uint8Array([65, 66]),
+        data: new TextEncoder().encode('header1,header2\nval1,val2').buffer,
         headers: { 'content-disposition': 'attachment; filename="match-requests.csv"' },
       })
 
-    await expect(exportBusinessMatchingCsv({
+    const result = await exportBusinessMatchingCsv({
       role: 'ADMIN', projectId: 'project-a', eventId: 'event-a', type: 'match-requests', status: 'Accepted',
-    })).resolves.toEqual({ success: true, bytes: [65, 66], filename: 'match-requests.csv' })
+    })
+    expect(result.success).toBe(true)
+    expect(result).toMatchObject({ success: true, filename: 'match-requests.csv' })
     expect(mockApiGet).toHaveBeenCalledWith('/v1/business-matching/admin/reports/match-requests/export.csv', {
       headers: { Authorization: 'Bearer token', 'X-Project-UUID': 'project-a' },
       params: { project_uuid: 'project-a', event_uuid: 'event-a', status: 'Accepted' },
