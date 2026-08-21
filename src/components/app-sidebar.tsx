@@ -23,6 +23,7 @@ import {
   Bell,
   Sparkles,
   Tags,
+  Handshake,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -365,7 +366,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       isActive={isActive(`${basePath}/business-matching`)}
                     >
                       <Link href={projectId ? `${basePath}/business-matching?projectId=${projectId}` : `${basePath}/business-matching`}>
-                        <Sparkles />
+                        <Handshake />
                         <span>Business Matching</span>
                       </Link>
                     </SidebarMenuButton>
