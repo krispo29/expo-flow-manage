@@ -118,12 +118,10 @@ export function CommandPalette() {
               <FileText className="mr-2 h-4 w-4" />
               <span>Reports</span>
             </CommandItem>
-            {!isOrganizer && (
-              <CommandItem onSelect={() => navigate("/admin/upgrade-requests")}>
+            <CommandItem onSelect={() => navigate(`${basePath}/upgrade-requests`)}>
                 <BadgeCheck className="mr-2 h-4 w-4" />
                 <span>Upgrade Requests</span>
               </CommandItem>
-            )}
             {!isOrganizer && (
               <CommandItem onSelect={() => navigate("/admin/questionnaires-stats")}>
                 <BarChart3 className="mr-2 h-4 w-4" />

@@ -343,7 +343,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {user?.role === 'ADMIN' && (
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild

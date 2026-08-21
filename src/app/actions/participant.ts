@@ -607,7 +607,11 @@ export interface AttendeeType {
 export async function getAllAttendeeTypes(projectId?: string) {
   try {
     const headers = await getAuthHeaders(projectId)
-    const response = await api.get('/v1/admin/project/participants/attendee_types', {
+    const role = await getUserRole()
+    const endpoint = role === 'ORGANIZER'
+      ? '/v1/organizer/participants/attendee_types'
+      : '/v1/admin/project/participants/attendee_types'
+    const response = await api.get(endpoint, {
       headers
     })
 

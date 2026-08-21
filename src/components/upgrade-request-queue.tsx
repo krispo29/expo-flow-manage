@@ -33,6 +33,7 @@ import {
   getDefaultTargetTypeCode,
   normalizeUpgradeStatus,
   type UpgradeRequestFilter,
+  type ReviewUpgradeRequestPayload,
 } from '@/lib/upgrade-requests'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -68,6 +69,15 @@ interface UpgradeRequestQueueProps {
   initialRequests: UpgradeRequest[]
   attendeeTypes: AttendeeType[]
   initialError?: string
+  loadRequests?: (projectId: string) => Promise<{
+    success: boolean
+    data: UpgradeRequest[]
+    error?: string
+  }>
+  reviewRequest?: (
+    projectId: string,
+    payload: ReviewUpgradeRequestPayload
+  ) => Promise<{ success: boolean; data?: unknown; error?: string }>
 }
 
 const STATUS_META: Record<
@@ -329,6 +339,8 @@ export function UpgradeRequestQueue({
   initialRequests,
   attendeeTypes,
   initialError,
+  loadRequests = getUpgradeRequests,
+  reviewRequest = reviewUpgradeRequest,
 }: UpgradeRequestQueueProps) {
   const [requests, setRequests] = useState(initialRequests)
   const [statusFilter, setStatusFilter] = useState<UpgradeRequestFilter>('pending')
@@ -376,7 +388,7 @@ export function UpgradeRequestQueue({
 
   const refreshRequests = (showSuccess = false) => {
     startRefreshTransition(async () => {
-      const result = await getUpgradeRequests(projectId)
+      const result = await loadRequests(projectId)
       if (result.success) {
         setRequests(result.data)
         if (showSuccess) toast.success('Upgrade requests refreshed')
@@ -414,7 +426,7 @@ export function UpgradeRequestQueue({
 
     setActionRequestUuid(selectedRequest.request_uuid)
     startReviewTransition(async () => {
-      const result = await reviewUpgradeRequest(
+      const result = await reviewRequest(
         projectId,
         buildReviewUpgradePayload({
           requestUuid: selectedRequest.request_uuid,

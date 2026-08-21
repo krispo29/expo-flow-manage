@@ -1,26 +1,23 @@
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { FolderSearch } from 'lucide-react'
 import { getUserRole } from '@/app/actions/auth'
 import { getAllAttendeeTypes } from '@/app/actions/participant'
-import { getUpgradeRequests } from '@/app/actions/upgrade-request'
+import {
+  getOrganizerUpgradeRequests,
+  reviewOrganizerUpgradeRequest,
+} from '@/app/actions/organizer-upgrade-request'
 import { UpgradeRequestQueue } from '@/components/upgrade-request-queue'
 import { Card, CardContent } from '@/components/ui/card'
-import { FolderSearch } from 'lucide-react'
+import { getServerAuthContext } from '@/lib/server-auth'
 
-export default async function UpgradeRequestsPage({
-  searchParams,
-}: Readonly<{
-  searchParams: Promise<{ projectId?: string }>
-}>) {
+export default async function OrganizerUpgradeRequestsPage() {
   const role = await getUserRole()
-  if (role !== 'ADMIN') {
-    redirect(role === 'ORGANIZER' ? '/organizer' : '/login')
+  if (role !== 'ORGANIZER') {
+    redirect(role === 'ADMIN' ? '/admin' : '/login')
   }
 
-  const resolvedSearchParams = await searchParams
-  const cookieStore = await cookies()
-  const projectId =
-    resolvedSearchParams.projectId || cookieStore.get('project_uuid')?.value || ''
+  const authContext = await getServerAuthContext()
+  const projectId = authContext?.projectUuid || ''
 
   if (!projectId) {
     return (
@@ -29,10 +26,9 @@ export default async function UpgradeRequestsPage({
           <div className="grid size-16 place-items-center rounded-3xl bg-primary/10 text-primary">
             <FolderSearch className="size-8" />
           </div>
-          <h1 className="mt-5 text-2xl font-black">Select a project</h1>
+          <h1 className="mt-5 text-2xl font-black">Project unavailable</h1>
           <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            Choose a project from the sidebar to review questionnaire-triggered
-            attendee upgrades.
+            Your Organizer account is not associated with a project.
           </p>
         </CardContent>
       </Card>
@@ -40,7 +36,7 @@ export default async function UpgradeRequestsPage({
   }
 
   const [requestsResult, attendeeTypesResult] = await Promise.all([
-    getUpgradeRequests(projectId),
+    getOrganizerUpgradeRequests(projectId),
     getAllAttendeeTypes(projectId),
   ])
 
@@ -55,6 +51,8 @@ export default async function UpgradeRequestsPage({
           ? attendeeTypesResult.error
           : requestsResult.error
       }
+      loadRequests={getOrganizerUpgradeRequests}
+      reviewRequest={reviewOrganizerUpgradeRequest}
     />
   )
 }
