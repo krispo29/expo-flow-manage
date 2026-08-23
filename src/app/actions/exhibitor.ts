@@ -52,6 +52,15 @@ export interface Exhibitor {
   companyProfile?: string
   companyLogo?: string
   productHighlights: ProductHighlight[]
+  leadScannerStaffQuota?: number
+}
+
+export interface LeadScannerStaffQuotaStatus {
+  exhibitor_uuid: string
+  company_name: string
+  quota: number
+  enabled_count: number
+  is_quota_full: boolean
 }
 
 export interface ProductHighlight {
@@ -354,16 +363,40 @@ export async function getExhibitorById(
       companyProfile: rawData.company_profile || '',
       companyLogo: rawData.company_logo || '',
       productHighlights: rawData.product_highlights || [],
+      leadScannerStaffQuota: rawData.lead_scanner_staff_quota ?? 0,
     }
 
     return {
       success: true,
       exhibitor: mappedExhibitor,
       members: response.data.data.members,
+      leadScannerStaffQuotaStatus: response.data.data.lead_scanner_staff_quota_status as LeadScannerStaffQuotaStatus | undefined,
     }
   } catch (error: any) {
     console.error('Error fetching exhibitor:', error)
     return { success: false, error: 'Failed to fetch exhibitor' }
+  }
+}
+
+export async function updateLeadScannerStaffQuota(projectUuid: string, exhibitorUuid: string, quota: number) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    await api.patch(`/v1/admin/project/exhibitors/${exhibitorUuid}/lead-scanner/staff-quota`, { quota }, { headers })
+    revalidatePath('/admin/exhibitors')
+    return { success: true }
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) || 'Failed to update Lead Scanner quota' }
+  }
+}
+
+export async function toggleLeadScannerMemberStatus(projectUuid: string, exhibitorUuid: string, registrationUuid: string) {
+  try {
+    const headers = await getAuthHeaders(projectUuid)
+    await api.patch(`/v1/admin/project/exhibitors/${exhibitorUuid}/lead-scanner/members/${registrationUuid}/toggle-status`, {}, { headers })
+    revalidatePath('/admin/exhibitors')
+    return { success: true }
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) || 'Failed to update Lead Scanner access' }
   }
 }
 

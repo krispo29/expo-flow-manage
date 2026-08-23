@@ -1,6 +1,6 @@
 import api from '@/lib/api'
-import { createExhibitor, presignExhibitorImage, updateExhibitor, type ExhibitorPayload } from '@/app/actions/exhibitor'
-import { createOrganizerExhibitor, updateOrganizerExhibitor } from '@/app/actions/organizer-exhibitor'
+import { createExhibitor, presignExhibitorImage, updateExhibitor, updateLeadScannerStaffQuota, toggleLeadScannerMemberStatus, type ExhibitorPayload } from '@/app/actions/exhibitor'
+import { createOrganizerExhibitor, updateOrganizerExhibitor, updateOrganizerLeadScannerStaffQuota, toggleOrganizerLeadScannerMemberStatus } from '@/app/actions/organizer-exhibitor'
 import { cookies } from 'next/headers'
 
 const THAILAB2026_PROJECT_UUID = '07626a19-001d-4675-addd-3a92e3f46d47'
@@ -9,6 +9,7 @@ let currentProjectUuid = 'project-1'
 jest.mock('@/lib/api', () => ({
   post: jest.fn(),
   put: jest.fn(),
+  patch: jest.fn(),
   getErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Unknown error',
 }))
 jest.mock('next/headers', () => ({ cookies: jest.fn() }))
@@ -16,6 +17,7 @@ jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }))
 
 const post = api.post as jest.MockedFunction<typeof api.post>
 const put = api.put as jest.MockedFunction<typeof api.put>
+const patch = api.patch as jest.MockedFunction<typeof api.patch>
 const payload: ExhibitorPayload = {
   eventId: 'event-1',
   companyName: 'Expo Co',
@@ -92,4 +94,18 @@ test('Presign image upload uses shared exhibitor endpoint', async () => {
     { filename: 'logo.jpg', content_type: 'image/jpeg' },
     { headers: expect.objectContaining({ Authorization: 'Bearer token', 'X-Project-UUID': 'project-1' }) },
   )
+})
+
+test('Lead Scanner actions use role-specific PATCH endpoints', async () => {
+  patch.mockResolvedValue({ data: {} })
+
+  await updateLeadScannerStaffQuota('project-1', 'exhibitor-1', 2)
+  await toggleLeadScannerMemberStatus('project-1', 'exhibitor-1', 'registration-1')
+  await updateOrganizerLeadScannerStaffQuota('exhibitor-1', 2)
+  await toggleOrganizerLeadScannerMemberStatus('exhibitor-1', 'registration-1')
+
+  expect(patch).toHaveBeenNthCalledWith(1, '/v1/admin/project/exhibitors/exhibitor-1/lead-scanner/staff-quota', { quota: 2 }, expect.any(Object))
+  expect(patch).toHaveBeenNthCalledWith(2, '/v1/admin/project/exhibitors/exhibitor-1/lead-scanner/members/registration-1/toggle-status', {}, expect.any(Object))
+  expect(patch).toHaveBeenNthCalledWith(3, '/v1/organizer/exhibitors/exhibitor-1/lead-scanner/staff-quota', { quota: 2 }, expect.any(Object))
+  expect(patch).toHaveBeenNthCalledWith(4, '/v1/organizer/exhibitors/exhibitor-1/lead-scanner/members/registration-1/toggle-status', {}, expect.any(Object))
 })

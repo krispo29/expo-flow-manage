@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createStaff, updateStaff, deleteStaff, sendStaffCredentials, Staff } from '@/app/actions/staff'
+import { toggleLeadScannerMemberStatus, updateLeadScannerStaffQuota, type LeadScannerStaffQuotaStatus } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitorMembers, createOrganizerMember, updateOrganizerMember, toggleStatusOrganizerMember, resendEmailOrganizerMember } from '@/app/actions/organizer-exhibitor'
+import { toggleOrganizerLeadScannerMemberStatus, updateOrganizerLeadScannerStaffQuota } from '@/app/actions/organizer-exhibitor'
 import { getCountryCodeFromValue } from '@/lib/countries'
 import { CountrySelector } from '@/components/CountrySelector'
 import { Button } from '@/components/ui/button'
@@ -32,6 +34,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Plus, Pencil, Loader2, GripVertical, Mail, Power, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -40,9 +43,11 @@ interface StaffManagementProps {
   readonly projectId: string
   readonly exhibitor?: any
   readonly userRole?: string | null
+  readonly leadScannerStatus?: LeadScannerStaffQuotaStatus | null
+  readonly onLeadScannerChanged?: () => void
 }
 
-export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }: StaffManagementProps) {
+export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, leadScannerStatus, onLeadScannerChanged }: StaffManagementProps) {
   const isOrganizer = userRole === 'ORGANIZER'
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,6 +56,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [togglingStaffId, setTogglingStaffId] = useState<string | null>(null)
+  const [leadScannerDialogOpen, setLeadScannerDialogOpen] = useState(false)
+  const [leadScannerQuota, setLeadScannerQuota] = useState('')
+  const [updatingLeadScannerQuota, setUpdatingLeadScannerQuota] = useState(false)
+  const [togglingLeadScannerId, setTogglingLeadScannerId] = useState<string | null>(null)
   
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
@@ -133,7 +142,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
         companyName: m.company_name || '',
         companyCountry: getCountryCodeFromValue(m.company_country, initialCountry),
         companyTel: m.company_tel || '',
-        staff_type_code: m.staff_type_code || 'EXHIBITOR'
+        staff_type_code: m.staff_type_code || 'EXHIBITOR',
+        isLeadScannerEnabled: Boolean(m.is_lead_scanner_enabled)
       }))
       setStaffList(mappedStaff)
     } else {
@@ -303,6 +313,58 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
     }
   }
 
+  function openLeadScannerQuotaDialog() {
+    setLeadScannerQuota(String(leadScannerStatus?.quota ?? exhibitor?.leadScannerStaffQuota ?? 0))
+    setLeadScannerDialogOpen(true)
+  }
+
+  async function handleUpdateLeadScannerQuota() {
+    if (!/^\d+$/.test(leadScannerQuota) || updatingLeadScannerQuota) {
+      toast.error('Quota must be a non-negative whole number')
+      return
+    }
+
+    setUpdatingLeadScannerQuota(true)
+    try {
+      const quota = Number(leadScannerQuota)
+      const result = isOrganizer
+        ? await updateOrganizerLeadScannerStaffQuota(exhibitorId, quota)
+        : await updateLeadScannerStaffQuota(projectId, exhibitorId, quota)
+
+      if (result.success) {
+        toast.success('Lead Scanner quota updated')
+        setLeadScannerDialogOpen(false)
+        await fetchStaff()
+        onLeadScannerChanged?.()
+      } else {
+        toast.error(result.error || 'Failed to update Lead Scanner quota')
+      }
+    } finally {
+      setUpdatingLeadScannerQuota(false)
+    }
+  }
+
+  async function handleToggleLeadScanner(staff: Staff) {
+    if (togglingLeadScannerId) return
+
+    setTogglingLeadScannerId(staff.id)
+    try {
+      const result = isOrganizer
+        ? await toggleOrganizerLeadScannerMemberStatus(exhibitorId, staff.id)
+        : await toggleLeadScannerMemberStatus(projectId, exhibitorId, staff.id)
+
+      if (result.success) {
+        toast.success('Lead Scanner access updated')
+        await fetchStaff()
+        onLeadScannerChanged?.()
+      } else {
+        toast.error(result.error || 'Failed to update Lead Scanner access')
+      }
+    } finally {
+      setTogglingLeadScannerId(null)
+    }
+  }
+
   function handleOpenEmailDialog(staff: Staff) {
     setSelectedStaff(staff)
     setTargetEmail(staff.email || '')
@@ -338,8 +400,12 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle>Staff Members</CardTitle>
+        <div>
+          <CardTitle>Staff Members</CardTitle>
+          <p className="text-sm text-muted-foreground">{leadScannerStatus?.enabled_count ?? 0} / {leadScannerStatus?.quota ?? exhibitor?.leadScannerStaffQuota ?? 0} Lead Scanner staff{leadScannerStatus?.is_quota_full ? ' (Quota full)' : ''}</p>
+        </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <Button variant="outline" onClick={openLeadScannerQuotaDialog} size="sm">Adjust Lead Scanner Quota</Button>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -379,6 +445,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                 <TableHead>Position</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Lead Scanner</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -401,6 +468,14 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
                       {staff.isActive ? 'Active' : 'Inactive'}
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <Switch
+                      aria-label={`Enable Lead Scanner for ${staff.firstName} ${staff.lastName}`}
+                      checked={staff.isLeadScannerEnabled}
+                      disabled={togglingLeadScannerId !== null || (leadScannerStatus?.is_quota_full === true && !staff.isLeadScannerEnabled)}
+                      onCheckedChange={() => handleToggleLeadScanner(staff)}
+                    />
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       
@@ -421,6 +496,25 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole }:
           </Table>
         )}
       </CardContent>
+
+      <Dialog open={leadScannerDialogOpen} onOpenChange={setLeadScannerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Lead Scanner Quota</DialogTitle>
+            <DialogDescription>Set the maximum number of staff who can use Lead Scanner.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="leadScannerQuota">Maximum staff</Label>
+            <Input id="leadScannerQuota" type="number" min="0" step="1" value={leadScannerQuota} onChange={(event) => setLeadScannerQuota(event.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeadScannerDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateLeadScannerQuota} disabled={updatingLeadScannerQuota}>
+              {updatingLeadScannerQuota && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>

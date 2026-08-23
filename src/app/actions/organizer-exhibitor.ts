@@ -16,6 +16,7 @@ import type {
   BusinessMatchingCategory,
   Exhibitor,
   ExhibitorPayload,
+  LeadScannerStaffQuotaStatus,
 } from './exhibitor'
 
 function getQuotaFullState(item: {
@@ -150,16 +151,40 @@ export async function getOrganizerExhibitorById(exhibitorId: string) {
       companyProfile: rawData.company_profile || '',
       companyLogo: rawData.company_logo || '',
       productHighlights: rawData.product_highlights || [],
+      leadScannerStaffQuota: rawData.lead_scanner_staff_quota ?? 0,
     }
 
     return {
       success: true,
       exhibitor: mappedExhibitor,
       members: response.data.data.members,
+      leadScannerStaffQuotaStatus: response.data.data.lead_scanner_staff_quota_status as LeadScannerStaffQuotaStatus | undefined,
     }
   } catch (error: any) {
     console.error('Error fetching organizer exhibitor:', error)
     return { success: false, error: 'Failed to fetch exhibitor' }
+  }
+}
+
+export async function updateOrganizerLeadScannerStaffQuota(exhibitorUuid: string, quota: number) {
+  try {
+    const { headers } = await getOrganizerAuthHeaders()
+    await api.patch(`/v1/organizer/exhibitors/${exhibitorUuid}/lead-scanner/staff-quota`, { quota }, { headers })
+    revalidatePath('/organizer/exhibitors')
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.response?.data?.message || 'Failed to update Lead Scanner quota' }
+  }
+}
+
+export async function toggleOrganizerLeadScannerMemberStatus(exhibitorUuid: string, registrationUuid: string) {
+  try {
+    const { headers } = await getOrganizerAuthHeaders()
+    await api.patch(`/v1/organizer/exhibitors/${exhibitorUuid}/lead-scanner/members/${registrationUuid}/toggle-status`, {}, { headers })
+    revalidatePath('/organizer/exhibitors')
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.response?.data?.message || 'Failed to update Lead Scanner access' }
   }
 }
 

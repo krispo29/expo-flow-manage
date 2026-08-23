@@ -32,6 +32,7 @@ export interface Staff {
   staff_type_code?: string
   residence_country?: string
   is_business_matching?: boolean
+  isLeadScannerEnabled?: boolean
 }
 
 // GET /v1/admin/project/exhibitors/staff

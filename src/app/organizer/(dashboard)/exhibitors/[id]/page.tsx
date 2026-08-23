@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { getExhibitorById } from '@/app/actions/exhibitor'
+import { getExhibitorById, type LeadScannerStaffQuotaStatus } from '@/app/actions/exhibitor'
 import { getOrganizerExhibitorById } from '@/app/actions/organizer-exhibitor'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useBreadcrumbStore } from '@/store/useBreadcrumbStore'
@@ -22,6 +22,8 @@ export default function EditExhibitorPage() {
   const { setLabel, clearLabel } = useBreadcrumbStore()
   
   const [exhibitor, setExhibitor] = useState<any>(null)
+  const [leadScannerStatus, setLeadScannerStatus] = useState<LeadScannerStaffQuotaStatus | null>(null)
+  const [reloadVersion, setReloadVersion] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function EditExhibitorPage() {
       
       if (result.success && result.exhibitor) {
         setExhibitor(result.exhibitor)
+        setLeadScannerStatus(result.leadScannerStaffQuotaStatus ?? null)
         setLabel(id, result.exhibitor.companyName)
       }
       setLoading(false)
@@ -47,7 +50,7 @@ export default function EditExhibitorPage() {
     return () => {
       if (id) clearLabel(id)
     }
-  }, [id, projectId, isOrganizer, setLabel, clearLabel])
+  }, [id, projectId, isOrganizer, setLabel, clearLabel, reloadVersion])
 
   if (!isHydrated || !isAuthenticated || !user) {
     return (
@@ -91,7 +94,7 @@ export default function EditExhibitorPage() {
       </div>
       
       {exhibitor && (
-        <StaffManagement exhibitorId={exhibitor.id} projectId={projectId || ''} exhibitor={exhibitor} userRole={user?.role} />
+        <StaffManagement exhibitorId={exhibitor.id} projectId={projectId || ''} exhibitor={exhibitor} userRole={user?.role} leadScannerStatus={leadScannerStatus} onLeadScannerChanged={() => setReloadVersion((version) => version + 1)} />
       )}
     </div>
   )
