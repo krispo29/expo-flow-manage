@@ -99,6 +99,7 @@ interface ParticipantListProps {
   projectId: string
   attendeeTypes: AttendeeType[]
   events: Event[]
+  initialRegistrationCode?: string
 }
 
 export function ParticipantList({ 
@@ -106,6 +107,7 @@ export function ParticipantList({
   projectId, 
   attendeeTypes,
   events,
+  initialRegistrationCode = '',
 }: ParticipantListProps) {
   const showBusinessMatching = isBusinessMatchingEnabled(projectId)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -285,10 +287,10 @@ export function ParticipantList({
   const [currentPage, setCurrentPage] = useState(1)
 
   // Column filter state
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(Boolean(initialRegistrationCode))
   const [columnFilters, setColumnFilters] = useState({
     name: '',
-    registrationCode: '',
+    registrationCode: initialRegistrationCode,
     company: '',
     type: 'ALL',
     isActive: 'all'

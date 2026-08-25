@@ -24,6 +24,7 @@ import {
   Sparkles,
   Tags,
   Handshake,
+  KeyRound,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -325,6 +326,21 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       <Link href={projectId ? `${basePath}/invitation-codes?projectId=${projectId}` : `${basePath}/invitation-codes`}>
                         <FileText />
                         <span>Invitation Codes</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Payment Codes"
+                      isActive={isActive(`${basePath}/payment-codes`)}
+                    >
+                      <Link href={projectId ? `${basePath}/payment-codes?projectId=${projectId}` : `${basePath}/payment-codes`}>
+                        <KeyRound />
+                        <span>Payment Codes</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

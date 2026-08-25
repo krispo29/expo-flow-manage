@@ -12,7 +12,7 @@ import { isBusinessMatchingEnabled } from '@/lib/features'
 export default async function ParticipantsPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ projectId?: string }>;
+  searchParams: Promise<{ projectId?: string; registration_code?: string }>;
 }>) {
   const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
@@ -89,6 +89,7 @@ export default async function ParticipantsPage({
             projectId={projectId}
             attendeeTypes={attendeeTypes}
             events={events}
+            initialRegistrationCode={resolvedSearchParams.registration_code}
           />
         </TabsContent>
         <TabsContent value="attendance-logs" className="outline-none">
