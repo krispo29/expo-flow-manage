@@ -7,7 +7,7 @@ import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
 
 // Helper function to get headers with auth
-async function getAuthHeaders(projectUuid: string) {
+async function getAuthHeaders(projectUuid?: string) {
   return requireServerAuthHeaders({ projectUuid })
 }
 
@@ -210,7 +210,7 @@ export async function createProjectStaff(projectUuid: string, data: any) {
 // GET /v1/admin/project/staff/types
 export async function getStaffTypes(projectUuid?: string) {
   try {
-    const headers = await getAuthHeaders(projectUuid || '')
+    const headers = await getAuthHeaders(projectUuid)
     const response = await api.get('/v1/admin/project/staff/types', { headers })
     return { success: true, data: response.data.data }
   } catch (error: any) {

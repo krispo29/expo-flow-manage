@@ -1,7 +1,9 @@
 import api from '@/lib/api'
+import { requireServerAuthHeaders } from '@/lib/server-auth'
 import {
   createProjectStaff,
   updateProjectStaff,
+  getStaffTypes,
   getProjectStaffs,
   deleteProjectStaff,
   getProjectStaffEventPermissions,
@@ -30,6 +32,7 @@ jest.mock('next/cache', () => ({
 }))
 
 const mockApi = api as jest.Mocked<typeof api>
+const mockRequireServerAuthHeaders = requireServerAuthHeaders as jest.MockedFunction<typeof requireServerAuthHeaders>
 const PROJECT_UUID = '07626a19-001d-4675-addd-3a92e3f46d47'
 const STAFF_UUID = 'staff-uuid-123'
 
@@ -37,6 +40,17 @@ describe('Staff Server Actions', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.spyOn(console, 'error').mockImplementation(() => undefined)
+  })
+
+  describe('getStaffTypes', () => {
+    it('uses the selected project from server auth when no project is supplied', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: { data: [{ type_code: 'ST', type_name: 'Staff' }] } } as never)
+
+      await getStaffTypes()
+
+      expect(mockRequireServerAuthHeaders).toHaveBeenCalledWith({ projectUuid: undefined })
+      expect(mockApi.get).toHaveBeenCalledWith('/v1/admin/project/staff/types', expect.anything())
+    })
   })
 
   afterEach(() => {
