@@ -61,6 +61,10 @@ describe('Staff Server Actions', () => {
         company_name: 'Test Co',
         staff_type_code: 'ST',
         residence_country: 'Thailand',
+        job_position: 'Coordinator',
+        mobile_country_code: '+66',
+        mobile_number: '812345678',
+        email: 'john@example.com',
         is_business_matching: false,
       })
 
@@ -74,6 +78,10 @@ describe('Staff Server Actions', () => {
           company_name: 'Test Co',
           staff_type_code: 'ST',
           residence_country: 'Thailand',
+          job_position: 'Coordinator',
+          mobile_country_code: '+66',
+          mobile_number: '812345678',
+          email: 'john@example.com',
           is_business_matching: false,
         },
         expect.objectContaining({
@@ -117,6 +125,24 @@ describe('Staff Server Actions', () => {
           is_business_matching: true,
         },
         expect.anything()
+      )
+    })
+  })
+
+  describe('createProjectStaff', () => {
+    it('includes the new contact fields in the create payload', async () => {
+      mockApi.post.mockResolvedValueOnce({ data: { data: { staff_uuid: STAFF_UUID } } } as never)
+
+      const result = await createProjectStaff(PROJECT_UUID, {
+        title: 'Ms.', first_name: 'Jane', last_name: 'Doe', company_name: 'Test Co', staff_type_code: 'ST',
+        residence_country: 'Thailand', job_position: 'Manager', mobile_country_code: '+66', mobile_number: '812345679', email: 'jane@example.com',
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/v1/admin/project/staff',
+        expect.objectContaining({ job_position: 'Manager', mobile_country_code: '+66', mobile_number: '812345679', email: 'jane@example.com' }),
+        expect.anything(),
       )
     })
   })

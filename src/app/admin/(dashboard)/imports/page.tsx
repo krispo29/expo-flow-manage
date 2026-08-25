@@ -28,6 +28,7 @@ import {
   type ImportHistoryCode,
 } from '@/app/actions/import'
 import { getAllAttendeeTypes, type AttendeeType } from '@/app/actions/participant'
+import { getStaffTypes } from '@/app/actions/staff'
 import { format } from 'date-fns'
 import {
   Table,
@@ -87,11 +88,13 @@ function ImportsContent() {
   const [exhibitors, setExhibitors] = useState<ImportExhibitor[]>([])
   const [histories, setHistories] = useState<ImportHistory[]>([])
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
+  const [staffTypes, setStaffTypes] = useState<{ type_code: string; type_name: string }[]>([])
   const [eventUuids, setEventUuids] = useState<Record<string, string>>({
     'invite-codes': NO_EVENT_VALUE,
   })
   const [exhibitorUuids, setExhibitorUuids] = useState<Record<string, string>>({})
   const [attendeeTypeCodes, setAttendeeTypeCodes] = useState<Record<string, string>>({})
+  const [staffTypeCode, setStaffTypeCode] = useState('')
   const [files, setFiles] = useState<Record<ImportKind, File | null>>({
     exhibitors: null,
     'exhibitor-members': null,
@@ -181,11 +184,12 @@ function ImportsContent() {
 
   useEffect(() => {
     const run = async () => {
-      const [eventsRes, exhibitorsRes, historiesRes, typesRes] = await Promise.all([
+      const [eventsRes, exhibitorsRes, historiesRes, typesRes, staffTypesRes] = await Promise.all([
         getImportEvents(),
         getImportExhibitors(),
         getImportHistories(),
-        getAllAttendeeTypes()
+        getAllAttendeeTypes(),
+        getStaffTypes(),
       ])
 
       if (eventsRes.success) {
@@ -217,6 +221,10 @@ function ImportsContent() {
 
       if (typesRes.success) {
         setAttendeeTypes(typesRes.data)
+      }
+
+      if (staffTypesRes.success) {
+        setStaffTypes(staffTypesRes.data || [])
       }
     }
 
@@ -391,6 +399,14 @@ function ImportsContent() {
       formData.append('attendee_type_code', attendeeTypeCode)
     }
 
+    if (kind === 'staff') {
+      if (!staffTypeCode) {
+        toast.error('Please select staff type')
+        return
+      }
+      formData.append('staff_type_code', staffTypeCode)
+    }
+
     setLoading((prev) => ({ ...prev, [kind]: true }))
     try {
       let result: { success: boolean; error?: string }
@@ -471,7 +487,7 @@ function ImportsContent() {
               <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('exhibitors', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-primary/10 file:text-primary file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('exhibitors')} disabled={loading.exhibitors}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('exhibitors')} disabled={loading.exhibitors || !files.exhibitors}>
                 {loading.exhibitors ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
@@ -510,7 +526,7 @@ function ImportsContent() {
               <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('exhibitor-members', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-emerald-500/10 file:text-emerald-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('exhibitor-members')} disabled={loading['exhibitor-members']}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('exhibitor-members')} disabled={loading['exhibitor-members'] || !files['exhibitor-members']}>
                 {loading['exhibitor-members'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
@@ -562,7 +578,7 @@ function ImportsContent() {
               <Input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setFile('registrations', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-blue-500/10 file:text-blue-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('registrations')} disabled={loading.registrations}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('registrations')} disabled={loading.registrations || !files.registrations}>
                 {loading.registrations ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
@@ -586,11 +602,22 @@ function ImportsContent() {
           </CardHeader>
           <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
             <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Staff Type</Label>
+              <Combobox
+                options={staffTypes.map((type) => ({ value: type.type_code, label: `${type.type_name} (${type.type_code})` }))}
+                value={staffTypeCode}
+                onValueChange={setStaffTypeCode}
+                placeholder="Select staff type"
+                emptyMessage="No staff types found"
+                triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Upload File (.xlsx, .xls)</Label>
               <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('staff', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-purple-500/10 file:text-purple-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('staff')} disabled={loading.staff}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('staff')} disabled={loading.staff || !files.staff}>
                 {loading.staff ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
@@ -629,7 +656,7 @@ function ImportsContent() {
               <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('conferences', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-amber-500/10 file:text-amber-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('conferences')} disabled={loading.conferences}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('conferences')} disabled={loading.conferences || !files.conferences}>
                 {loading.conferences ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
@@ -671,7 +698,7 @@ function ImportsContent() {
               <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile('invite-codes', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-rose-500/10 file:text-rose-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('invite-codes')} disabled={loading['invite-codes']}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('invite-codes')} disabled={loading['invite-codes'] || !files['invite-codes']}>
                 {loading['invite-codes'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">
@@ -700,7 +727,7 @@ function ImportsContent() {
               <Input type="file" accept=".xlsx" onChange={(e) => setFile('payment-code-pool', e.target.files?.[0] || null)} className="bg-white/5 border-white/10 h-11 rounded-xl cursor-pointer file:bg-cyan-500/10 file:text-cyan-500 file:border-0 file:rounded-lg file:px-3 file:py-1 file:mr-3 file:font-bold file:text-[10px]" />
             </div>
             <div className="flex gap-2 mt-auto pt-4">
-              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('payment-code-pool')} disabled={loading['payment-code-pool']}>
+              <Button className="flex-1 btn-aurora rounded-xl font-bold h-11 shadow-lg shadow-primary/20" onClick={() => void runImport('payment-code-pool')} disabled={loading['payment-code-pool'] || !files['payment-code-pool']}>
                 {loading['payment-code-pool'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Import
               </Button>
               <Button asChild variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 hover:bg-white/10 font-bold px-4">

@@ -190,6 +190,10 @@ export async function createProjectStaff(projectUuid: string, data: any) {
       company_name: data.company_name,
       staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code,
       residence_country: data.residence_country,
+      job_position: data.job_position,
+      mobile_country_code: data.mobile_country_code,
+      mobile_number: data.mobile_number,
+      email: data.email,
       is_business_matching: Boolean(data.is_business_matching),
     }
 
@@ -240,6 +244,10 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
         staff_type_code: data.staff_type_code === 'ONSITE' ? 'ST' : data.staff_type_code === 'ORGANIZER' ? 'OR' : data.staff_type_code
       } : {}),
       ...(data.residence_country !== undefined ? { residence_country: data.residence_country } : {}),
+      ...(data.job_position !== undefined ? { job_position: data.job_position } : {}),
+      ...(data.mobile_country_code !== undefined ? { mobile_country_code: data.mobile_country_code } : {}),
+      ...(data.mobile_number !== undefined ? { mobile_number: data.mobile_number } : {}),
+      ...(data.email !== undefined ? { email: data.email } : {}),
       ...(data.is_business_matching !== undefined ? { is_business_matching: Boolean(data.is_business_matching) } : {}),
       ...(data.is_active !== undefined ? { is_active: Boolean(data.is_active) } : {}),
     }

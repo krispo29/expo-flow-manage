@@ -57,6 +57,10 @@ export interface Staff {
   created_at: string
   updated_at: string | null
   residence_country?: string
+  job_position?: string
+  mobile_country_code?: string
+  mobile_number?: string
+  email?: string
 }
 
 interface StaffResponse {
@@ -94,6 +98,7 @@ export function StaffList({
   const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
   const [residenceCountry, setResidenceCountry] = useState('TH')
+  const [mobileCountryCode, setMobileCountryCode] = useState('')
   const [isBusinessMatching, setIsBusinessMatching] = useState(false)
 
   const [loading, setLoading] = useState(false)
@@ -245,6 +250,7 @@ export function StaffList({
     setStaffType('ST')
     setTitle('Mr.')
     setResidenceCountry('TH')
+    setMobileCountryCode('')
     setIsBusinessMatching(false)
     setIsDialogOpen(true)
   }
@@ -259,6 +265,8 @@ export function StaffList({
     // Map full name from API to country code for UI
     const countryCode = countries.find(c => c.name === p.residence_country)?.code || 'TH'
     setResidenceCountry(countryCode)
+    const mobileCountryCode = countries.find(c => c.phoneCode === p.mobile_country_code)?.code || ''
+    setMobileCountryCode(mobileCountryCode)
     
     setIsDialogOpen(true)
   }
@@ -324,6 +332,10 @@ export function StaffList({
         company_name: selectedStaffForPermission.company_name || '',
         staff_type_code: selectedStaffForPermission.staff_type_code,
         residence_country: selectedStaffForPermission.residence_country || 'Thailand',
+        job_position: selectedStaffForPermission.job_position || '',
+        mobile_country_code: selectedStaffForPermission.mobile_country_code || '',
+        mobile_number: selectedStaffForPermission.mobile_number || '',
+        email: selectedStaffForPermission.email || '',
         is_business_matching: allowBusinessMatching,
       })
     ])
@@ -355,6 +367,7 @@ export function StaffList({
     const submittedCompany = ((formData.get('company_name') as string) || selectedStaff?.company_name || '').trim()
     const submittedStaffTypeCode = (formData.get('staff_type_code') as string) || staffType || selectedStaff?.staff_type_code || 'ST'
     const submittedResidenceCountry = countries.find(c => c.code === residenceCountry)?.name || selectedStaff?.residence_country || 'Thailand'
+    const submittedMobileCountryCode = countries.find(c => c.code === mobileCountryCode)?.phoneCode || ''
 
     const commonData = {
       title: submittedTitle,
@@ -363,6 +376,10 @@ export function StaffList({
       company_name: submittedCompany,
       staff_type_code: submittedStaffTypeCode,
       residence_country: submittedResidenceCountry,
+      job_position: (formData.get('job_position') as string || '').trim(),
+      mobile_country_code: submittedMobileCountryCode,
+      mobile_number: (formData.get('mobile_number') as string || '').trim(),
+      email: (formData.get('email') as string || '').trim(),
       is_business_matching: isBusinessMatching,
     }
 
@@ -970,6 +987,27 @@ export function StaffList({
                   onChange={setResidenceCountry}
                   required
                 />
+              </div>
+
+              <div className="space-y-2.5">
+                <Label htmlFor="job_position" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Position</Label>
+                <Input id="job_position" name="job_position" defaultValue={selectedStaff?.job_position || ''} className="h-12 bg-white/5 border-white/10 rounded-xl" />
+              </div>
+
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Mobile Country Code</Label>
+                <CountrySelector value={mobileCountryCode} onChange={setMobileCountryCode} label="" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2.5">
+                  <Label htmlFor="mobile_number" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Mobile Number</Label>
+                  <Input id="mobile_number" name="mobile_number" type="tel" defaultValue={selectedStaff?.mobile_number || ''} className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Email</Label>
+                  <Input id="email" name="email" type="email" defaultValue={selectedStaff?.email || ''} className="h-12 bg-white/5 border-white/10 rounded-xl" />
+                </div>
               </div>
 
               {isBusinessMatchingProject && (
