@@ -40,7 +40,7 @@ import {
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { type Event } from '@/app/actions/settings'
-import { isBusinessMatchingEnabled } from '@/lib/features'
+import { isBusinessMatchingEnabled, THAILAB2026_PROJECT_UUID } from '@/lib/features'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
@@ -249,8 +249,8 @@ export function ParticipantList({
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
   const [title, setTitle] = useState('Mr.')
-  const [residenceCountry, setResidenceCountry] = useState('VN')
-  const [mobileCountryCode, setMobileCountryCode] = useState('VN')
+  const [residenceCountry, setResidenceCountry] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
+  const [mobileCountryCode, setMobileCountryCode] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
   const [selectedEvent, setSelectedEvent] = useState(events[0]?.event_uuid || '')
   
   const onPrintClick = async (p: Participant) => {
@@ -408,8 +408,8 @@ export function ParticipantList({
     setSelectedParticipant(null)
     setAttendeeType('VI')
     setTitle('Mr.')
-    setResidenceCountry('VN')
-    setMobileCountryCode('VN')
+    setResidenceCountry(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
+    setMobileCountryCode(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
     setSelectedEvent(events[0]?.event_uuid || '')
     setIsDialogOpen(true)
   }
