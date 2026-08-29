@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/popover";
 import { countries, findCountryByPhoneCodeOrValue, getCountryDisplayName } from "@/lib/countries";
 import { getSelectedProject, getStoredProjects } from "@/lib/auth-storage";
+import { THAILAB2026_PROJECT_UUID } from "@/lib/features";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface CountrySelectorProps {
   value: string;
@@ -42,15 +44,19 @@ export function CountrySelector({
   className,
 }: CountrySelectorProps) {
   const [open, setOpen] = useState(false);
+  const userProjectId = useAuthStore((state) => state.user?.projectId);
   const projectIdFromUrl =
     typeof window === 'undefined'
       ? null
       : new URLSearchParams(window.location.search).get('projectId');
   const selectedProjectId =
-    projectIdFromUrl || getSelectedProject();
-  const projectCode = getStoredProjects().find(
-    (project) => project.project_uuid === selectedProjectId
-  )?.project_code;
+    projectIdFromUrl || userProjectId || getSelectedProject();
+  const projectCode =
+    selectedProjectId === THAILAB2026_PROJECT_UUID
+      ? 'THAILAB2026'
+      : getStoredProjects().find(
+          (project) => project.project_uuid === selectedProjectId
+        )?.project_code;
   const getDisplayValue = (country: typeof countries[number]) =>
     displayProperty === 'name'
       ? getCountryDisplayName(country, projectCode)

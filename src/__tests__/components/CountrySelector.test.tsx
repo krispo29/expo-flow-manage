@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { CountrySelector } from '@/components/CountrySelector'
+import { THAILAB2026_PROJECT_UUID } from '@/lib/features'
+import { useAuthStore } from '@/store/useAuthStore'
 
 global.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -32,6 +34,7 @@ describe('CountrySelector', () => {
     onChange.mockReset()
     sessionStorage.clear()
     window.history.pushState({}, '', '/')
+    useAuthStore.setState({ user: null })
   })
 
   it('shows Taiwan and still selects TW for THAILAB2026', () => {
@@ -99,5 +102,37 @@ describe('CountrySelector', () => {
     render(<CountrySelector value="TW" onChange={onChange} />)
 
     expect(screen.getByRole('combobox')).toHaveTextContent('Taiwan')
+  })
+
+  it('uses the organizer project when the URL and project session are absent', () => {
+    useAuthStore.setState({
+      user: {
+        id: 'organizer-1',
+        username: 'organizer',
+        role: 'ORGANIZER',
+        projectId: THAILAB2026_PROJECT_UUID,
+      },
+    })
+
+    render(<CountrySelector value="TW" onChange={onChange} />)
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('Taiwan')
+  })
+
+  it('keeps the canonical label for organizers from other projects', () => {
+    useAuthStore.setState({
+      user: {
+        id: 'organizer-2',
+        username: 'other-organizer',
+        role: 'ORGANIZER',
+        projectId: 'other-project',
+      },
+    })
+
+    render(<CountrySelector value="TW" onChange={onChange} />)
+
+    expect(screen.getByRole('combobox')).toHaveTextContent(
+      'Taiwan Province of China'
+    )
   })
 })
