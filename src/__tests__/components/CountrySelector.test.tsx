@@ -72,4 +72,32 @@ describe('CountrySelector', () => {
 
     expect(screen.getByRole('combobox')).toHaveTextContent('Taiwan')
   })
+
+  it('prefers the current URL project over a stale session selection', () => {
+    sessionStorage.setItem('selected_project', 'other-project')
+    sessionStorage.setItem(
+      'auth_projects',
+      JSON.stringify([
+        {
+          project_uuid: 'other-project',
+          project_name: 'Other Project',
+          project_code: 'OTHER2026',
+        },
+        {
+          project_uuid: 'thailab-project',
+          project_name: 'ThaiLab',
+          project_code: 'THAILAB2026',
+        },
+      ])
+    )
+    window.history.pushState(
+      {},
+      '',
+      '/admin/participants?projectId=thailab-project'
+    )
+
+    render(<CountrySelector value="TW" onChange={onChange} />)
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('Taiwan')
+  })
 })
