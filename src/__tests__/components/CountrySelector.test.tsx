@@ -31,6 +31,7 @@ describe('CountrySelector', () => {
   beforeEach(() => {
     onChange.mockReset()
     sessionStorage.clear()
+    window.history.pushState({}, '', '/')
   })
 
   it('shows Taiwan and still selects TW for THAILAB2026', () => {
@@ -52,5 +53,23 @@ describe('CountrySelector', () => {
     expect(screen.getByRole('combobox')).toHaveTextContent(
       'Taiwan Province of China'
     )
+  })
+
+  it('uses the project ID in the URL when session selection is absent', () => {
+    sessionStorage.setItem(
+      'auth_projects',
+      JSON.stringify([
+        {
+          project_uuid: 'project-1',
+          project_name: 'ThaiLab',
+          project_code: 'THAILAB2026',
+        },
+      ])
+    )
+    window.history.pushState({}, '', '/admin/participants?projectId=project-1')
+
+    render(<CountrySelector value="TW" onChange={onChange} />)
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('Taiwan')
   })
 })

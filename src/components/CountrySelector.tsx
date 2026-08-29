@@ -42,7 +42,11 @@ export function CountrySelector({
   className,
 }: CountrySelectorProps) {
   const [open, setOpen] = useState(false);
-  const selectedProjectId = getSelectedProject();
+  const selectedProjectId =
+    getSelectedProject() ||
+    (typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('projectId'));
   const projectCode = getStoredProjects().find(
     (project) => project.project_uuid === selectedProjectId
   )?.project_code;
