@@ -269,6 +269,12 @@ const normalizePhoneCodeValue = (value: string) => {
 
 export const getCountryByCode = (code: string) => countries.find(c => c.code === code);
 
+export const getCountryDisplayName = (
+  country: Pick<Country, 'code' | 'name'>,
+  projectCode?: string | null
+) =>
+  country.code === 'TW' && projectCode === 'THAILAB2026' ? 'Taiwan' : country.name;
+
 export const findCountryByCodeOrName = (value?: string | null) => {
   if (!value) return undefined;
 

@@ -16,7 +16,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { countries, findCountryByPhoneCodeOrValue } from "@/lib/countries"; 
+import { countries, findCountryByPhoneCodeOrValue, getCountryDisplayName } from "@/lib/countries";
+import { getSelectedProject, getStoredProjects } from "@/lib/auth-storage";
 import { cn } from "@/lib/utils";
 
 interface CountrySelectorProps {
@@ -41,6 +42,14 @@ export function CountrySelector({
   className,
 }: CountrySelectorProps) {
   const [open, setOpen] = useState(false);
+  const selectedProjectId = getSelectedProject();
+  const projectCode = getStoredProjects().find(
+    (project) => project.project_uuid === selectedProjectId
+  )?.project_code;
+  const getDisplayValue = (country: typeof countries[number]) =>
+    displayProperty === 'name'
+      ? getCountryDisplayName(country, projectCode)
+      : country[displayProperty];
 
   const sortedCountries = useMemo(() => {
     return [...countries].sort((a, b) => {
@@ -78,7 +87,7 @@ export function CountrySelector({
                   alt={selectedCountry.name} 
                   className="w-5 h-auto rounded-sm object-cover shadow-sm"
                 />
-                <span className="truncate">{selectedCountry[displayProperty]}</span>
+                <span className="truncate">{getDisplayValue(selectedCountry)}</span>
               </span>
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
@@ -95,7 +104,7 @@ export function CountrySelector({
                 {sortedCountries.map((country) => (
                   <CommandItem
                     key={country.code}
-                    value={country[displayProperty]}
+                    value={getDisplayValue(country)}
                     onSelect={() => {
                       onChange(country.code);
                       setOpen(false);
@@ -107,7 +116,7 @@ export function CountrySelector({
                         alt={country.name} 
                         className="w-5 h-auto rounded-sm object-cover shadow-sm"
                       />
-                      <span>{country[displayProperty]}</span>
+                      <span>{getDisplayValue(country)}</span>
                     </span>
                     {selectedCountry?.code === country.code && <Check className="ml-auto h-4 w-4" />}
                   </CommandItem>

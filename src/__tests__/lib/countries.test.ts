@@ -5,6 +5,7 @@ import {
   getCountryByCode,
   getCountryCodeFromPhoneCodeOrValue,
   getCountryCodeFromValue,
+  getCountryDisplayName,
   getCountryNameFromValue,
 } from '@/lib/countries'
 
@@ -147,6 +148,17 @@ describe('country value helpers', () => {
     expect(findCountryByCodeOrName('Taiwan')?.code).toBe('TW')
     expect(getCountryCodeFromValue('Taiwan')).toBe('TW')
     expect(getCountryNameFromValue('Taiwan')).toBe('Taiwan Province of China')
+  })
+
+  it('should shorten Taiwan only for the THAILAB2026 display label', () => {
+    const taiwan = getCountryByCode('TW')
+
+    expect(taiwan).toBeDefined()
+    expect(getCountryDisplayName(taiwan!, 'THAILAB2026')).toBe('Taiwan')
+    expect(getCountryDisplayName(taiwan!, 'OTHER2026')).toBe(
+      'Taiwan Province of China'
+    )
+    expect(getCountryNameFromValue('TW')).toBe('Taiwan Province of China')
   })
 
   it('should resolve phone country codes from API variants', () => {

@@ -68,7 +68,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
+import {
+  getCountryCodeFromValue,
+  getCountryDisplayName,
+  getCountryNameFromValue,
+} from '@/lib/countries'
 
 export default function ProjectsPage() {
   const router = useRouter()
@@ -85,6 +89,8 @@ export default function ProjectsPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>('')
   const [timezoneOpen, setTimezoneOpen] = useState(false)
   const [countryOpen, setCountryOpen] = useState(false)
+  const getEditorCountryName = (country?: Country) =>
+    country && getCountryDisplayName(country, editingProject?.project_code)
 
   async function fetchProjects() {
     setLoading(true)
@@ -524,8 +530,11 @@ export default function ProjectsPage() {
                           className="w-full justify-between font-normal"
                         >
                           {selectedCountry
-                            ? countries.find((c) => c.code === selectedCountry)
-                                ?.name
+                            ? getEditorCountryName(
+                                countries.find(
+                                  (country) => country.code === selectedCountry
+                                )
+                              )
                             : 'Select country...'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -539,7 +548,7 @@ export default function ProjectsPage() {
                               {countries.map((country) => (
                                 <CommandItem
                                   key={country.code}
-                                  value={country.name}
+                                  value={getEditorCountryName(country)}
                                   onSelect={() => {
                                     setSelectedCountry(country.code)
                                     setCountryOpen(false)
@@ -553,7 +562,7 @@ export default function ProjectsPage() {
                                         : 'opacity-0'
                                     )}
                                   />
-                                  {country.name}
+                                  {getEditorCountryName(country)}
                                 </CommandItem>
                               ))}
                             </CommandGroup>
