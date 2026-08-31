@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsDown } from "lucide-react"
+import { Check, ChevronsDown, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,7 @@ export interface ComboboxProps {
   className?: string
   triggerClassName?: string
   disabled?: boolean
+  loading?: boolean
 }
 
 export function Combobox({
@@ -44,6 +45,7 @@ export function Combobox({
   className,
   triggerClassName,
   disabled,
+  loading,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
@@ -68,11 +70,18 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           className={cn("w-full justify-between font-normal", triggerClassName)}
-          disabled={disabled}
+          disabled={disabled || loading}
         >
-          <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
+          {loading ? (
+            <span className="flex items-center text-muted-foreground" aria-live="polite">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading…
+            </span>
+          ) : (
+            <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>
+              {selectedOption ? selectedOption.label : placeholder}
+            </span>
+          )}
           <ChevronsDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

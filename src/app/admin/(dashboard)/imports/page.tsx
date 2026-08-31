@@ -89,6 +89,12 @@ function ImportsContent() {
   const [histories, setHistories] = useState<ImportHistory[]>([])
   const [attendeeTypes, setAttendeeTypes] = useState<AttendeeType[]>([])
   const [staffTypes, setStaffTypes] = useState<{ type_code: string; type_name: string }[]>([])
+  const [optionsLoading, setOptionsLoading] = useState({
+    events: true,
+    exhibitors: true,
+    attendeeTypes: true,
+    staffTypes: true,
+  })
   const [eventUuids, setEventUuids] = useState<Record<string, string>>({
     'invite-codes': NO_EVENT_VALUE,
   })
@@ -183,19 +189,14 @@ function ImportsContent() {
   }
 
   useEffect(() => {
-    const run = async () => {
-      const [eventsRes, exhibitorsRes, historiesRes, typesRes, staffTypesRes] = await Promise.all([
-        getImportEvents(),
-        getImportExhibitors(),
-        getImportHistories(),
-        getAllAttendeeTypes(),
-        getStaffTypes(),
-      ])
+    const loadEvents = async () => {
+      try {
+        const response = await getImportEvents()
+        if (!response.success) return
 
-      if (eventsRes.success) {
-        setEvents(eventsRes.data)
-        if (eventsRes.data.length > 0) {
-          const defaultUuid = eventsRes.data[0].event_uuid
+        setEvents(response.data)
+        if (response.data.length > 0) {
+          const defaultUuid = response.data[0].event_uuid
           setEventUuids({
             exhibitors: defaultUuid,
             registrations: defaultUuid,
@@ -203,32 +204,53 @@ function ImportsContent() {
             'invite-codes': NO_EVENT_VALUE,
           })
         }
-      }
-
-      if (exhibitorsRes.success) {
-        setExhibitors(exhibitorsRes.data)
-        if (exhibitorsRes.data.length > 0) {
-          const defaultUuid = exhibitorsRes.data[0].exhibitor_uuid
-          setExhibitorUuids({
-            'exhibitor-members': defaultUuid,
-          })
-        }
-      }
-
-      if (historiesRes.success) {
-        setHistories(historiesRes.data)
-      }
-
-      if (typesRes.success) {
-        setAttendeeTypes(typesRes.data)
-      }
-
-      if (staffTypesRes.success) {
-        setStaffTypes(staffTypesRes.data || [])
+      } finally {
+        setOptionsLoading((current) => ({ ...current, events: false }))
       }
     }
 
-    void run()
+    const loadExhibitors = async () => {
+      try {
+        const response = await getImportExhibitors()
+        if (!response.success) return
+
+        setExhibitors(response.data)
+        if (response.data.length > 0) {
+          setExhibitorUuids({ 'exhibitor-members': response.data[0].exhibitor_uuid })
+        }
+      } finally {
+        setOptionsLoading((current) => ({ ...current, exhibitors: false }))
+      }
+    }
+
+    const loadHistories = async () => {
+      const response = await getImportHistories()
+      if (response.success) setHistories(response.data)
+    }
+
+    const loadAttendeeTypes = async () => {
+      try {
+        const response = await getAllAttendeeTypes()
+        if (response.success) setAttendeeTypes(response.data)
+      } finally {
+        setOptionsLoading((current) => ({ ...current, attendeeTypes: false }))
+      }
+    }
+
+    const loadStaffTypes = async () => {
+      try {
+        const response = await getStaffTypes()
+        if (response.success) setStaffTypes(response.data || [])
+      } finally {
+        setOptionsLoading((current) => ({ ...current, staffTypes: false }))
+      }
+    }
+
+    void loadEvents()
+    void loadExhibitors()
+    void loadHistories()
+    void loadAttendeeTypes()
+    void loadStaffTypes()
   }, [])
 
   useEffect(() => {
@@ -479,6 +501,7 @@ function ImportsContent() {
                 onValueChange={(val) => setEventUuids(prev => ({ ...prev, exhibitors: val }))}
                 placeholder="Select event"
                 emptyMessage="No events found"
+                loading={optionsLoading.events}
                 triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all"
               />
             </div>
@@ -518,6 +541,7 @@ function ImportsContent() {
                 onValueChange={(val) => setExhibitorUuids(prev => ({ ...prev, 'exhibitor-members': val }))}
                 placeholder="Select exhibitor"
                 emptyMessage="No exhibitors found"
+                loading={optionsLoading.exhibitors}
                 triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
               />
             </div>
@@ -558,6 +582,7 @@ function ImportsContent() {
                   onValueChange={(val) => setEventUuids(prev => ({ ...prev, registrations: val }))}
                   placeholder="Select"
                   emptyMessage="No events found"
+                  loading={optionsLoading.events}
                   triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
                 />
               </div>
@@ -569,6 +594,7 @@ function ImportsContent() {
                   onValueChange={(val) => setAttendeeTypeCodes((prev: Record<string, string>) => ({ ...prev, registrations: val }))}
                   placeholder="Select"
                   emptyMessage="No attendee types found"
+                  loading={optionsLoading.attendeeTypes}
                   triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
                 />
               </div>
@@ -609,6 +635,7 @@ function ImportsContent() {
                 onValueChange={setStaffTypeCode}
                 placeholder="Select staff type"
                 emptyMessage="No staff types found"
+                loading={optionsLoading.staffTypes}
                 triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
               />
             </div>
@@ -648,6 +675,7 @@ function ImportsContent() {
                 onValueChange={(val) => setEventUuids(prev => ({ ...prev, conferences: val }))}
                 placeholder="Select event"
                 emptyMessage="No events found"
+                loading={optionsLoading.events}
                 triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
               />
             </div>
@@ -690,6 +718,7 @@ function ImportsContent() {
                 onValueChange={(value) => setEventUuids((prev) => ({ ...prev, 'invite-codes': value }))}
                 placeholder="No Event"
                 emptyMessage="No events found"
+                loading={optionsLoading.events}
                 triggerClassName="h-11 bg-white/5 border-white/10 rounded-xl"
               />
             </div>
