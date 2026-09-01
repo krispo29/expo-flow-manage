@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Printer, Loader2, Search, UserCheck, ZoomIn, ZoomOut, Trash2, Cpu, Ticket } from "lucide-react"
-import { useMemo, useState, Suspense } from "react"
+import { useMemo, useState, useEffect, Suspense } from "react"
 import { searchParticipantsByCodes, printParticipantBadgesBulk, Participant as RealParticipant } from "@/app/actions/participant"
+import { getProjectDetail } from "@/app/actions/project"
+import { THAILAB2026_PROJECT_UUID } from "@/lib/features"
 import { toast } from "sonner"
 import { BadgePrint } from "@/components/badge-print"
 import { QRCodeSVG } from "qrcode.react"
@@ -15,7 +17,7 @@ import { useSearchParams } from "next/navigation"
 import { printBadges } from "@/utils/print-badge"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
-import { getCountryNameFromValue } from "@/lib/countries"
+import { findCountryByCodeOrName, getCountryDisplayName, getCountryNameFromValue } from "@/lib/countries"
 
 function parseParticipantSearchTerms(value: string) {
   const seen = new Set<string>()
@@ -36,6 +38,22 @@ function parseParticipantSearchTerms(value: string) {
 function UtilitiesContent() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId') || ""
+  const [projectCode, setProjectCode] = useState<string>(() => {
+    return projectId === THAILAB2026_PROJECT_UUID ? "THAILAB2026" : ""
+  })
+
+  useEffect(() => {
+    if (!projectId) return
+    if (projectId === THAILAB2026_PROJECT_UUID) {
+      setProjectCode("THAILAB2026")
+      return
+    }
+    getProjectDetail(projectId).then(result => {
+      if (result.success && result.project) {
+        setProjectCode(result.project.project_code || "")
+      }
+    })
+  }, [projectId])
   
   const [printSearch, setPrintSearch] = useState("")
   const [participants, setParticipants] = useState<RealParticipant[]>([])
@@ -122,11 +140,16 @@ function UtilitiesContent() {
             residence_country?: string
           }
 
+          const countryObj = findCountryByCodeOrName(participantFull.residence_country)
+          const displayCountry = countryObj
+            ? getCountryDisplayName(countryObj, projectCode)
+            : getCountryNameFromValue(participantFull.residence_country, '')
+
           return {
             firstName: p.first_name || '',
             lastName: p.last_name || '',
             companyName: p.company_name || '',
-            country: getCountryNameFromValue(participantFull.residence_country, ''),
+            country: displayCountry,
             registrationCode: p.registration_code,
             category: p.attendee_type_code || 'VISITOR',
             badgeType: participantFull.badge_name || participantFull.attendee_type_name || p.attendee_type_code || 'VISITOR',
@@ -134,7 +157,7 @@ function UtilitiesContent() {
           }
         })
         
-        printBadges(badgeData)
+        printBadges(badgeData, projectCode)
       } else {
         toast.error(result.error || "Failed to bulk print")
       }
@@ -406,7 +429,10 @@ function UtilitiesContent() {
                                             
                                             <div className="shadow-2xl rounded-3xl bg-white overflow-hidden aspect-[3/4.2] relative group ring-4 ring-white/5 flex items-start justify-center pt-10">
                                                 <div className="transition-transform group-hover:scale-[1.03] duration-1000 origin-top pointer-events-none" style={{ transform: 'scale(0.82)' }}>
-                                                    <BadgePrint participant={(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]) as RealParticipant & { title_other?: string }} />
+                                                    <BadgePrint 
+                                                        participant={(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]) as RealParticipant & { title_other?: string }} 
+                                                        projectCode={projectCode}
+                                                    />
                                                 </div>
                                                 
                                                 {/* Intelligence Overlay */}

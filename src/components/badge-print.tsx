@@ -5,9 +5,12 @@ import { Participant, ParticipantDetail } from '@/app/actions/participant'
 import { getAttendeeTypeLabel } from '@/lib/attendee-types'
 import { getCountryNameFromValue } from '@/lib/countries'
 import { QRCodeSVG } from 'qrcode.react'
+import { isThailabBadgeProject, ThailabBadgeCard } from '@/components/print/thailab-badge-card'
+import type { PrintBadgeData } from '@/utils/print-badge'
 
 interface BadgePrintProps {
   participant: Participant | ParticipantDetail
+  projectCode?: string
 }
 
 const NAME_FIT_MAX_FONT_SIZE_PT = 20
@@ -32,7 +35,7 @@ function calculateFitFontSizePt(element: HTMLElement) {
   return Math.max(NAME_FIT_MIN_FONT_SIZE_PT, Math.min(NAME_FIT_MAX_FONT_SIZE_PT, nextFontSize))
 }
 
-export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
+export function BadgePrint({ participant, projectCode }: Readonly<BadgePrintProps>) {
   const p = participant as ParticipantDetail & { attendee_type_name?: string; badge_name?: string; country?: string }
   const nameRef = useRef<HTMLDivElement>(null)
   const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ').trim()
@@ -41,6 +44,34 @@ export function BadgePrint({ participant }: Readonly<BadgePrintProps>) {
   const country = getCountryNameFromValue(p.residence_country || p.country, '')
   const registrationCode = p.registration_code || p.registration_uuid
   const [nameFontSizePt, setNameFontSizePt] = useState(NAME_FIT_MAX_FONT_SIZE_PT)
+
+  if (isThailabBadgeProject(projectCode)) {
+    const thailabBadgeData: PrintBadgeData = {
+      firstName: p.first_name || '',
+      lastName: p.last_name || '',
+      companyName: p.company_name || '',
+      country: p.residence_country || p.country || '',
+      registrationCode: registrationCode || '',
+      position,
+      badgeType,
+      category: p.attendee_type_code || 'VISITOR',
+    }
+    return (
+      <div className="badge-print-preview">
+        <ThailabBadgeCard badge={thailabBadgeData} />
+        <style jsx>{`
+          .badge-print-preview {
+            width: 10.5cm;
+            height: 13cm;
+            background: white;
+            color: black;
+            overflow: hidden;
+            text-align: center;
+          }
+        `}</style>
+      </div>
+    )
+  }
 
   useLayoutEffect(() => {
     const nameElement = nameRef.current
