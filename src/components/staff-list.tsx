@@ -98,7 +98,6 @@ export function StaffList({
 
   const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
-  const [titleOther, setTitleOther] = useState('')
   const [residenceCountry, setResidenceCountry] = useState('TH')
   const [mobileCountryCode, setMobileCountryCode] = useState('')
   const [isBusinessMatching, setIsBusinessMatching] = useState(false)
@@ -251,7 +250,6 @@ export function StaffList({
     setSelectedStaff(null)
     setStaffType('ST')
     setTitle('Mr.')
-    setTitleOther('')
     setResidenceCountry('TH')
     setMobileCountryCode('')
     setIsBusinessMatching(false)
@@ -262,15 +260,7 @@ export function StaffList({
     setSelectedStaff(p)
     const normalizedType = p.staff_type_code === 'ONSITE' ? 'ST' : p.staff_type_code === 'ORGANIZER' ? 'OR' : (p.staff_type_code || 'ST')
     setStaffType(normalizedType)
-    const standardTitlesWithoutOther = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.']
-    const rawTitle = p.title || 'Mr.'
-    if (rawTitle === 'Other' || !standardTitlesWithoutOther.includes(rawTitle)) {
-      setTitle('Other')
-      setTitleOther(p.title_other || (rawTitle !== 'Other' ? rawTitle : ''))
-    } else {
-      setTitle(rawTitle)
-      setTitleOther(p.title_other || '')
-    }
+    setTitle(p.title || 'Mr.')
     setIsBusinessMatching(Boolean(p.is_business_matching))
     
     // Map full name from API to country code for UI
@@ -373,7 +363,6 @@ export function StaffList({
 
     const formData = new FormData(e.currentTarget)
     const submittedTitle = title || (formData.get('title') as string) || 'Mr.'
-    const submittedTitleOther = title === 'Other' ? (((formData.get('title_other') as string) || titleOther).trim()) : ''
     const submittedFirstName = ((formData.get('first_name') as string) || selectedStaff?.first_name || '').trim()
     const submittedLastName = ((formData.get('last_name') as string) || selectedStaff?.last_name || '').trim()
     const submittedCompany = ((formData.get('company_name') as string) || selectedStaff?.company_name || '').trim()
@@ -383,7 +372,6 @@ export function StaffList({
 
     const commonData = {
       title: submittedTitle,
-      title_other: submittedTitleOther,
       first_name: submittedFirstName,
       last_name: submittedLastName,
       company_name: submittedCompany,
@@ -1003,17 +991,7 @@ export function StaffList({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2.5 sm:col-span-2">
                   <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title <span className="text-red-500">*</span></Label>
-                  <Select 
-                    name="title" 
-                    value={title} 
-                    onValueChange={(val) => {
-                      setTitle(val)
-                      if (val !== 'Other') {
-                        setTitleOther('')
-                      }
-                    }} 
-                    required
-                  >
+                  <Select name="title" value={title} onValueChange={setTitle} required>
                     <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
                       <SelectValue />
                     </SelectTrigger>
@@ -1023,17 +1001,6 @@ export function StaffList({
                       ))}
                     </SelectContent>
                   </Select>
-                  {title === 'Other' && (
-                    <Input 
-                      id="title_other" 
-                      name="title_other" 
-                      placeholder="Specify title" 
-                      value={titleOther} 
-                      onChange={(e) => setTitleOther(e.target.value)} 
-                      required 
-                      className="h-12 bg-white/5 border-white/10 rounded-xl mt-2" 
-                    />
-                  )}
                 </div>
                 <div className="space-y-2.5">
                   <Label htmlFor="first_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">First Name <span className="text-red-500">*</span></Label>

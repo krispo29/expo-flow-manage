@@ -107,10 +107,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
     companyTel: '',
     staffTypeCode: 'EXHIBITOR'
   })
-  const [isOtherTitle, setIsOtherTitle] = useState(false)
-  const [customTitle, setCustomTitle] = useState('')
-
-  const TITLES = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'Miss']
+  const TITLES = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'Miss', 'Other']
 
   const fetchStaff = useCallback(async () => {
     setLoading(true)
@@ -131,7 +128,6 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
         registrationCode: m.registration_code,
         exhibitorId: exhibitorId,
         title: m.title || '',
-        title_other: m.title_other || '',
         firstName: m.first_name || '',
         lastName: m.last_name || '',
         email: m.email || '',
@@ -160,19 +156,10 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
   function handleOpenDialog(staff?: Staff) {
     if (staff) {
       setEditingStaff(staff)
-      const isStandard = TITLES.includes(staff.title || '')
-      
-      let displayTitle = '';
-      if (isStandard) {
-        displayTitle = staff.title || '';
-      } else if (staff.title) {
-        displayTitle = 'Other';
-      }
-      
       setFormData({
         firstName: staff.firstName || '',
         lastName: staff.lastName || '',
-        title: displayTitle,
+        title: staff.title || 'Mr.',
         position: staff.position || '',
         email: staff.email || '',
         mobile: staff.mobile || '',
@@ -181,20 +168,12 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
         companyTel: staff.companyTel || exhibitor?.phone || '',
         staffTypeCode: staff.staff_type_code || 'EXHIBITOR'
       })
-      
-      if (!isStandard && staff.title) {
-        setIsOtherTitle(true)
-        setCustomTitle((staff as any).title_other || (staff.title !== 'Other' ? staff.title : ''))
-      } else {
-        setIsOtherTitle(false)
-        setCustomTitle('')
-      }
     } else {
       setEditingStaff(null)
       setFormData({
         firstName: '',
         lastName: '',
-        title: '',
+        title: 'Mr.',
         position: '',
         email: '',
         mobile: '',
@@ -203,8 +182,6 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
         companyTel: exhibitor?.phone || '',
         staffTypeCode: 'EXHIBITOR'
       })
-      setIsOtherTitle(false)
-      setCustomTitle('')
     }
     setIsDialogOpen(true)
   }
@@ -215,13 +192,9 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
 
     setIsSubmitting(true)
     
-    const finalTitle = isOtherTitle ? 'Other' : formData.title
-    const finalTitleOther = isOtherTitle ? customTitle : ''
-    
     // Structure expected by the actions
     const payload = {
-      title: finalTitle,
-      title_other: finalTitleOther,
+      title: formData.title,
       firstName: formData.firstName,
       lastName: formData.lastName,
       position: formData.position,
@@ -531,38 +504,20 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="title" className="text-right">Title</Label>
-                <div className="col-span-3 flex gap-2">
+                <div className="col-span-3">
                   <Select 
                     value={formData.title} 
-                    onValueChange={(value) => {
-                      if (value === 'Other') {
-                        setIsOtherTitle(true)
-                        setFormData({...formData, title: 'Other'})
-                      } else {
-                        setIsOtherTitle(false)
-                        setFormData({...formData, title: value})
-                        setCustomTitle('')
-                      }
-                    }}
+                    onValueChange={(value) => setFormData({...formData, title: value})}
                   >
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TITLES.map((t) => (
+                      {Array.from(new Set([...TITLES, formData.title])).filter(Boolean).map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
-                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  {isOtherTitle && (
-                    <Input 
-                      placeholder="Specify title" 
-                      value={customTitle} 
-                      onChange={(e) => setCustomTitle(e.target.value)}
-                      className="flex-1"
-                    />
-                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
