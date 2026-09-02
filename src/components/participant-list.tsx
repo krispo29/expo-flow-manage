@@ -249,6 +249,7 @@ export function ParticipantList({
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
   const [title, setTitle] = useState('Mr.')
+  const [titleOther, setTitleOther] = useState('')
   const [residenceCountry, setResidenceCountry] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
   const [mobileCountryCode, setMobileCountryCode] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
   const [selectedEvent, setSelectedEvent] = useState(events[0]?.event_uuid || '')
@@ -412,6 +413,7 @@ export function ParticipantList({
     setSelectedParticipant(null)
     setAttendeeType('VI')
     setTitle('Mr.')
+    setTitleOther('')
     setResidenceCountry(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
     setMobileCountryCode(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
     setSelectedEvent(events[0]?.event_uuid || '')
@@ -423,10 +425,19 @@ export function ParticipantList({
     const result = await getParticipantById(p.registration_uuid)
     setLoading(false)
 
+    const standardTitlesWithoutOther = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.']
+
     if (result.success && result.data) {
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
-      setTitle(result.data.title || 'Mr.')
+      const rawTitle = result.data.title || 'Mr.'
+      if (rawTitle === 'Other' || !standardTitlesWithoutOther.includes(rawTitle)) {
+        setTitle('Other')
+        setTitleOther(result.data.title_other || (rawTitle !== 'Other' ? rawTitle : ''))
+      } else {
+        setTitle(rawTitle)
+        setTitleOther(result.data.title_other || '')
+      }
       const residenceCountryCode = getCountryCodeFromValue(result.data.residence_country, '')
       setResidenceCountry(residenceCountryCode)
 
@@ -437,7 +448,14 @@ export function ParticipantList({
     } else {
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
-      setTitle(p.title || 'Mr.')
+      const rawTitle = p.title || 'Mr.'
+      if (rawTitle === 'Other' || !standardTitlesWithoutOther.includes(rawTitle)) {
+        setTitle('Other')
+        setTitleOther((p as any).title_other || (rawTitle !== 'Other' ? rawTitle : ''))
+      } else {
+        setTitle(rawTitle)
+        setTitleOther((p as any).title_other || '')
+      }
       setResidenceCountry(getCountryCodeFromValue(p.residence_country, ''))
       setMobileCountryCode('')
       setSelectedEvent(events[0]?.event_uuid || '')
@@ -1188,16 +1206,37 @@ export function ParticipantList({
               </div>
               <div className="space-y-2.5">
                 <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title</Label>
-                <Select name="title" value={title} onValueChange={setTitle} required>
+                <Select 
+                  name="title" 
+                  value={title} 
+                  onValueChange={(val) => {
+                    setTitle(val)
+                    if (val !== 'Other') {
+                      setTitleOther('')
+                    }
+                  }} 
+                  required
+                >
                   <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="glass border-white/10">
-                    {Array.from(new Set(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', title])).filter(Boolean).map(t => (
+                    {Array.from(new Set(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Other', title])).filter(Boolean).map(t => (
                       <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {title === 'Other' && (
+                  <Input 
+                    id="title_other" 
+                    name="title_other" 
+                    placeholder="Specify title" 
+                    value={titleOther} 
+                    onChange={(e) => setTitleOther(e.target.value)} 
+                    required 
+                    className="h-12 bg-white/5 border-white/10 rounded-xl mt-2" 
+                  />
+                )}
               </div>
               <div className="space-y-2.5">
                 <Label htmlFor="first_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">First Name *</Label>

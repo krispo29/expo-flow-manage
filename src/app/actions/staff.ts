@@ -185,6 +185,7 @@ export async function createProjectStaff(projectUuid: string, data: any) {
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
       title: data.title,
+      title_other: data.title_other || '',
       first_name: data.first_name,
       last_name: data.last_name,
       company_name: data.company_name,
@@ -237,6 +238,7 @@ export async function updateProjectStaff(projectUuid: string, staffId: string, d
     const headers = await getAuthHeaders(projectUuid)
     const payload = {
       ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.title_other !== undefined ? { title_other: data.title_other } : {}),
       ...(data.first_name !== undefined ? { first_name: data.first_name } : {}),
       ...(data.last_name !== undefined ? { last_name: data.last_name } : {}),
       ...(data.company_name !== undefined ? { company_name: data.company_name } : {}),

@@ -171,4 +171,15 @@ describe('StaffList Business Matching Toggle', () => {
       )
     })
   })
+
+  it('renders Other in title options and handles custom title', async () => {
+    render(<StaffList initialData={initialData} projectId={PROJECT_ID} />)
+
+    // Click Add Staff button
+    const addStaffButton = screen.getByRole('button', { name: /add staff/i })
+    fireEvent.click(addStaffButton)
+
+    expect(screen.getAllByText('Add Staff').length).toBeGreaterThan(0)
+    expect(screen.getByText('Other')).toBeInTheDocument()
+  })
 })

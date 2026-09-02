@@ -113,4 +113,21 @@ describe('ParticipantList', () => {
       )
     })
   })
+
+  it('renders Other in title options when creating participant', () => {
+    render(
+      <ParticipantList
+        participants={[]}
+        projectId="07626a19-001d-4675-addd-3a92e3f46d47"
+        attendeeTypes={[]}
+        events={[]}
+      />,
+    )
+
+    const addButton = screen.getByRole('button', { name: /^add$/i })
+    fireEvent.click(addButton)
+
+    expect(screen.getByText('Create Participant')).toBeInTheDocument()
+    expect(screen.getByText('Other')).toBeInTheDocument()
+  })
 })

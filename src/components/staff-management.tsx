@@ -131,6 +131,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
         registrationCode: m.registration_code,
         exhibitorId: exhibitorId,
         title: m.title || '',
+        title_other: m.title_other || '',
         firstName: m.first_name || '',
         lastName: m.last_name || '',
         email: m.email || '',
@@ -183,7 +184,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
       
       if (!isStandard && staff.title) {
         setIsOtherTitle(true)
-        setCustomTitle(staff.title)
+        setCustomTitle((staff as any).title_other || (staff.title !== 'Other' ? staff.title : ''))
       } else {
         setIsOtherTitle(false)
         setCustomTitle('')
@@ -214,11 +215,13 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
 
     setIsSubmitting(true)
     
-    const finalTitle = isOtherTitle ? customTitle : formData.title
+    const finalTitle = isOtherTitle ? 'Other' : formData.title
+    const finalTitleOther = isOtherTitle ? customTitle : ''
     
     // Structure expected by the actions
     const payload = {
       title: finalTitle,
+      title_other: finalTitleOther,
       firstName: formData.firstName,
       lastName: formData.lastName,
       position: formData.position,
