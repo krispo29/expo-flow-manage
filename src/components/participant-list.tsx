@@ -31,7 +31,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Mail, Calendar, Building2, Filter, X, Copy, Check, Send } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Mail, Calendar, Building2, Filter, X, Copy, Check, Send } from 'lucide-react'
 import { 
   type Participant, createParticipant, updateParticipant, deleteParticipant, getParticipantById, type ParticipantDetail,
   type AttendeeType,
@@ -1070,33 +1070,69 @@ export function ParticipantList({
               Visualizing <span className="text-foreground">{filteredParticipants.length > 0 ? startIndex + 1 : 0}</span> to <span className="text-foreground">{Math.min(endIndex, filteredParticipants.length)}</span> of <span className="text-foreground font-bold">{filteredParticipants.length}</span> attendees
             </div>
             
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-white/5 border-white/10"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex items-center gap-1 mx-2">
-                <span className="text-sm font-bold text-foreground">{currentPage}</span>
-                <span className="text-sm text-muted-foreground/40 font-normal">/</span>
-                <span className="text-sm text-muted-foreground font-bold">{totalPages || 1}</span>
+            {filteredParticipants.length > PAGE_SIZE && (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1 mx-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = currentPage
+                    if (currentPage <= 3) pageNum = i + 1
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                    else pageNum = currentPage - 2 + i
+
+                    if (pageNum > 0 && pageNum <= totalPages) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="icon"
+                          className={cn("h-9 w-9 rounded-full text-xs font-bold", currentPage === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    }
+                    return null
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
               </div>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-white/5 border-white/10"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1460,37 +1496,78 @@ export function ParticipantList({
                            })}
                          
                          {totalConfPages > 1 && (
-                           <div className="col-span-full flex flex-col sm:flex-row items-center justify-between pt-8 mt-4 border-t border-white/10 text-xs gap-4">
-                             <div className="text-muted-foreground font-medium italic">
-                               Visualizing <span className="text-foreground">{startIdx + 1}</span> to <span className="text-foreground">{Math.min(startIdx + CONF_PAGE_SIZE, filtered.length)}</span> of <span className="text-foreground font-bold">{filtered.length}</span> results
-                             </div>
-                             <div className="flex gap-2">
-                               <Button
-                                 type="button"
-                                 variant="outline"
-                                 size="icon"
-                                 className="h-8 w-8 rounded-full bg-white/5 border-white/10"
-                                 onClick={() => setConfCurrentPage(prev => Math.max(1, prev - 1))}
-                                 disabled={confCurrentPage === 1}
-                               >
-                                 <ChevronLeft className="h-4 w-4" />
-                               </Button>
-                               <div className="flex items-center px-4 font-bold">
-                                 {confCurrentPage} <span className="mx-1 opacity-30 font-normal">/</span> {totalConfPages}
-                               </div>
-                               <Button
-                                 type="button"
-                                 variant="outline"
-                                 size="icon"
-                                 className="h-8 w-8 rounded-full bg-white/5 border-white/10"
-                                 onClick={() => setConfCurrentPage(prev => Math.min(totalConfPages, prev + 1))}
-                                 disabled={confCurrentPage === totalConfPages}
-                               >
-                                 <ChevronRight className="h-4 w-4" />
-                               </Button>
-                             </div>
-                           </div>
-                         )}
+                            <div className="col-span-full flex flex-col sm:flex-row items-center justify-between pt-8 mt-4 border-t border-white/10 text-xs gap-4">
+                              <div className="text-muted-foreground font-medium italic">
+                                Visualizing <span className="text-foreground">{startIdx + 1}</span> to <span className="text-foreground">{Math.min(startIdx + CONF_PAGE_SIZE, filtered.length)}</span> of <span className="text-foreground font-bold">{filtered.length}</span> results
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-white/5 border-white/10"
+                                  onClick={() => setConfCurrentPage(1)}
+                                  disabled={confCurrentPage === 1}
+                                >
+                                  <ChevronsLeft className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-white/5 border-white/10"
+                                  onClick={() => setConfCurrentPage(prev => Math.max(1, prev - 1))}
+                                  disabled={confCurrentPage === 1}
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <div className="flex items-center gap-1 mx-1">
+                                  {Array.from({ length: Math.min(5, totalConfPages) }, (_, i) => {
+                                    let pageNum = confCurrentPage
+                                    if (confCurrentPage <= 3) pageNum = i + 1
+                                    else if (confCurrentPage >= totalConfPages - 2) pageNum = totalConfPages - 4 + i
+                                    else pageNum = confCurrentPage - 2 + i
+
+                                    if (pageNum > 0 && pageNum <= totalConfPages) {
+                                      return (
+                                        <Button
+                                          key={pageNum}
+                                          type="button"
+                                          variant={confCurrentPage === pageNum ? "default" : "outline"}
+                                          size="icon"
+                                          className={cn("h-8 w-8 rounded-full text-xs font-bold", confCurrentPage === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
+                                          onClick={() => setConfCurrentPage(pageNum)}
+                                        >
+                                          {pageNum}
+                                        </Button>
+                                      )
+                                    }
+                                    return null
+                                  })}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-white/5 border-white/10"
+                                  onClick={() => setConfCurrentPage(prev => Math.min(totalConfPages, prev + 1))}
+                                  disabled={confCurrentPage === totalConfPages}
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-white/5 border-white/10"
+                                  onClick={() => setConfCurrentPage(totalConfPages)}
+                                  disabled={confCurrentPage === totalConfPages}
+                                >
+                                  <ChevronsRight className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                        </>
                      );
                    })()

@@ -29,7 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, Building2, ShieldCheck, Power, Filter, X, Copy, Check } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, Printer, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Building2, ShieldCheck, Power, Filter, X, Copy, Check } from 'lucide-react'
 import {
   createProjectStaff, updateProjectStaff, deleteProjectStaff, printProjectStaffBadge, getStaffTypes,
   getProjectStaffEventPermissions, updateProjectStaffEventPermissions
@@ -878,33 +878,69 @@ export function StaffList({
                 <span className="text-foreground font-bold">{initialData.total_items}</span> staff
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
-                  onClick={() => handlePageChange(initialData.page - 1)}
-                  disabled={initialData.page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+              {initialData.total_pages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                    onClick={() => handlePageChange(1)}
+                    disabled={initialData.page === 1}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                    onClick={() => handlePageChange(initialData.page - 1)}
+                    disabled={initialData.page === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-1 mx-1">
+                    {Array.from({ length: Math.min(5, initialData.total_pages) }, (_, i) => {
+                      let pageNum = initialData.page
+                      if (initialData.page <= 3) pageNum = i + 1
+                      else if (initialData.page >= initialData.total_pages - 2) pageNum = initialData.total_pages - 4 + i
+                      else pageNum = initialData.page - 2 + i
 
-                <div className="flex items-center gap-1 mx-2">
-                  <span className="text-sm font-bold text-foreground">{initialData.page}</span>
-                  <span className="text-sm text-muted-foreground/40 font-normal">/</span>
-                  <span className="text-sm text-muted-foreground font-bold">{initialData.total_pages || 1}</span>
+                      if (pageNum > 0 && pageNum <= initialData.total_pages) {
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={initialData.page === pageNum ? "default" : "outline"}
+                            size="icon"
+                            className={cn("h-9 w-9 rounded-full text-xs font-bold", initialData.page === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
+                            onClick={() => handlePageChange(pageNum)}
+                          >
+                            {pageNum}
+                          </Button>
+                        )
+                      }
+                      return null
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                    onClick={() => handlePageChange(initialData.page + 1)}
+                    disabled={initialData.page === initialData.total_pages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                    onClick={() => handlePageChange(initialData.total_pages)}
+                    disabled={initialData.page === initialData.total_pages}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
-                  onClick={() => handlePageChange(initialData.page + 1)}
-                  disabled={initialData.page === initialData.total_pages || initialData.total_pages === 0}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              )}
             </div>
           )}
         </CardContent>

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Search, Upload, ChevronLeft, ChevronRight, Building2, QrCode, Filter, X, Download } from 'lucide-react'
+import { Loader2, Search, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Building2, QrCode, Filter, X, Download } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -509,36 +509,73 @@ export function AttendanceLogs({ projectId }: Readonly<{ projectId: string }>) {
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 border-t border-white/5 bg-white/5">
             <div className="text-sm text-muted-foreground italic font-medium">
-              Streaming <span className="text-foreground">{(page - 1) * limit + 1}</span> to <span className="text-foreground">{Math.min(page * limit, total)}</span> of <span className="text-foreground font-bold">{total}</span> check-ins
+              Streaming <span className="text-foreground">{total > 0 ? (page - 1) * limit + 1 : 0}</span> to <span className="text-foreground">{Math.min(page * limit, total)}</span> of <span className="text-foreground font-bold">{total}</span> check-ins
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-white/5 border-white/10"
-                onClick={() => setPage(prev => Math.max(1, prev - 1))}
-                disabled={page <= 1 || loading}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setPage(1)}
+                  disabled={page <= 1 || loading}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                  disabled={page <= 1 || loading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1 mx-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = page
+                    if (page <= 3) pageNum = i + 1
+                    else if (page >= totalPages - 2) pageNum = totalPages - 4 + i
+                    else pageNum = page - 2 + i
 
-              <div className="flex items-center gap-1 mx-2">
-                <span className="text-sm font-bold text-foreground">{page}</span>
-                <span className="text-sm text-muted-foreground/40 font-normal">/</span>
-                <span className="text-sm text-muted-foreground font-bold">{totalPages || 1}</span>
+                    if (pageNum > 0 && pageNum <= totalPages) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={page === pageNum ? "default" : "outline"}
+                          size="icon"
+                          className={cn("h-9 w-9 rounded-full text-xs font-bold", page === pageNum ? 'shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10')}
+                          onClick={() => setPage(pageNum)}
+                          disabled={loading}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    }
+                    return null
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={page >= totalPages || loading}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-white/5 border-white/10"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages || loading}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
               </div>
-
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-white/5 border-white/10"
-                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={page >= totalPages || totalPages === 0 || loading}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
