@@ -9,6 +9,12 @@ import {
   undoQuotaRequest,
   QuotaRequest 
 } from '@/app/actions/quota-request'
+import {
+  approveOrganizerQuotaRequest,
+  getOrganizerQuotaRequests,
+  rejectOrganizerQuotaRequest,
+  undoOrganizerQuotaRequest,
+} from '@/app/actions/organizer-quota-request'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -60,7 +66,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-function QuotaRequestsContent() {
+function QuotaRequestsContent({ isOrganizer }: { isOrganizer: boolean }) {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   
@@ -138,9 +144,11 @@ function QuotaRequestsContent() {
   }
 
   const fetchRequests = async () => {
-    if (!projectId) return
+    if (!isOrganizer && !projectId) return
     setLoading(true)
-    const result = await getQuotaRequests(projectId)
+    const result = isOrganizer
+      ? await getOrganizerQuotaRequests()
+      : await getQuotaRequests(projectId!)
     if (result.success && result.data) {
       setRequests(result.data)
     }
@@ -150,12 +158,14 @@ function QuotaRequestsContent() {
   useEffect(() => {
     fetchRequests()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId])
+  }, [isOrganizer, projectId])
 
   const handleApprove = async (requestUuid: string) => {
-    if (!projectId) return
+    if (!isOrganizer && !projectId) return
     setActionLoading(requestUuid)
-    const result = await approveQuotaRequest(projectId, requestUuid)
+    const result = isOrganizer
+      ? await approveOrganizerQuotaRequest(requestUuid)
+      : await approveQuotaRequest(projectId!, requestUuid)
     setActionLoading(null)
     
     if (result.success) {
@@ -167,9 +177,11 @@ function QuotaRequestsContent() {
   }
 
   const handleReject = async () => {
-    if (!projectId || !selectedRequest) return
+    if ((!isOrganizer && !projectId) || !selectedRequest) return
     setActionLoading(selectedRequest.request_uuid)
-    const result = await rejectQuotaRequest(projectId, selectedRequest.request_uuid, rejectNote)
+    const result = isOrganizer
+      ? await rejectOrganizerQuotaRequest(selectedRequest.request_uuid, rejectNote)
+      : await rejectQuotaRequest(projectId!, selectedRequest.request_uuid, rejectNote)
     setActionLoading(null)
     
     if (result.success) {
@@ -183,9 +195,11 @@ function QuotaRequestsContent() {
   }
 
   const handleUndo = async (requestUuid: string) => {
-    if (!projectId) return
+    if (!isOrganizer && !projectId) return
     setActionLoading(requestUuid)
-    const result = await undoQuotaRequest(projectId, requestUuid)
+    const result = isOrganizer
+      ? await undoOrganizerQuotaRequest(requestUuid)
+      : await undoQuotaRequest(projectId!, requestUuid)
     setActionLoading(null)
     
     if (result.success) {
@@ -224,7 +238,7 @@ function QuotaRequestsContent() {
     }
   }
 
-  if (!projectId) {
+  if (!isOrganizer && !projectId) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] glass rounded-3xl p-12">
         <h2 className="text-2xl font-display font-bold mb-2">No Project Selected</h2>
@@ -689,14 +703,14 @@ function QuotaRequestsContent() {
   )
 }
 
-export default function QuotaRequestsPage() {
+export default function QuotaRequestsPage({ isOrganizer = false }: { isOrganizer?: boolean }) {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
     }>
-      <QuotaRequestsContent />
+      <QuotaRequestsContent isOrganizer={isOrganizer} />
     </Suspense>
   )
 }
