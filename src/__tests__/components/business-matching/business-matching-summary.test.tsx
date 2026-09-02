@@ -109,6 +109,32 @@ describe('BusinessMatchingSummary', () => {
     expect(screen.getByText('Bob Exhibitor · Booth A1')).toBeInTheDocument()
   })
 
+  it('identifies both exhibitor companies for an E2E request', async () => {
+    const user = userEvent.setup()
+    mockGetBusinessMatchingDetails.mockResolvedValue({
+      success: true,
+      items: [{
+        match_request_uuid: 'req-e2e-1',
+        requester_type: 'exhibitor',
+        recipient_exhibitor_uuid: 'exhibitor-recipient',
+        exhibitor_company_name: 'AA Company',
+        recipient_exhibitor_name: 'BB Company',
+        booth_no: 'A1',
+        recipient_exhibitor_booth: 'B2',
+        status: 'Requested',
+      }],
+      total: 1,
+    })
+
+    render(<BusinessMatchingSummary role="ADMIN" result={mockResult} />)
+
+    await user.click(screen.getByRole('button', { name: /View Requested details/i }))
+
+    expect(await screen.findByText((_, element) => element?.textContent === 'Requester: AA Company · Booth A1')).toBeInTheDocument()
+    expect(screen.getByText((_, element) => element?.textContent === 'Recipient: BB Company · Booth B2')).toBeInTheDocument()
+    expect(screen.queryByText('Visitor details unavailable')).not.toBeInTheDocument()
+  })
+
   it('opens detail modal when clicking chart status shortcuts', async () => {
     const user = userEvent.setup()
     render(<BusinessMatchingSummary role="ADMIN" result={mockResult} />)

@@ -457,7 +457,11 @@ export function AdminReportDetailModal({ role, projectId, eventId, detail, onClo
                   const lastName = String(item.visitor_last_name || '')
                   const company = String(item.visitor_company_name || item.visitor_company || '')
                   const exhibitorName = String(item.exhibitor_company_name || item.exhibitor_company || '')
+                  const recipientExhibitorUUID = String(item.recipient_exhibitor_uuid || '')
+                  const recipientExhibitorName = String(item.recipient_exhibitor_name || '')
                   const booth = String(item.booth_no || '-')
+                  const recipientBooth = String(item.recipient_exhibitor_booth || '')
+                  const isExhibitorToExhibitor = item.requester_type === 'exhibitor' && recipientExhibitorUUID !== ''
                   const statusLabel = String(item.report_status || item.status || 'Requested')
                   const requestedStart = formatReportDate(item.requested_start_at)
                   const confirmedStart = formatReportDate(item.confirmed_start_at)
@@ -470,17 +474,26 @@ export function AdminReportDetailModal({ role, projectId, eventId, detail, onClo
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-display font-bold text-foreground">
-                              {[regCode, [firstName, lastName].filter(Boolean).join(' '), company]
-                                .filter(Boolean)
-                                .join(' - ') || 'Visitor details unavailable'}
-                            </span>
-                            {regCode && <CopyButton text={regCode} label="registration code" />}
-                          </div>
-                          <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                            {exhibitorName} · Booth {booth}
-                          </p>
+                          {isExhibitorToExhibitor ? (
+                            <div className="space-y-1 text-xs font-semibold text-muted-foreground">
+                              {exhibitorName && <p><span className="font-bold text-foreground">Requester: </span>{[exhibitorName, booth !== '-' && `Booth ${booth}`].filter(Boolean).join(' · ')}</p>}
+                              {recipientExhibitorName && <p><span className="font-bold text-foreground">Recipient: </span>{[recipientExhibitorName, recipientBooth && `Booth ${recipientBooth}`].filter(Boolean).join(' · ')}</p>}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-display font-bold text-foreground">
+                                  {[regCode, [firstName, lastName].filter(Boolean).join(' '), company]
+                                    .filter(Boolean)
+                                    .join(' - ') || 'Visitor details unavailable'}
+                                </span>
+                                {regCode && <CopyButton text={regCode} label="registration code" />}
+                              </div>
+                              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                                {exhibitorName} · Booth {booth}
+                              </p>
+                            </>
+                          )}
                         </div>
                         <span className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-bold ${statusBadgeClass(statusLabel)}`}>
                           {statusLabel}
