@@ -207,10 +207,10 @@ export function StaffList({
                lastName: data.last_name || '',
                companyName: data.company_name || '',
                country: getCountryNameFromValue(data.residence_country || p.residence_country, ''),
-               registrationCode: data.staff_code || '',
-               category: data.staff_type_code || 'STAFF',
-               position: '',
-            })
+               registrationCode: data.staff_code || p.staff_code || '',
+               category: data.staff_type_code || p.staff_type_code || 'STAFF',
+               position: data.job_position || p.job_position || '',
+            }, projectId)
           } catch (e) {
             console.error("Local print failed", e)
           }

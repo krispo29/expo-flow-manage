@@ -266,10 +266,14 @@ export function ParticipantList({
 
       const participantForBadge =
         detailResult.success && detailResult.data
-          ? detailResult.data
+          ? {
+              ...p,
+              ...detailResult.data,
+              registration_code: detailResult.data.registration_code || p.registration_code,
+            }
           : p
 
-      printBadge(getParticipantPrintData(participantForBadge, attendeeTypesByCode))
+      printBadge(getParticipantPrintData(participantForBadge, attendeeTypesByCode), projectId)
 
       return 'Badge print triggered'
     })()

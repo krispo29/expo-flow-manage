@@ -181,6 +181,7 @@ const getBadgeStyles = () => `
     display: flex;
     min-height: 2.15cm;
     margin-top: auto;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
@@ -198,6 +199,15 @@ const getBadgeStyles = () => `
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  .badge-print-registration-code {
+    margin-top: 0.10cm;
+    font-size: 8pt;
+    font-weight: 400;
+    line-height: 1;
+    white-space: nowrap;
+    color: #000;
   }
 
   .badge-print-footer {
@@ -601,6 +611,7 @@ const generateBadgeHtml = (data: PrintBadgeData) => {
             <div class="badge-print-qr-frame">
               <img src="${qrCodeUrl}" alt="QR Code" />
             </div>
+            <div class="badge-print-registration-code">${escapeHtml(registrationCode)}</div>
           </div>
         </div>
 
@@ -646,7 +657,7 @@ const generateThailabBadgeHtml = (data: PrintBadgeData) => {
             <div class="thailab-badge-qr">
               <img src="${qrCodeUrl}" alt="QR Code" />
             </div>
-            <div class="thailab-badge-registration-code">${registrationCode}</div>
+            <div class="thailab-badge-registration-code">${escapeHtml(registrationCode)}</div>
           </div>
 
           <div class="thailab-badge-type">${badgeType}</div>

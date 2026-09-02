@@ -1,5 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ParticipantList } from '@/components/participant-list'
+import { printParticipantBadge, getParticipantById } from '@/app/actions/participant'
+import { printBadge } from '@/utils/print-badge'
 
 jest.mock('@/app/actions/participant', () => ({
   createParticipant: jest.fn(),
@@ -24,8 +26,25 @@ jest.mock('@/components/CountrySelector', () => ({
   CountrySelector: () => null,
 }))
 
+jest.mock('@/utils/print-badge', () => ({
+  printBadge: jest.fn(),
+}))
+
+jest.mock('sonner', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    promise: (promise: Promise<any>, { success, error }: any) => {
+      return promise.then(
+        (data) => (typeof success === 'function' ? success(data) : success),
+        (err) => (typeof error === 'function' ? error(err) : error)
+      )
+    },
+  },
+}))
+
 const participant = (registration_code: string, first_name: string) => ({
-  registration_uuid: registration_code,
+  registration_uuid: `uuid-${registration_code}`,
   registration_code,
   first_name,
   last_name: 'Example',
@@ -40,6 +59,10 @@ const participant = (registration_code: string, first_name: string) => ({
 })
 
 describe('ParticipantList', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
   it('initializes the registration-code filter from a payment-code link', () => {
     render(
       <ParticipantList
@@ -54,5 +77,40 @@ describe('ParticipantList', () => {
     expect(screen.getAllByDisplayValue('REG-001')).not.toHaveLength(0)
     expect(screen.getAllByText('Alice Example')).not.toHaveLength(0)
     expect(screen.queryByText('Bob Example')).not.toBeInTheDocument()
+  })
+
+  it('triggers badge printing with registration code and projectId when print icon is clicked', async () => {
+    ;(printParticipantBadge as jest.Mock).mockResolvedValue({ success: true })
+    ;(getParticipantById as jest.Mock).mockResolvedValue({
+      success: true,
+      data: {
+        ...participant('REG-001', 'Alice'),
+        residence_country: 'Thailand',
+      },
+    })
+
+    render(
+      <ParticipantList
+        participants={[participant('REG-001', 'Alice')]}
+        projectId="07626a19-001d-4675-addd-3a92e3f46d47"
+        attendeeTypes={[{ type_code: 'VI', type_name: 'Visitor', prefix_code: 'V', need_questionnaire: false, can_book_conference: true, created_at: '' }]}
+        events={[]}
+      />,
+    )
+
+    const printButtons = screen.getAllByRole('button', { name: /print badge/i })
+    expect(printButtons.length).toBeGreaterThan(0)
+    fireEvent.click(printButtons[0])
+
+    await waitFor(() => {
+      expect(printParticipantBadge).toHaveBeenCalledWith('07626a19-001d-4675-addd-3a92e3f46d47', 'uuid-REG-001')
+      expect(printBadge).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: 'Alice',
+          registrationCode: 'REG-001',
+        }),
+        '07626a19-001d-4675-addd-3a92e3f46d47'
+      )
+    })
   })
 })

@@ -28,7 +28,10 @@ export function sanitizeProjectCode(projectCode?: string | null) {
 export function isThailabBadgeProject(projectCode?: string | null) {
   if (!projectCode) return false
   const sanitized = sanitizeProjectCode(projectCode)
-  return sanitized === THAILAB_BADGE_PROJECT_CODE || projectCode === THAILAB_PROJECT_UUID
+  return (
+    sanitized === THAILAB_BADGE_PROJECT_CODE ||
+    sanitized === sanitizeProjectCode(THAILAB_PROJECT_UUID)
+  )
 }
 
 export function calculateFitFontSizePt(

@@ -148,6 +148,7 @@ export function BadgePrint({ participant, projectCode }: Readonly<BadgePrintProp
                   style={{ height: '100%', width: '100%' }}
                 />
               </div>
+              <div className="badge-print-registration-code">{registrationCode}</div>
             </div>
           </div>
 
@@ -259,6 +260,7 @@ export function BadgePrint({ participant, projectCode }: Readonly<BadgePrintProp
           display: flex;
           min-height: 2.15cm;
           margin-top: auto;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
         }
@@ -270,6 +272,15 @@ export function BadgePrint({ participant, projectCode }: Readonly<BadgePrintProp
           align-items: center;
           justify-content: center;
           background: #fff;
+        }
+
+        .badge-print-registration-code {
+          margin-top: 0.10cm;
+          font-size: 8pt;
+          font-weight: 400;
+          line-height: 1;
+          white-space: nowrap;
+          color: #000;
         }
 
         .badge-print-type {

@@ -98,6 +98,7 @@ describe('BadgePrint integration', () => {
     expect(container.querySelector('.thailab-badge-header-spacer')).toBeInTheDocument()
     expect(container.querySelector('.thailab-badge-name')).toHaveTextContent('John Doe')
     expect(container.querySelector('.thailab-badge-country')).toHaveTextContent('Taiwan')
+    expect(container.querySelector('.thailab-badge-registration-code')).toHaveTextContent('CODE123')
   })
 
   it('renders default badge layout when projectCode is not THAILAB2026', () => {
@@ -118,5 +119,6 @@ describe('BadgePrint integration', () => {
 
     expect(container.querySelector('.badge-print-container')).toBeInTheDocument()
     expect(container.querySelector('.thailab-badge-container')).not.toBeInTheDocument()
+    expect(container.querySelector('.badge-print-registration-code')).toHaveTextContent('CODE456')
   })
 })
