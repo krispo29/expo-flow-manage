@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Bell, BellRing, CheckCheck, Circle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/store/useAuthStore'
 import {
   getNotifications,
   getNotificationsCount,
@@ -11,6 +13,7 @@ import {
   markNotificationRead,
   type AdminNotification,
 } from '@/app/actions/notification'
+import { getNotificationUrl } from '@/lib/notification-utils'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -43,6 +46,8 @@ export function NotificationCenter({
   initialUnreadCount,
   initialError,
 }: NotificationCenterProps) {
+  const router = useRouter()
+  const { user } = useAuthStore()
   const [notifications, setNotifications] = useState(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
@@ -90,6 +95,17 @@ export function NotificationCenter({
       )
       setUnreadCount((count) => Math.max(0, count - 1))
     })
+  }
+
+  const handleNotificationClick = (notification: AdminNotification) => {
+    if (isUnread(notification)) {
+      markOne(notification)
+    }
+
+    const targetUrl = getNotificationUrl(notification, user?.role, projectId)
+    if (targetUrl) {
+      router.push(targetUrl)
+    }
   }
 
   const markAll = () => {
@@ -178,26 +194,33 @@ export function NotificationCenter({
         <div className="flex flex-col gap-2">
           {visibleNotifications.map((notification) => {
             const unread = isUnread(notification)
+            const targetUrl = getNotificationUrl(notification, user?.role, projectId)
+
             return (
               <button
                 key={notification.notification_uuid}
                 type="button"
-                disabled={!unread || pendingId === notification.notification_uuid}
-                onClick={() => markOne(notification)}
+                disabled={pendingId === notification.notification_uuid}
+                onClick={() => handleNotificationClick(notification)}
                 className={cn(
-                  'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors',
-                  unread ? 'bg-primary/5 hover:bg-primary/10' : 'bg-card opacity-75'
+                  'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors cursor-pointer group',
+                  unread 
+                    ? 'bg-primary/5 hover:bg-primary/10 border-primary/20' 
+                    : 'bg-card hover:bg-muted/40 border-border/60 opacity-85 hover:opacity-100'
                 )}
               >
                 <Circle
                   className={cn(
-                    'mt-1 size-2 shrink-0',
-                    unread ? 'fill-primary text-primary' : 'fill-muted text-muted'
+                    'mt-1 size-2 shrink-0 transition-all duration-300',
+                    unread ? 'fill-primary text-primary scale-110' : 'fill-muted text-muted'
                   )}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold">
+                    <span className={cn(
+                      "font-bold transition-colors",
+                      targetUrl && "group-hover:text-primary"
+                    )}>
                       {notification.title || notification.type || 'Notification'}
                     </span>
                     {notification.type ? (

@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Bell, CheckCheck, Circle, Loader2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import {
   getNotifications,
@@ -14,6 +14,7 @@ import {
   markNotificationRead,
   type AdminNotification,
 } from '@/app/actions/notification'
+import { getNotificationUrl } from '@/lib/notification-utils'
 import {
   Popover,
   PopoverContent,
@@ -37,6 +38,7 @@ function relativeDate(value?: string) {
 }
 
 export function NotificationBell() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const { user, isAuthenticated } = useAuthStore()
@@ -120,6 +122,18 @@ export function NotificationBell() {
     })
   }
 
+  const handleNotificationClick = (notification: AdminNotification) => {
+    if (isUnread(notification)) {
+      markOne(notification)
+    }
+
+    const targetUrl = getNotificationUrl(notification, user?.role, projectId)
+    if (targetUrl) {
+      setIsOpen(false)
+      router.push(targetUrl)
+    }
+  }
+
   const markAll = () => {
     if (!projectId) return
     startTransition(async () => {
@@ -148,7 +162,7 @@ export function NotificationBell() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="relative text-foreground/70 hover:text-primary transition-all duration-300 hover:scale-105 active:scale-95"
+          className="relative text-foreground/70 hover:text-primary transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
           aria-label="Notifications"
         >
           <Bell className={cn("size-5", unreadCount > 0 && "animate-pulse")} />
@@ -162,11 +176,11 @@ export function NotificationBell() {
       
       <PopoverContent 
         align="end" 
-        className="w-80 p-0 overflow-hidden border border-primary/10 glass-elevated shadow-xl rounded-2xl"
+        className="w-80 sm:w-96 p-0 overflow-hidden border border-border/80 bg-popover text-popover-foreground shadow-2xl rounded-2xl flex flex-col max-h-[85vh] z-50"
         sideOffset={8}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-primary/10 px-4 py-3 bg-primary/[0.02]">
+        <div className="shrink-0 flex items-center justify-between border-b border-border/60 px-4 py-3 bg-muted/40">
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm text-foreground">Notifications</span>
             {unreadCount > 0 && (
@@ -198,7 +212,7 @@ export function NotificationBell() {
         </div>
 
         {/* Content list */}
-        <ScrollArea className="max-h-72">
+        <ScrollArea className="flex-1 max-h-80 overflow-y-auto">
           {isPending && notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <Loader2 className="size-6 animate-spin text-primary" />
@@ -210,33 +224,38 @@ export function NotificationBell() {
               <span className="text-xs font-semibold">No notifications yet</span>
             </div>
           ) : (
-            <div className="divide-y divide-primary/5">
+            <div className="divide-y divide-border/40">
               {previewNotifications.map((notification) => {
                 const unread = isUnread(notification)
                 const isItemPending = pendingId === notification.notification_uuid
+                const targetUrl = getNotificationUrl(notification, user?.role, projectId)
                 
                 return (
                   <button
                     key={notification.notification_uuid}
                     type="button"
-                    disabled={!unread || isItemPending}
-                    onClick={() => markOne(notification)}
+                    disabled={isItemPending}
+                    onClick={() => handleNotificationClick(notification)}
                     className={cn(
-                      'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
+                      'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors cursor-pointer group',
                       unread 
-                        ? 'bg-primary/[0.03] hover:bg-primary/[0.08] cursor-pointer' 
-                        : 'bg-transparent opacity-85 hover:bg-muted/10'
+                        ? 'bg-primary/[0.04] hover:bg-primary/[0.09]' 
+                        : 'bg-transparent hover:bg-muted/50 opacity-90'
                     )}
                   >
                     <Circle
                       className={cn(
                         'mt-1 size-2 shrink-0 transition-all duration-300',
-                        unread ? 'fill-primary text-primary scale-110' : 'fill-muted/40 text-muted/40'
+                        unread ? 'fill-primary text-primary scale-110' : 'fill-muted-foreground/30 text-muted-foreground/30'
                       )}
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-bold text-xs text-foreground truncate">
+                        <span className={cn(
+                          "text-xs truncate transition-colors",
+                          unread ? "font-bold text-foreground" : "font-semibold text-foreground/80",
+                          targetUrl && "group-hover:text-primary"
+                        )}>
                           {notification.title || notification.type || 'Notification'}
                         </span>
                         {notification.type && (
@@ -260,11 +279,11 @@ export function NotificationBell() {
         </ScrollArea>
 
         {/* Footer */}
-        <div className="border-t border-primary/10 p-2 bg-primary/[0.01] text-center">
+        <div className="shrink-0 border-t border-border/60 p-2.5 bg-muted/30 text-center">
           <Link 
             href={`/admin/notifications?projectId=${projectId}`}
             onClick={() => setIsOpen(false)}
-            className="block w-full py-1.5 text-center text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors"
+            className="block w-full py-1 text-center text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors"
           >
             View All Notifications
           </Link>

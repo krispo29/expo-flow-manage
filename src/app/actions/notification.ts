@@ -14,6 +14,11 @@ export interface AdminNotification {
   is_read?: boolean
   read_at?: string | null
   created_at?: string
+  url?: string
+  target_url?: string
+  link?: string
+  path?: string
+  [key: string]: any
 }
 
 async function getHeaders(projectUuid: string) {
