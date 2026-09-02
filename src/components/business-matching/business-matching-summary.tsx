@@ -87,6 +87,13 @@ function buildNeedsAttention(requests: Record<string, unknown>[], now = Date.now
 }
 
 function getRequestRecordLabel(request: Record<string, unknown>): string {
+  const recipientExhibitorUUID = String(request.recipient_exhibitor_uuid || '')
+  if (request.requester_type === 'exhibitor' && recipientExhibitorUUID) {
+    const requester = String(request.exhibitor_company_name || request.exhibitor_company || '')
+    const recipient = String(request.recipient_exhibitor_name || '')
+    return [requester && `Requester: ${requester}`, recipient && `Recipient: ${recipient}`].filter(Boolean).join(' → ') || 'Exhibitor request'
+  }
+
   const regCode = String(request.registration_code || request.visitor_registration_code || '')
   const firstName = String(request.visitor_first_name || '')
   const lastName = String(request.visitor_last_name || '')

@@ -135,6 +135,28 @@ describe('BusinessMatchingSummary', () => {
     expect(screen.queryByText('Visitor details unavailable')).not.toBeInTheDocument()
   })
 
+  it('identifies E2E requests in needs attention without showing their UUID', async () => {
+    const requestUUID = 'aeeac720-343f-492a-9053-53d468176ca5'
+    mockGetBusinessMatchingDetails.mockResolvedValue({
+      success: true,
+      items: [{
+        match_request_uuid: requestUUID,
+        requester_type: 'exhibitor',
+        recipient_exhibitor_uuid: 'exhibitor-recipient',
+        exhibitor_company_name: 'AA Company',
+        recipient_exhibitor_name: 'BB Company',
+        status: 'Requested',
+        created_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+      }],
+      total: 1,
+    })
+
+    render(<BusinessMatchingSummary role="ADMIN" result={mockResult} />)
+
+    expect(await screen.findByText('Requester: AA Company → Recipient: BB Company')).toBeInTheDocument()
+    expect(screen.queryByText(requestUUID)).not.toBeInTheDocument()
+  })
+
   it('opens detail modal when clicking chart status shortcuts', async () => {
     const user = userEvent.setup()
     render(<BusinessMatchingSummary role="ADMIN" result={mockResult} />)
