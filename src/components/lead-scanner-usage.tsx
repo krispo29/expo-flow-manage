@@ -175,7 +175,7 @@ export function LeadScannerUsage({ projectId }: Props) {
             <Tabs value={selectedDay} onValueChange={setSelectedDay} className="w-full">
               <TabsList className="h-auto p-1 flex flex-wrap w-full sm:w-auto justify-start gap-1">
                 <TabsTrigger value="total" className="px-4 py-1.5 text-xs sm:text-sm">
-                  Total (รวมทั้งหมด)
+                  Total
                 </TabsTrigger>
                 {days.map((day) => (
                   <TabsTrigger key={day.dayLabel} value={day.dayLabel} className="px-4 py-1.5 text-xs sm:text-sm">
