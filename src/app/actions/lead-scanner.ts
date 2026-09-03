@@ -4,6 +4,12 @@ import api, { getErrorMessage } from '@/lib/api'
 import { verifyProjectAccess } from '@/lib/authorization'
 import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
+export type HourlyTrafficPoint = {
+  hour: string
+  label: string
+  scans: number
+}
+
 export type LeadScannerUsage = {
   startDate: string
   endDate: string
@@ -12,6 +18,8 @@ export type LeadScannerUsage = {
     totalScanned: number
     totalContact: number
   }>
+  hourlyTraffic?: HourlyTrafficPoint[]
+  peakTime?: string
 }
 
 export type LeadScannerUsageResult =
@@ -37,6 +45,19 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
     const response = await api.get('/v1/admin/project/lead-scanner/usage', { headers })
     const data = response.data?.data ?? {}
 
+    const hourlyTraffic = Array.isArray(data.hourly_traffic)
+      ? data.hourly_traffic.map((item: {
+          hour?: string
+          label?: string
+          scans?: number
+          total_scanned?: number
+        }) => ({
+          hour: item.hour ?? '',
+          label: item.label ?? item.hour ?? '',
+          scans: item.scans ?? item.total_scanned ?? 0,
+        }))
+      : undefined
+
     return {
       success: true,
       data: {
@@ -51,6 +72,8 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
           totalScanned: item.total_scanned ?? 0,
           totalContact: item.total_contact ?? 0,
         })),
+        ...(hourlyTraffic ? { hourlyTraffic } : {}),
+        ...(data.peak_time ? { peakTime: data.peak_time } : {}),
       },
     }
   } catch (error) {

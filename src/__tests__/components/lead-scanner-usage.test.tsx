@@ -6,6 +6,15 @@ import * as actions from '@/app/actions/lead-scanner'
 
 jest.mock('@/app/actions/lead-scanner', () => ({ getLeadScannerUsage: jest.fn(), exportLeadScannerUsage: jest.fn() }))
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }))
+jest.mock('recharts', () => {
+  const OriginalModule = jest.requireActual('recharts')
+  return {
+    ...OriginalModule,
+    ResponsiveContainer: ({ children }: any) => (
+      <div style={{ width: 800, height: 260 }}>{children}</div>
+    ),
+  }
+})
 
 const mockGetUsage = actions.getLeadScannerUsage as jest.MockedFunction<typeof actions.getLeadScannerUsage>
 const mockExportUsage = actions.exportLeadScannerUsage as jest.MockedFunction<typeof actions.exportLeadScannerUsage>
@@ -39,6 +48,7 @@ describe('LeadScannerUsage', () => {
     expect(await screen.findByText(/Sep 2, 2026.*Sep 4, 2026/i)).toBeInTheDocument()
     expect(screen.getByText('33')).toBeInTheDocument()
     expect(screen.getByText('29')).toBeInTheDocument()
+    expect(screen.getByText('Peak Hour Traffic')).toBeInTheDocument()
     expect(screen.getAllByRole('row')[1]).toHaveTextContent('A&D Instruments')
   })
 

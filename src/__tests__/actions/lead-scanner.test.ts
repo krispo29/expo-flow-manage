@@ -39,6 +39,35 @@ describe('lead scanner actions', () => {
     })
   })
 
+  it('maps hourly_traffic and peak_time when returned by API', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: {
+          start_date: '2026-09-02',
+          end_date: '2026-09-04',
+          overall: [],
+          peak_time: '2 PM',
+          hourly_traffic: [
+            { hour: '14:00', label: '2PM', total_scanned: 64 },
+          ],
+        },
+      },
+    })
+
+    await expect(getLeadScannerUsage('project-a')).resolves.toEqual({
+      success: true,
+      data: {
+        startDate: '2026-09-02',
+        endDate: '2026-09-04',
+        overall: [],
+        peakTime: '2 PM',
+        hourlyTraffic: [
+          { hour: '14:00', label: '2PM', scans: 64 },
+        ],
+      },
+    })
+  })
+
   it('blocks missing or inaccessible Admin project scope', async () => {
     await expect(getLeadScannerUsage()).resolves.toEqual({ success: false, error: 'Select a project to view Lead Scanner usage' })
     mockVerifyProjectAccess.mockResolvedValue(false)

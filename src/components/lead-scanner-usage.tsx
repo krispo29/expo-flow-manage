@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { LeadScannerPeakHours } from '@/components/lead-scanner-peak-hours'
 
 type Props = { projectId?: string }
 
@@ -132,6 +133,12 @@ export function LeadScannerUsage({ projectId }: Props) {
               </CardContent>
             </Card>
           </div>
+
+          <LeadScannerPeakHours
+            data={report?.hourlyTraffic}
+            totalScanned={totals.scanned}
+            peakTime={report?.peakTime}
+          />
 
           <Card>
             <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
