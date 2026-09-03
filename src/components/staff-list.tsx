@@ -628,7 +628,7 @@ export function StaffList({
                       />
                       <div className="min-w-0 space-y-1.5">
                         <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
-                          {p.title} {p.first_name} {p.last_name}
+                          {(p.title === 'Other' && p.title_other ? p.title_other : p.title)} {p.first_name} {p.last_name}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
                           <code className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">{p.staff_code}</code>
@@ -819,7 +819,7 @@ export function StaffList({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{p.title} {p.first_name} {p.last_name}</p>
+                          <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{(p.title === 'Other' && p.title_other ? p.title_other : p.title)} {p.first_name} {p.last_name}</p>
                           {isBusinessMatchingProject && p.is_business_matching && (
                             <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[9px] font-bold py-0 whitespace-nowrap">
                               BM

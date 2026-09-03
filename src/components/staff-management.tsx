@@ -432,7 +432,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
                   </TableCell>
                   <TableCell>{staff.registrationCode || staff.id.substring(0, 8)}</TableCell>
-                  <TableCell>{staff.title}</TableCell>
+                  <TableCell>{(staff.title === 'Other' && (staff as any).title_other ? (staff as any).title_other : staff.title)}</TableCell>
                   <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
                   <TableCell>{staff.position}</TableCell>
                   <TableCell>
