@@ -159,4 +159,46 @@ describe('LeadScannerUsage', () => {
     expect(searchInput).toHaveValue('')
     expect(screen.getByText('A&D Instruments')).toBeInTheDocument()
   })
+
+  it('paginates company rows and navigates pages', async () => {
+    const user = userEvent.setup()
+    const companies = Array.from({ length: 30 }, (_, i) => ({
+      companyName: `Company ${String(i + 1).padStart(2, '0')}`,
+      totalScanned: 100 - i,
+      totalContact: 50 - i,
+    }))
+
+    mockGetUsage.mockResolvedValue({
+      success: true,
+      data: {
+        startDate: '2026-09-02',
+        endDate: '2026-09-04',
+        overall: companies,
+      },
+    })
+
+    render(<LeadScannerUsage projectId="project-a" />)
+    expect(await screen.findByText('Company 01')).toBeInTheDocument()
+
+    // Default pageSize is 25: shows 1 to 25 of 30 companies
+    expect(screen.getByTestId('pagination-showing')).toHaveTextContent('Showing 1 to 25 of 30 companies')
+    expect(screen.getByText('Company 25')).toBeInTheDocument()
+    expect(screen.queryByText('Company 26')).not.toBeInTheDocument()
+
+    // Click Next page button
+    const nextBtn = screen.getByTitle('Next page')
+    await user.click(nextBtn)
+
+    expect(screen.getByTestId('pagination-showing')).toHaveTextContent('Showing 26 to 30 of 30 companies')
+    expect(screen.getByText('Company 26')).toBeInTheDocument()
+    expect(screen.queryByText('Company 01')).not.toBeInTheDocument()
+
+    // Change per page to 10
+    const perPageSelect = screen.getByLabelText(/items per page/i)
+    await user.selectOptions(perPageSelect, '10')
+
+    expect(screen.getByTestId('pagination-showing')).toHaveTextContent('Showing 1 to 10 of 30 companies')
+    expect(screen.getByText('Company 10')).toBeInTheDocument()
+    expect(screen.queryByText('Company 11')).not.toBeInTheDocument()
+  })
 })

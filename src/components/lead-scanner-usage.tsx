@@ -2,7 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
-import { ArrowUpDown, Download, Loader2, Percent, RefreshCw, ScanLine, Search, Users, X } from 'lucide-react'
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  Loader2,
+  Percent,
+  RefreshCw,
+  ScanLine,
+  Search,
+  Users,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { exportLeadScannerUsage, getLeadScannerUsage, type LeadScannerUsage as LeadScannerUsageData } from '@/app/actions/lead-scanner'
 import { Button } from '@/components/ui/button'
@@ -27,6 +41,8 @@ export function LeadScannerUsage({ projectId }: Props) {
   const [query, setQuery] = useState('')
   const [sortField, setSortField] = useState<SortField>('scanned')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -73,6 +89,7 @@ export function LeadScannerUsage({ projectId }: Props) {
       setSortOrder(field === 'company' ? 'asc' : 'desc')
       return field
     })
+    setCurrentPage(1)
   }, [])
 
   const rows = useMemo(() => {
@@ -94,6 +111,15 @@ export function LeadScannerUsage({ projectId }: Props) {
       return sortOrder === 'asc' ? comparison : -comparison
     })
   }, [query, activeUsage, sortField, sortOrder])
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const validPage = Math.min(Math.max(1, currentPage), totalPages)
+  const startIndex = (validPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, rows.length)
+  const paginatedRows = useMemo(
+    () => rows.slice(startIndex, endIndex),
+    [rows, startIndex, endIndex],
+  )
 
   const totals = useMemo(() => activeUsage.reduce(
     (result, item) => ({ scanned: result.scanned + item.totalScanned, contacts: result.contacts + item.totalContact }),
@@ -172,7 +198,14 @@ export function LeadScannerUsage({ projectId }: Props) {
           {error && <p className="rounded-lg bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{error}</p>}
 
           {days.length > 0 && (
-            <Tabs value={selectedDay} onValueChange={setSelectedDay} className="w-full">
+            <Tabs
+              value={selectedDay}
+              onValueChange={(val) => {
+                setSelectedDay(val)
+                setCurrentPage(1)
+              }}
+              className="w-full"
+            >
               <TabsList className="h-auto p-1 flex flex-wrap w-full sm:w-auto justify-start gap-1">
                 <TabsTrigger value="total" className="px-4 py-1.5 text-xs sm:text-sm">
                   Total
@@ -231,14 +264,20 @@ export function LeadScannerUsage({ projectId }: Props) {
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    setQuery(event.target.value)
+                    setCurrentPage(1)
+                  }}
                   placeholder="Search companies..."
                   className="pl-9 pr-8"
                 />
                 {query && (
                   <button
                     type="button"
-                    onClick={() => setQuery('')}
+                    onClick={() => {
+                      setQuery('')
+                      setCurrentPage(1)
+                    }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     title="Clear search"
                   >
@@ -253,74 +292,185 @@ export function LeadScannerUsage({ projectId }: Props) {
               ) : rows.length === 0 ? (
                 <div className="py-10 text-center space-y-2">
                   <p className="text-sm text-muted-foreground">No companies match &quot;{query}&quot;</p>
-                  <Button variant="ghost" size="sm" onClick={() => setQuery('')}>Clear search</Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setQuery('')
+                      setCurrentPage(1)
+                    }}
+                  >
+                    Clear search
+                  </Button>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16 text-center">No.</TableHead>
-                      <TableHead>
-                        <button
-                          type="button"
-                          onClick={() => handleSort('company')}
-                          className="inline-flex items-center gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer"
-                        >
-                          Company
-                          <ArrowUpDown className="size-3.5 opacity-60" />
-                        </button>
-                      </TableHead>
-                      <TableHead className="text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleSort('scanned')}
-                          className="inline-flex items-center justify-end gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
-                        >
-                          Scanned
-                          <ArrowUpDown className="size-3.5 opacity-60" />
-                        </button>
-                      </TableHead>
-                      <TableHead className="text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleSort('contacts')}
-                          className="inline-flex items-center justify-end gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
-                        >
-                          Contacts
-                          <ArrowUpDown className="size-3.5 opacity-60" />
-                        </button>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((item, index) => (
-                      <TableRow key={item.companyName}>
-                        <TableCell className="text-center font-mono text-xs">
-                          {sortField === 'scanned' && sortOrder === 'desc' && index === 0 ? (
-                            <span className="inline-flex items-center justify-center size-5.5 rounded-full bg-amber-500/15 text-amber-600 font-bold text-xs">
-                              1
-                            </span>
-                          ) : sortField === 'scanned' && sortOrder === 'desc' && index === 1 ? (
-                            <span className="inline-flex items-center justify-center size-5.5 rounded-full bg-slate-400/15 text-slate-500 font-bold text-xs">
-                              2
-                            </span>
-                          ) : sortField === 'scanned' && sortOrder === 'desc' && index === 2 ? (
-                            <span className="inline-flex items-center justify-center size-5.5 rounded-full bg-amber-700/15 text-amber-700 font-bold text-xs">
-                              3
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">{index + 1}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">{item.companyName}</TableCell>
-                        <TableCell className="text-right font-medium">{item.totalScanned.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-400">
-                          {item.totalContact.toLocaleString()}
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16 text-center">No.</TableHead>
+                        <TableHead>
+                          <button
+                            type="button"
+                            onClick={() => handleSort('company')}
+                            className="inline-flex items-center gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer"
+                          >
+                            Company
+                            <ArrowUpDown className="size-3.5 opacity-60" />
+                          </button>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleSort('scanned')}
+                            className="inline-flex items-center justify-end gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
+                          >
+                            Scanned
+                            <ArrowUpDown className="size-3.5 opacity-60" />
+                          </button>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleSort('contacts')}
+                            className="inline-flex items-center justify-end gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
+                          >
+                            Contacts
+                            <ArrowUpDown className="size-3.5 opacity-60" />
+                          </button>
+                        </TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedRows.map((item, index) => {
+                        const rank = startIndex + index + 1
+                        return (
+                          <TableRow key={item.companyName}>
+                            <TableCell className="text-center font-mono text-xs">
+                              {sortField === 'scanned' && sortOrder === 'desc' && rank === 1 ? (
+                                <span className="inline-flex items-center justify-center size-5.5 rounded-full bg-amber-500/15 text-amber-600 font-bold text-xs">
+                                  1
+                                </span>
+                              ) : sortField === 'scanned' && sortOrder === 'desc' && rank === 2 ? (
+                                <span className="inline-flex items-center justify-center size-5.5 rounded-full bg-slate-400/15 text-slate-500 font-bold text-xs">
+                                  2
+                                </span>
+                              ) : sortField === 'scanned' && sortOrder === 'desc' && rank === 3 ? (
+                                <span className="inline-flex items-center justify-center size-5.5 rounded-full bg-amber-700/15 text-amber-700 font-bold text-xs">
+                                  3
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">{rank}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{item.companyName}</TableCell>
+                            <TableCell className="text-right font-medium">{item.totalScanned.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-400">
+                              {item.totalContact.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+
+                  {rows.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/50 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span data-testid="pagination-showing">
+                          Showing <span className="font-semibold text-foreground">{startIndex + 1}</span> to{' '}
+                          <span className="font-semibold text-foreground">{endIndex}</span> of{' '}
+                          <span className="font-semibold text-foreground">{rows.length}</span> companies
+                        </span>
+                        <div className="flex items-center gap-1.5 ml-2">
+                          <span className="text-xs">Per page:</span>
+                          <select
+                            aria-label="Items per page"
+                            value={pageSize}
+                            onChange={(e) => {
+                              setPageSize(Number(e.target.value))
+                              setCurrentPage(1)
+                            }}
+                            className="h-8 rounded-md border border-input bg-transparent px-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-ring"
+                          >
+                            <option value={10} className="bg-background text-foreground">10</option>
+                            <option value={25} className="bg-background text-foreground">25</option>
+                            <option value={50} className="bg-background text-foreground">50</option>
+                            <option value={100} className="bg-background text-foreground">100</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setCurrentPage(1)}
+                            disabled={validPage === 1}
+                            title="First page"
+                          >
+                            <ChevronsLeft className="size-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={validPage === 1}
+                            title="Previous page"
+                          >
+                            <ChevronLeft className="size-4" />
+                          </Button>
+                          <div className="flex items-center gap-1 px-1">
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                              let pageNum = validPage
+                              if (validPage <= 3) pageNum = i + 1
+                              else if (validPage >= totalPages - 2) pageNum = totalPages - 4 + i
+                              else pageNum = validPage - 2 + i
+
+                              if (pageNum > 0 && pageNum <= totalPages) {
+                                return (
+                                  <Button
+                                    key={pageNum}
+                                    variant={validPage === pageNum ? 'default' : 'outline'}
+                                    size="icon"
+                                    className="size-8 text-xs font-semibold"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                  >
+                                    {pageNum}
+                                  </Button>
+                                )
+                              }
+                              return null
+                            })}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={validPage === totalPages}
+                            title="Next page"
+                          >
+                            <ChevronRight className="size-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setCurrentPage(totalPages)}
+                            disabled={validPage === totalPages}
+                            title="Last page"
+                          >
+                            <ChevronsRight className="size-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
