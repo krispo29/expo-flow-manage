@@ -131,4 +131,32 @@ describe('LeadScannerUsage', () => {
     await user.click(screen.getByRole('tab', { name: '03 Sep 2026' }))
     expect(screen.getAllByText('12')).toHaveLength(2)
   })
+
+  it('allows sorting columns and clearing search', async () => {
+    const user = userEvent.setup()
+    render(<LeadScannerUsage projectId="project-a" />)
+    await screen.findByText('A&D Instruments')
+
+    // Initial order by scans desc: A&D Instruments (26), A Dose Pharma (7)
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('A&D Instruments')
+
+    // Click Scanned header to toggle to asc: A Dose Pharma (7) becomes 1st
+    const scannedHeaderBtn = screen.getByRole('button', { name: /scanned/i })
+    await user.click(scannedHeaderBtn)
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('A Dose Pharma')
+
+    // Click again to toggle back to desc: A&D Instruments (26) becomes 1st
+    await user.click(scannedHeaderBtn)
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('A&D Instruments')
+
+    // Type in search, then click clear search button
+    const searchInput = screen.getByPlaceholderText(/search companies/i)
+    await user.type(searchInput, 'Dose')
+    expect(screen.queryByText('A&D Instruments')).not.toBeInTheDocument()
+
+    const clearBtn = screen.getByTitle('Clear search')
+    await user.click(clearBtn)
+    expect(searchInput).toHaveValue('')
+    expect(screen.getByText('A&D Instruments')).toBeInTheDocument()
+  })
 })
