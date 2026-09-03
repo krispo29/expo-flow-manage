@@ -25,6 +25,7 @@ import {
   Tags,
   Handshake,
   KeyRound,
+  ScanLine,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -237,6 +238,20 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       <Link href={projectId ? `${basePath}/staff?projectId=${projectId}` : `${basePath}/staff`}>
                         <ContactRound />
                         <span>Staff</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user?.role === 'ADMIN' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Lead Scanner"
+                      isActive={isActive(`${basePath}/lead-scanner`)}
+                    >
+                      <Link href={projectId ? `${basePath}/lead-scanner?projectId=${projectId}` : `${basePath}/lead-scanner`}>
+                        <ScanLine />
+                        <span>Lead Scanner</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
