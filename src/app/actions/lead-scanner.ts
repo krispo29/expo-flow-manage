@@ -4,6 +4,18 @@ import api, { getErrorMessage } from '@/lib/api'
 import { verifyProjectAccess } from '@/lib/authorization'
 import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
+export type CompanyUsageItem = {
+  companyName: string
+  totalScanned: number
+  totalContact: number
+}
+
+export type LeadScannerDay = {
+  dayLabel: string
+  date?: string
+  overall: CompanyUsageItem[]
+}
+
 export type HourlyTrafficPoint = {
   hour: string
   label: string
@@ -13,11 +25,8 @@ export type HourlyTrafficPoint = {
 export type LeadScannerUsage = {
   startDate: string
   endDate: string
-  overall: Array<{
-    companyName: string
-    totalScanned: number
-    totalContact: number
-  }>
+  overall: CompanyUsageItem[]
+  days?: LeadScannerDay[]
   hourlyTraffic?: HourlyTrafficPoint[]
   peakTime?: string
 }
@@ -58,20 +67,96 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
         }))
       : undefined
 
+    let parsedDays: LeadScannerDay[] = []
+    if (Array.isArray(data.days) && data.days.length > 0) {
+      const first = data.days[0]
+      if (
+        first &&
+        typeof first === 'object' &&
+        ('companies' in first ||
+          'overall' in first ||
+          'data' in first ||
+          'items' in first ||
+          'usage' in first ||
+          'usages' in first)
+      ) {
+        parsedDays = data.days.map((d: any) => ({
+          dayLabel: d.day_label ?? d.label ?? d.date ?? 'Day',
+          date: d.date,
+          overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? d.usage ?? d.usages ?? []).map(
+            (item: any) => ({
+              companyName: item.company_name ?? item.companyName ?? '-',
+              totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
+              totalContact: item.total_contact ?? item.totalContact ?? 0,
+            }),
+          ),
+        }))
+      } else if (first && typeof first === 'object' && ('company_name' in first || 'companyName' in first)) {
+        const dayMap = new Map<string, CompanyUsageItem[]>()
+        for (const item of data.days) {
+          const label = item.day_label ?? item.label ?? item.date ?? 'Day'
+          if (!dayMap.has(label)) {
+            dayMap.set(label, [])
+          }
+          dayMap.get(label)!.push({
+            companyName: item.company_name ?? item.companyName ?? '-',
+            totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
+            totalContact: item.total_contact ?? item.totalContact ?? 0,
+          })
+        }
+        parsedDays = Array.from(dayMap.entries()).map(([dayLabel, overall]) => ({
+          dayLabel,
+          overall,
+        }))
+      } else if (first && typeof first === 'object' && 'day_label' in first) {
+        parsedDays = data.days.map((d: any) => ({
+          dayLabel: d.day_label ?? d.label ?? d.date ?? 'Day',
+          date: d.date,
+          overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? []).map((item: any) => ({
+            companyName: item.company_name ?? item.companyName ?? '-',
+            totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
+            totalContact: item.total_contact ?? item.totalContact ?? 0,
+          })),
+        }))
+      }
+    }
+
+    let overall: CompanyUsageItem[] = []
+    if (Array.isArray(data.overall) && data.overall.length > 0) {
+      overall = data.overall.map((item: {
+        company_name?: string
+        total_scanned?: number
+        total_contact?: number
+      }) => ({
+        companyName: item.company_name ?? '-',
+        totalScanned: item.total_scanned ?? 0,
+        totalContact: item.total_contact ?? 0,
+      }))
+    } else if (parsedDays.length > 0) {
+      const companyMap = new Map<string, { totalScanned: number; totalContact: number }>()
+      for (const day of parsedDays) {
+        for (const item of day.overall) {
+          const existing = companyMap.get(item.companyName) ?? { totalScanned: 0, totalContact: 0 }
+          companyMap.set(item.companyName, {
+            totalScanned: existing.totalScanned + item.totalScanned,
+            totalContact: existing.totalContact + item.totalContact,
+          })
+        }
+      }
+      overall = Array.from(companyMap.entries()).map(([companyName, stats]) => ({
+        companyName,
+        totalScanned: stats.totalScanned,
+        totalContact: stats.totalContact,
+      }))
+    }
+
     return {
       success: true,
       data: {
         startDate: data.start_date ?? '',
         endDate: data.end_date ?? '',
-        overall: (data.overall ?? []).map((item: {
-          company_name?: string
-          total_scanned?: number
-          total_contact?: number
-        }) => ({
-          companyName: item.company_name ?? '-',
-          totalScanned: item.total_scanned ?? 0,
-          totalContact: item.total_contact ?? 0,
-        })),
+        overall,
+        ...(parsedDays.length > 0 ? { days: parsedDays } : {}),
         ...(hourlyTraffic ? { hourlyTraffic } : {}),
         ...(data.peak_time ? { peakTime: data.peak_time } : {}),
       },

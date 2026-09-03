@@ -82,4 +82,53 @@ describe('LeadScannerUsage', () => {
     await user.click(screen.getByRole('button', { name: /export excel/i }))
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Export failed'))
   })
+
+  it('renders day tabs and updates totals and rows when switching days', async () => {
+    const user = userEvent.setup()
+    mockGetUsage.mockResolvedValue({
+      success: true,
+      data: {
+        startDate: '2026-09-02',
+        endDate: '2026-09-03',
+        overall: [
+          { companyName: 'A Dose Pharma', totalScanned: 7, totalContact: 6 },
+          { companyName: 'A&D Instruments', totalScanned: 23, totalContact: 20 },
+        ],
+        days: [
+          {
+            dayLabel: '02 Sep 2026',
+            overall: [
+              { companyName: 'A Dose Pharma', totalScanned: 5, totalContact: 4 },
+              { companyName: 'A&D Instruments', totalScanned: 13, totalContact: 10 },
+            ],
+          },
+          {
+            dayLabel: '03 Sep 2026',
+            overall: [
+              { companyName: 'A Dose Pharma', totalScanned: 2, totalContact: 2 },
+              { companyName: 'A&D Instruments', totalScanned: 10, totalContact: 10 },
+            ],
+          },
+        ],
+      },
+    })
+
+    render(<LeadScannerUsage projectId="project-a" />)
+
+    expect(await screen.findByRole('tab', { name: /Total/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '02 Sep 2026' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '03 Sep 2026' })).toBeInTheDocument()
+
+    // Default is total (30 scanned: 7 + 23)
+    expect(screen.getByText('30')).toBeInTheDocument()
+
+    // Click 02 Sep 2026 tab (18 scanned: 5 + 13)
+    await user.click(screen.getByRole('tab', { name: '02 Sep 2026' }))
+    expect(screen.getByText('18')).toBeInTheDocument()
+    expect(screen.getByText('14')).toBeInTheDocument()
+
+    // Click 03 Sep 2026 tab (12 scanned: 2 + 10, 12 contacts: 2 + 10)
+    await user.click(screen.getByRole('tab', { name: '03 Sep 2026' }))
+    expect(screen.getAllByText('12')).toHaveLength(2)
+  })
 })

@@ -68,6 +68,71 @@ describe('lead scanner actions', () => {
     })
   })
 
+  it('parses days array and auto-aggregates overall when overall is missing', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: {
+          start_date: '2026-09-02',
+          end_date: '2026-09-03',
+          days: [
+            {
+              day_label: '02 Sep 2026',
+              companies: [
+                { company_name: 'A Dose Pharma', total_scanned: 5, total_contact: 4 },
+                { company_name: 'A&D Instruments', total_scanned: 13, total_contact: 10 },
+              ],
+            },
+            {
+              day_label: '03 Sep 2026',
+              companies: [
+                { company_name: 'A Dose Pharma', total_scanned: 2, total_contact: 2 },
+                { company_name: 'A&D Instruments', total_scanned: 10, total_contact: 10 },
+              ],
+            },
+          ],
+        },
+      },
+    })
+
+    const result = await getLeadScannerUsage('project-a')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.days).toHaveLength(2)
+      expect(result.data.days?.[0].dayLabel).toBe('02 Sep 2026')
+      expect(result.data.days?.[1].dayLabel).toBe('03 Sep 2026')
+      // Aggregated overall
+      expect(result.data.overall).toEqual([
+        { companyName: 'A Dose Pharma', totalScanned: 7, totalContact: 6 },
+        { companyName: 'A&D Instruments', totalScanned: 23, totalContact: 20 },
+      ])
+    }
+  })
+
+  it('parses flat days array with day_label and groups by day', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: {
+          start_date: '2026-09-02',
+          end_date: '2026-09-03',
+          days: [
+            { day_label: '02 Sep 2026', company_name: 'A Dose Pharma', total_scanned: 5, total_contact: 4 },
+            { day_label: '03 Sep 2026', company_name: 'A Dose Pharma', total_scanned: 2, total_contact: 2 },
+          ],
+        },
+      },
+    })
+
+    const result = await getLeadScannerUsage('project-a')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.days).toHaveLength(2)
+      expect(result.data.days?.[0].dayLabel).toBe('02 Sep 2026')
+      expect(result.data.days?.[0].overall[0].totalScanned).toBe(5)
+      expect(result.data.days?.[1].dayLabel).toBe('03 Sep 2026')
+      expect(result.data.days?.[1].overall[0].totalScanned).toBe(2)
+    }
+  })
+
   it('blocks missing or inaccessible Admin project scope', async () => {
     await expect(getLeadScannerUsage()).resolves.toEqual({ success: false, error: 'Select a project to view Lead Scanner usage' })
     mockVerifyProjectAccess.mockResolvedValue(false)
