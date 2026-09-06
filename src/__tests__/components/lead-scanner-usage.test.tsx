@@ -248,14 +248,81 @@ describe('LeadScannerUsage', () => {
     expect(screen.getByText('1,533')).toBeInTheDocument()
     expect(screen.getByText('13')).toBeInTheDocument()
 
-    // Check table headers
+    // Check table headers and filter buttons
     expect(screen.getByRole('button', { name: /exported/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /downloads/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /downloaded/i })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /downloaded/i })).toHaveLength(2)
 
     // Check badges
     expect(screen.getByText('Downloaded', { selector: '[data-slot="badge"]' })).toBeInTheDocument()
     expect(screen.getByText('Not downloaded', { selector: '[data-slot="badge"]' })).toBeInTheDocument()
+  })
+
+  it('filters table rows via quick status filter pills', async () => {
+    const user = userEvent.setup()
+    mockGetUsage.mockResolvedValue({
+      success: true,
+      data: {
+        startDate: '2026-09-02',
+        endDate: '2026-09-04',
+        overall: [
+          { companyName: 'Company Alpha', totalScanned: 10, totalContact: 8, isDownloaded: true },
+          { companyName: 'Company Beta', totalScanned: 5, totalContact: 4, isDownloaded: false },
+          { companyName: 'Company Gamma', totalScanned: 0, totalContact: 0, isDownloaded: false },
+        ],
+      },
+    })
+
+    render(<LeadScannerUsage projectId="project-a" />)
+    expect(await screen.findByText('Company Alpha')).toBeInTheDocument()
+    expect(screen.getByText('Company Beta')).toBeInTheDocument()
+    expect(screen.getByText('Company Gamma')).toBeInTheDocument()
+
+    // Filter by Downloaded
+    const downloadedPill = screen.getAllByRole('button', { name: /downloaded/i })[0]
+    await user.click(downloadedPill)
+    expect(screen.getByText('Company Alpha')).toBeInTheDocument()
+    expect(screen.queryByText('Company Beta')).not.toBeInTheDocument()
+    expect(screen.queryByText('Company Gamma')).not.toBeInTheDocument()
+
+    // Filter by Pending Download
+    const pendingPill = screen.getByRole('button', { name: /pending download/i })
+    await user.click(pendingPill)
+    expect(screen.queryByText('Company Alpha')).not.toBeInTheDocument()
+    expect(screen.getByText('Company Beta')).toBeInTheDocument()
+    expect(screen.getByText('Company Gamma')).toBeInTheDocument()
+
+    // Filter by No Scans
+    const noScansPill = screen.getByRole('button', { name: /no scans/i })
+    await user.click(noScansPill)
+    expect(screen.queryByText('Company Alpha')).not.toBeInTheDocument()
+    expect(screen.queryByText('Company Beta')).not.toBeInTheDocument()
+    expect(screen.getByText('Company Gamma')).toBeInTheDocument()
+
+    // Reset filter
+    const resetBtn = screen.getByRole('button', { name: /reset filter/i })
+    await user.click(resetBtn)
+    expect(screen.getByText('Company Alpha')).toBeInTheDocument()
+    expect(screen.getByText('Company Beta')).toBeInTheDocument()
+    expect(screen.getByText('Company Gamma')).toBeInTheDocument()
+  })
+
+  it('copies company name to clipboard on button click', async () => {
+    const user = userEvent.setup()
+    const writeTextMock = jest.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextMock },
+      configurable: true,
+    })
+
+    render(<LeadScannerUsage projectId="project-a" />)
+    await screen.findByText('A&D Instruments')
+
+    const copyBtn = screen.getByRole('button', { name: /copy a&d instruments/i })
+    await user.click(copyBtn)
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('A&D Instruments')
+    expect(toast.success).toHaveBeenCalledWith('Copied "A&D Instruments"')
   })
 
   it('opens confirmation modal and disables all lead scanners', async () => {
@@ -292,5 +359,61 @@ describe('LeadScannerUsage', () => {
     await user.click(screen.getByRole('button', { name: /disable all scanners/i }))
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Permission denied'))
+  })
+
+  it('renders smart day navigator and handles day stepping and total reset', async () => {
+    const user = userEvent.setup()
+    mockGetUsage.mockResolvedValue({
+      success: true,
+      data: {
+        startDate: '2026-09-04',
+        endDate: '2026-09-21',
+        totalScanned: 100,
+        totalContact: 80,
+        totalExportedContact: 50,
+        totalDownloadCount: 5,
+        totalLeadScannerEnabledCount: 12,
+        overall: [{ companyName: 'Company 1', totalScanned: 10, totalContact: 8 }],
+        days: Array.from({ length: 18 }, (_, i) => ({
+          dayLabel: `Day ${i + 1} (2026-09-${String(i + 4).padStart(2, '0')})`,
+          totalScanned: i + 1,
+          totalContact: i + 1,
+          overall: [{ companyName: 'Company 1', totalScanned: i + 1, totalContact: i + 1 }],
+        })),
+      },
+    })
+
+    render(<LeadScannerUsage projectId="project-a" />)
+
+    // For 18 days (> 4), Smart Day Navigator renders
+    const totalBtn = await screen.findByRole('button', { name: /Total \(All 18 Days\)/i })
+    expect(totalBtn).toBeInTheDocument()
+
+    const prevBtn = screen.getByRole('button', { name: /previous day/i })
+    const nextBtn = screen.getByRole('button', { name: /next day/i })
+    expect(prevBtn).toBeInTheDocument()
+    expect(nextBtn).toBeInTheDocument()
+    expect(prevBtn).toBeDisabled() // disabled when on total
+
+    // Click Next day button: advances to Day 1
+    await user.click(nextBtn)
+    expect(screen.getByText('Day 1 of 18')).toBeInTheDocument()
+
+    // Now prevBtn is disabled (since on Day 1), and nextBtn is enabled
+    expect(prevBtn).toBeDisabled()
+    expect(nextBtn).toBeEnabled()
+
+    // Click Next day button again: advances to Day 2
+    await user.click(nextBtn)
+    expect(screen.getByText('Day 2 of 18')).toBeInTheDocument()
+    expect(prevBtn).toBeEnabled()
+
+    // Click Previous day button: goes back to Day 1
+    await user.click(prevBtn)
+    expect(screen.getByText('Day 1 of 18')).toBeInTheDocument()
+
+    // Click Total button: resets to Total
+    await user.click(totalBtn)
+    expect(screen.queryByText('Day 1 of 18')).not.toBeInTheDocument()
   })
 })
