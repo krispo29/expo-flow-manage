@@ -4,7 +4,11 @@ import { toast } from 'sonner'
 import { LeadScannerUsage } from '@/components/lead-scanner-usage'
 import * as actions from '@/app/actions/lead-scanner'
 
-jest.mock('@/app/actions/lead-scanner', () => ({ getLeadScannerUsage: jest.fn(), exportLeadScannerUsage: jest.fn() }))
+jest.mock('@/app/actions/lead-scanner', () => ({
+  getLeadScannerUsage: jest.fn(),
+  exportLeadScannerUsage: jest.fn(),
+  disableAllLeadScanners: jest.fn(),
+}))
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }))
 jest.mock('recharts', () => {
   const OriginalModule = jest.requireActual('recharts')
@@ -18,6 +22,7 @@ jest.mock('recharts', () => {
 
 const mockGetUsage = actions.getLeadScannerUsage as jest.MockedFunction<typeof actions.getLeadScannerUsage>
 const mockExportUsage = actions.exportLeadScannerUsage as jest.MockedFunction<typeof actions.exportLeadScannerUsage>
+const mockDisableAll = actions.disableAllLeadScanners as jest.MockedFunction<typeof actions.disableAllLeadScanners>
 
 const usage = {
   success: true as const,
@@ -35,6 +40,7 @@ describe('LeadScannerUsage', () => {
     jest.clearAllMocks()
     mockGetUsage.mockResolvedValue(usage)
     mockExportUsage.mockResolvedValue({ success: true, bytes: [1, 2, 3], filename: 'usage.xlsx' })
+    mockDisableAll.mockResolvedValue({ success: true })
     Object.defineProperty(URL, 'createObjectURL', { writable: true, value: jest.fn(() => 'blob:test') })
     Object.defineProperty(URL, 'revokeObjectURL', { writable: true, value: jest.fn() })
     jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
@@ -200,5 +206,91 @@ describe('LeadScannerUsage', () => {
     expect(screen.getByTestId('pagination-showing')).toHaveTextContent('Showing 1 to 10 of 30 companies')
     expect(screen.getByText('Company 10')).toBeInTheDocument()
     expect(screen.queryByText('Company 11')).not.toBeInTheDocument()
+  })
+
+  it('renders new metrics and table columns with downloaded status badges', async () => {
+    mockGetUsage.mockResolvedValue({
+      success: true,
+      data: {
+        startDate: '2026-09-02',
+        endDate: '2026-09-04',
+        totalScanned: 8846,
+        totalContact: 8506,
+        totalExportedContact: 1533,
+        totalDownloadCount: 13,
+        totalLeadScannerEnabledCount: 262,
+        overall: [
+          {
+            companyName: 'A Dose Pharma',
+            totalScanned: 17,
+            totalContact: 16,
+            totalExportedContact: 10,
+            totalDownloadCount: 2,
+            isDownloaded: true,
+          },
+          {
+            companyName: 'B Health Care',
+            totalScanned: 5,
+            totalContact: 4,
+            totalExportedContact: 0,
+            totalDownloadCount: 0,
+            isDownloaded: false,
+          },
+        ],
+      },
+    })
+
+    render(<LeadScannerUsage projectId="project-a" />)
+
+    expect(await screen.findByText('262')).toBeInTheDocument()
+    expect(screen.getByText('8,846')).toBeInTheDocument()
+    expect(screen.getByText('8,506')).toBeInTheDocument()
+    expect(screen.getByText('1,533')).toBeInTheDocument()
+    expect(screen.getByText('13')).toBeInTheDocument()
+
+    // Check table headers
+    expect(screen.getByRole('button', { name: /exported/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /downloads/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /downloaded/i })).toBeInTheDocument()
+
+    // Check badges
+    expect(screen.getByText('Downloaded', { selector: '[data-slot="badge"]' })).toBeInTheDocument()
+    expect(screen.getByText('Not downloaded', { selector: '[data-slot="badge"]' })).toBeInTheDocument()
+  })
+
+  it('opens confirmation modal and disables all lead scanners', async () => {
+    const user = userEvent.setup()
+    render(<LeadScannerUsage projectId="project-a" />)
+    await screen.findByText('A&D Instruments')
+
+    // Click Disable All button in header
+    const disableAllBtn = screen.getByRole('button', { name: /disable all/i })
+    await user.click(disableAllBtn)
+
+    // Confirm dialog appears
+    expect(screen.getByRole('heading', { name: /disable all lead scanners/i })).toBeInTheDocument()
+    expect(
+      screen.getByText(/Are you sure you want to disable Lead Scanner for all exhibitors in this project/i),
+    ).toBeInTheDocument()
+
+    // Click Confirm button inside modal
+    const confirmBtn = screen.getByRole('button', { name: /disable all scanners/i })
+    await user.click(confirmBtn)
+
+    await waitFor(() => expect(mockDisableAll).toHaveBeenCalledWith('project-a'))
+    expect(toast.success).toHaveBeenCalledWith('Disabled all Lead Scanners successfully')
+    expect(mockGetUsage).toHaveBeenCalledTimes(2) // Initial load + refresh after disable
+  })
+
+  it('shows error toast when disabling all lead scanners fails', async () => {
+    const user = userEvent.setup()
+    mockDisableAll.mockResolvedValue({ success: false, error: 'Permission denied' })
+    render(<LeadScannerUsage projectId="project-a" />)
+    await screen.findByText('A&D Instruments')
+
+    await user.click(screen.getByRole('button', { name: /disable all/i }))
+    await user.click(screen.getByRole('button', { name: /disable all scanners/i }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Permission denied'))
   })
 })

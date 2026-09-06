@@ -3,14 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import {
+  AlertTriangle,
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Download,
+  FileDown,
   Loader2,
   Percent,
+  PowerOff,
+  QrCode,
   RefreshCw,
   ScanLine,
   Search,
@@ -18,16 +22,30 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { exportLeadScannerUsage, getLeadScannerUsage, type LeadScannerUsage as LeadScannerUsageData } from '@/app/actions/lead-scanner'
+import {
+  disableAllLeadScanners,
+  exportLeadScannerUsage,
+  getLeadScannerUsage,
+  type LeadScannerUsage as LeadScannerUsageData,
+} from '@/app/actions/lead-scanner'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LeadScannerPeakHours } from '@/components/lead-scanner-peak-hours'
 
 type Props = { projectId?: string }
-type SortField = 'company' | 'scanned' | 'contacts'
+type SortField = 'company' | 'scanned' | 'contacts' | 'exported' | 'downloads' | 'status'
 type SortOrder = 'asc' | 'desc'
 
 function formatReportDate(date: string) {
@@ -46,6 +64,8 @@ export function LeadScannerUsage({ projectId }: Props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [showDisableDialog, setShowDisableDialog] = useState(false)
+  const [disabling, setDisabling] = useState(false)
 
   const loadUsage = useCallback(async () => {
     setLoading(true)
@@ -67,6 +87,11 @@ export function LeadScannerUsage({ projectId }: Props) {
     () => (report?.days ?? []).filter((d) => d.dayLabel.toLowerCase() !== 'overall'),
     [report],
   )
+
+  const activeDay = useMemo(() => {
+    if (selectedDay === 'total') return null
+    return report?.days?.find((d) => d.dayLabel === selectedDay) ?? null
+  }, [report, selectedDay])
 
   const activeUsage = useMemo(() => {
     if (selectedDay === 'total') {
@@ -103,9 +128,15 @@ export function LeadScannerUsage({ projectId }: Props) {
       if (sortField === 'company') {
         comparison = a.companyName.localeCompare(b.companyName)
       } else if (sortField === 'scanned') {
-        comparison = a.totalScanned - b.totalScanned
+        comparison = (a.totalScanned ?? 0) - (b.totalScanned ?? 0)
       } else if (sortField === 'contacts') {
-        comparison = a.totalContact - b.totalContact
+        comparison = (a.totalContact ?? 0) - (b.totalContact ?? 0)
+      } else if (sortField === 'exported') {
+        comparison = (a.totalExportedContact ?? 0) - (b.totalExportedContact ?? 0)
+      } else if (sortField === 'downloads') {
+        comparison = (a.totalDownloadCount ?? 0) - (b.totalDownloadCount ?? 0)
+      } else if (sortField === 'status') {
+        comparison = Number(Boolean(a.isDownloaded)) - Number(Boolean(b.isDownloaded))
       }
 
       return sortOrder === 'asc' ? comparison : -comparison
@@ -121,10 +152,32 @@ export function LeadScannerUsage({ projectId }: Props) {
     [rows, startIndex, endIndex],
   )
 
-  const totals = useMemo(() => activeUsage.reduce(
-    (result, item) => ({ scanned: result.scanned + item.totalScanned, contacts: result.contacts + item.totalContact }),
-    { scanned: 0, contacts: 0 },
-  ), [activeUsage])
+  const totals = useMemo(() => {
+    if (selectedDay === 'total') {
+      const scanned = report?.totalScanned ?? activeUsage.reduce((acc, item) => acc + (item.totalScanned ?? 0), 0)
+      const contacts = report?.totalContact ?? activeUsage.reduce((acc, item) => acc + (item.totalContact ?? 0), 0)
+      const exportedContacts =
+        report?.totalExportedContact ??
+        activeUsage.reduce((acc, item) => acc + (item.totalExportedContact ?? 0), 0)
+      const downloadCount =
+        report?.totalDownloadCount ??
+        activeUsage.reduce((acc, item) => acc + (item.totalDownloadCount ?? 0), 0)
+      const enabledCount = report?.totalLeadScannerEnabledCount ?? 0
+      return { scanned, contacts, exportedContacts, downloadCount, enabledCount }
+    }
+
+    const day = activeDay
+    const scanned = day?.totalScanned ?? activeUsage.reduce((acc, item) => acc + (item.totalScanned ?? 0), 0)
+    const contacts = day?.totalContact ?? activeUsage.reduce((acc, item) => acc + (item.totalContact ?? 0), 0)
+    const exportedContacts =
+      day?.totalExportedContact ??
+      activeUsage.reduce((acc, item) => acc + (item.totalExportedContact ?? 0), 0)
+    const downloadCount =
+      day?.totalDownloadCount ??
+      activeUsage.reduce((acc, item) => acc + (item.totalDownloadCount ?? 0), 0)
+    const enabledCount = report?.totalLeadScannerEnabledCount ?? 0
+    return { scanned, contacts, exportedContacts, downloadCount, enabledCount }
+  }, [selectedDay, report, activeUsage, activeDay])
 
   const contactRate = totals.scanned > 0
     ? ((totals.contacts / totals.scanned) * 100).toFixed(1)
@@ -154,6 +207,19 @@ export function LeadScannerUsage({ projectId }: Props) {
     toast.success('Lead Scanner usage exported')
   }
 
+  const handleDisableAll = async () => {
+    setDisabling(true)
+    const result = await disableAllLeadScanners(projectId)
+    setDisabling(false)
+    if (result.success) {
+      toast.success('Disabled all Lead Scanners successfully')
+      setShowDisableDialog(false)
+      await loadUsage()
+    } else {
+      toast.error(result.error || 'Failed to disable Lead Scanners')
+    }
+  }
+
   const reportRange = report ? `${formatReportDate(report.startDate)} – ${formatReportDate(report.endDate)}` : ''
 
   return (
@@ -175,12 +241,51 @@ export function LeadScannerUsage({ projectId }: Props) {
             {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
             Refresh
           </Button>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDisableDialog(true)}
+            disabled={loading || disabling}
+          >
+            <PowerOff className="mr-2 size-4" />
+            Disable All
+          </Button>
           <Button onClick={() => void handleExport()} disabled={exporting}>
             {exporting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Download className="mr-2 size-4" />}
             Export Excel
           </Button>
         </div>
       </div>
+
+      <Dialog open={showDisableDialog} onOpenChange={setShowDisableDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="size-5" />
+              Disable All Lead Scanners
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to disable Lead Scanner for all exhibitors in this project? This will immediately revoke scanner access for all exhibitors and staff members.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDisableDialog(false)}
+              disabled={disabling}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void handleDisableAll()}
+              disabled={disabling}
+            >
+              {disabling ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+              Disable All Scanners
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {error && !report ? (
         <Card>
@@ -219,25 +324,70 @@ export function LeadScannerUsage({ projectId }: Props) {
             </Tabs>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <Card>
               <CardContent className="flex items-center gap-4 pt-6">
-                <div className="rounded-xl bg-primary/10 p-3 text-primary"><ScanLine className="size-5" /></div>
-                <div><p className="text-sm text-muted-foreground">Total scanned</p><p className="text-3xl font-bold">{totals.scanned.toLocaleString()}</p></div>
+                <div className="rounded-xl bg-primary/10 p-3 text-primary">
+                  <QrCode className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Scanner enabled</p>
+                  <p className="text-2xl font-bold xl:text-3xl">{totals.enabledCount.toLocaleString()}</p>
+                </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="flex items-center gap-4 pt-6">
-                <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600"><Users className="size-5" /></div>
-                <div><p className="text-sm text-muted-foreground">Total contacts</p><p className="text-3xl font-bold">{totals.contacts.toLocaleString()}</p></div>
+                <div className="rounded-xl bg-blue-500/10 p-3 text-blue-600 dark:text-blue-400">
+                  <ScanLine className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total scanned</p>
+                  <p className="text-2xl font-bold xl:text-3xl">{totals.scanned.toLocaleString()}</p>
+                </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="flex items-center gap-4 pt-6">
-                <div className="rounded-xl bg-indigo-500/10 p-3 text-indigo-600 dark:text-indigo-400"><Percent className="size-5" /></div>
+                <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600 dark:text-emerald-400">
+                  <Users className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total contacts</p>
+                  <p className="text-2xl font-bold xl:text-3xl">{totals.contacts.toLocaleString()}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-4 pt-6">
+                <div className="rounded-xl bg-violet-500/10 p-3 text-violet-600 dark:text-violet-400">
+                  <FileDown className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Exported contacts</p>
+                  <p className="text-2xl font-bold xl:text-3xl">{totals.exportedContacts.toLocaleString()}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-4 pt-6">
+                <div className="rounded-xl bg-amber-500/10 p-3 text-amber-600 dark:text-amber-400">
+                  <Download className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Download count</p>
+                  <p className="text-2xl font-bold xl:text-3xl">{totals.downloadCount.toLocaleString()}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-4 pt-6">
+                <div className="rounded-xl bg-indigo-500/10 p-3 text-indigo-600 dark:text-indigo-400">
+                  <Percent className="size-5" />
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Contact rate</p>
-                  <p className="text-3xl font-bold">{contactRate}%</p>
+                  <p className="text-2xl font-bold xl:text-3xl">{contactRate}%</p>
                 </div>
               </CardContent>
             </Card>
@@ -339,6 +489,36 @@ export function LeadScannerUsage({ projectId }: Props) {
                             <ArrowUpDown className="size-3.5 opacity-60" />
                           </button>
                         </TableHead>
+                        <TableHead className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleSort('exported')}
+                            className="inline-flex items-center justify-end gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
+                          >
+                            Exported
+                            <ArrowUpDown className="size-3.5 opacity-60" />
+                          </button>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleSort('downloads')}
+                            className="inline-flex items-center justify-end gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
+                          >
+                            Downloads
+                            <ArrowUpDown className="size-3.5 opacity-60" />
+                          </button>
+                        </TableHead>
+                        <TableHead className="text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleSort('status')}
+                            className="inline-flex items-center justify-center gap-1.5 font-medium hover:text-foreground transition-colors cursor-pointer w-full"
+                          >
+                            Downloaded
+                            <ArrowUpDown className="size-3.5 opacity-60" />
+                          </button>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -364,9 +544,26 @@ export function LeadScannerUsage({ projectId }: Props) {
                               )}
                             </TableCell>
                             <TableCell className="font-medium">{item.companyName}</TableCell>
-                            <TableCell className="text-right font-medium">{item.totalScanned.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-medium">{(item.totalScanned ?? 0).toLocaleString()}</TableCell>
                             <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-400">
-                              {item.totalContact.toLocaleString()}
+                              {(item.totalContact ?? 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-violet-600 dark:text-violet-400">
+                              {(item.totalExportedContact ?? 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {(item.totalDownloadCount ?? 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {item.isDownloaded ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-medium normal-case tracking-normal">
+                                  Downloaded
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-muted text-muted-foreground border-transparent font-normal normal-case tracking-normal">
+                                  Not downloaded
+                                </Badge>
+                              )}
                             </TableCell>
                           </TableRow>
                         )

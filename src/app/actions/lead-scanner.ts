@@ -8,11 +8,19 @@ export type CompanyUsageItem = {
   companyName: string
   totalScanned: number
   totalContact: number
+  totalExportedContact?: number
+  totalDownloadCount?: number
+  isDownloaded?: boolean
 }
 
 export type LeadScannerDay = {
+  day?: number
   dayLabel: string
   date?: string
+  totalScanned?: number
+  totalContact?: number
+  totalExportedContact?: number
+  totalDownloadCount?: number
   overall: CompanyUsageItem[]
 }
 
@@ -25,6 +33,11 @@ export type HourlyTrafficPoint = {
 export type LeadScannerUsage = {
   startDate: string
   endDate: string
+  totalScanned?: number
+  totalContact?: number
+  totalExportedContact?: number
+  totalDownloadCount?: number
+  totalLeadScannerEnabledCount?: number
   overall: CompanyUsageItem[]
   days?: LeadScannerDay[]
   hourlyTraffic?: HourlyTrafficPoint[]
@@ -38,6 +51,26 @@ export type LeadScannerUsageResult =
 export type LeadScannerExportResult =
   | { success: true; bytes: number[]; filename: string }
   | { success: false; error: string }
+
+export type DisableAllLeadScannersResult =
+  | { success: true }
+  | { success: false; error: string }
+
+function mapCompanyUsageItem(item: any): CompanyUsageItem {
+  return {
+    companyName: item.company_name ?? item.companyName ?? '-',
+    totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
+    totalContact: item.total_contact ?? item.totalContact ?? 0,
+    totalExportedContact: item.total_exported_contact ?? item.totalExportedContact ?? 0,
+    totalDownloadCount:
+      item.total_download_count ??
+      item.download_count ??
+      item.totalDownloadCount ??
+      item.downloadCount ??
+      0,
+    isDownloaded: Boolean(item.is_downloaded ?? item.isDownloaded ?? false),
+  }
+}
 
 async function getAdminProjectHeaders(projectId?: string) {
   const auth = await getServerAuthContext()
@@ -81,14 +114,19 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
           'usages' in first)
       ) {
         parsedDays = data.days.map((d: any) => ({
+          day: typeof d.day === 'number' ? d.day : undefined,
           dayLabel: d.day_label ?? d.label ?? d.date ?? 'Day',
           date: d.date,
+          totalScanned: d.total_scanned ?? d.totalScanned,
+          totalContact: d.total_contact ?? d.totalContact,
+          totalExportedContact: d.total_exported_contact ?? d.totalExportedContact,
+          totalDownloadCount:
+            d.total_download_count ??
+            d.download_count ??
+            d.totalDownloadCount ??
+            d.downloadCount,
           overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? d.usage ?? d.usages ?? []).map(
-            (item: any) => ({
-              companyName: item.company_name ?? item.companyName ?? '-',
-              totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
-              totalContact: item.total_contact ?? item.totalContact ?? 0,
-            }),
+            mapCompanyUsageItem,
           ),
         }))
       } else if (first && typeof first === 'object' && ('company_name' in first || 'companyName' in first)) {
@@ -98,11 +136,7 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
           if (!dayMap.has(label)) {
             dayMap.set(label, [])
           }
-          dayMap.get(label)!.push({
-            companyName: item.company_name ?? item.companyName ?? '-',
-            totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
-            totalContact: item.total_contact ?? item.totalContact ?? 0,
-          })
+          dayMap.get(label)!.push(mapCompanyUsageItem(item))
         }
         parsedDays = Array.from(dayMap.entries()).map(([dayLabel, overall]) => ({
           dayLabel,
@@ -110,44 +144,53 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
         }))
       } else if (first && typeof first === 'object' && 'day_label' in first) {
         parsedDays = data.days.map((d: any) => ({
+          day: typeof d.day === 'number' ? d.day : undefined,
           dayLabel: d.day_label ?? d.label ?? d.date ?? 'Day',
           date: d.date,
-          overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? []).map((item: any) => ({
-            companyName: item.company_name ?? item.companyName ?? '-',
-            totalScanned: item.total_scanned ?? item.totalScanned ?? 0,
-            totalContact: item.total_contact ?? item.totalContact ?? 0,
-          })),
+          totalScanned: d.total_scanned ?? d.totalScanned,
+          totalContact: d.total_contact ?? d.totalContact,
+          totalExportedContact: d.total_exported_contact ?? d.totalExportedContact,
+          totalDownloadCount:
+            d.total_download_count ??
+            d.download_count ??
+            d.totalDownloadCount ??
+            d.downloadCount,
+          overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? []).map(mapCompanyUsageItem),
         }))
       }
     }
 
     let overall: CompanyUsageItem[] = []
     if (Array.isArray(data.overall) && data.overall.length > 0) {
-      overall = data.overall.map((item: {
-        company_name?: string
-        total_scanned?: number
-        total_contact?: number
-      }) => ({
-        companyName: item.company_name ?? '-',
-        totalScanned: item.total_scanned ?? 0,
-        totalContact: item.total_contact ?? 0,
-      }))
+      overall = data.overall.map(mapCompanyUsageItem)
     } else if (parsedDays.length > 0) {
-      const companyMap = new Map<string, { totalScanned: number; totalContact: number }>()
-      for (const day of parsedDays) {
-        for (const item of day.overall) {
-          const existing = companyMap.get(item.companyName) ?? { totalScanned: 0, totalContact: 0 }
-          companyMap.set(item.companyName, {
-            totalScanned: existing.totalScanned + item.totalScanned,
-            totalContact: existing.totalContact + item.totalContact,
-          })
+      const overallDay = parsedDays.find((d) => d.dayLabel.toLowerCase() === 'overall')
+      if (overallDay) {
+        overall = overallDay.overall
+      } else {
+        const companyMap = new Map<string, CompanyUsageItem>()
+        for (const day of parsedDays) {
+          for (const item of day.overall) {
+            const existing = companyMap.get(item.companyName) ?? {
+              companyName: item.companyName,
+              totalScanned: 0,
+              totalContact: 0,
+              totalExportedContact: 0,
+              totalDownloadCount: 0,
+              isDownloaded: false,
+            }
+            companyMap.set(item.companyName, {
+              companyName: item.companyName,
+              totalScanned: (existing.totalScanned ?? 0) + (item.totalScanned ?? 0),
+              totalContact: (existing.totalContact ?? 0) + (item.totalContact ?? 0),
+              totalExportedContact: (existing.totalExportedContact ?? 0) + (item.totalExportedContact ?? 0),
+              totalDownloadCount: (existing.totalDownloadCount ?? 0) + (item.totalDownloadCount ?? 0),
+              isDownloaded: Boolean(existing.isDownloaded || item.isDownloaded),
+            })
+          }
         }
+        overall = Array.from(companyMap.values())
       }
-      overall = Array.from(companyMap.entries()).map(([companyName, stats]) => ({
-        companyName,
-        totalScanned: stats.totalScanned,
-        totalContact: stats.totalContact,
-      }))
     }
 
     return {
@@ -156,11 +199,31 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
         startDate: data.start_date ?? '',
         endDate: data.end_date ?? '',
         overall,
+        totalScanned: data.total_scanned ?? data.totalScanned,
+        totalContact: data.total_contact ?? data.totalContact,
+        totalExportedContact: data.total_exported_contact ?? data.totalExportedContact,
+        totalDownloadCount:
+          data.total_download_count ??
+          data.download_count ??
+          data.totalDownloadCount ??
+          data.downloadCount,
+        totalLeadScannerEnabledCount:
+          data.total_lead_scanner_enabled_count ?? data.totalLeadScannerEnabledCount,
         ...(parsedDays.length > 0 ? { days: parsedDays } : {}),
         ...(hourlyTraffic ? { hourlyTraffic } : {}),
         ...(data.peak_time ? { peakTime: data.peak_time } : {}),
       },
     }
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+export async function disableAllLeadScanners(projectId?: string): Promise<DisableAllLeadScannersResult> {
+  try {
+    const headers = await getAdminProjectHeaders(projectId)
+    await api.patch('/v1/admin/project/lead-scanner/disable-all', {}, { headers })
+    return { success: true }
   } catch (error) {
     return { success: false, error: getErrorMessage(error) }
   }

@@ -1,17 +1,22 @@
 import api from '@/lib/api'
-import { exportLeadScannerUsage, getLeadScannerUsage } from '@/app/actions/lead-scanner'
+import {
+  disableAllLeadScanners,
+  exportLeadScannerUsage,
+  getLeadScannerUsage,
+} from '@/app/actions/lead-scanner'
 import { verifyProjectAccess } from '@/lib/authorization'
 import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 
 jest.mock('@/lib/api', () => ({
   __esModule: true,
-  default: { get: jest.fn() },
+  default: { get: jest.fn(), patch: jest.fn() },
   getErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Unexpected error',
 }))
 jest.mock('@/lib/authorization', () => ({ verifyProjectAccess: jest.fn() }))
 jest.mock('@/lib/server-auth', () => ({ getServerAuthContext: jest.fn(), requireServerAuthHeaders: jest.fn() }))
 
 const mockApiGet = api.get as jest.MockedFunction<typeof api.get>
+const mockApiPatch = api.patch as jest.MockedFunction<typeof api.patch>
 const mockVerifyProjectAccess = verifyProjectAccess as jest.MockedFunction<typeof verifyProjectAccess>
 const mockAuthContext = getServerAuthContext as jest.MockedFunction<typeof getServerAuthContext>
 const mockAuthHeaders = requireServerAuthHeaders as jest.MockedFunction<typeof requireServerAuthHeaders>
@@ -32,11 +37,83 @@ describe('lead scanner actions', () => {
 
     await expect(getLeadScannerUsage('project-a')).resolves.toEqual({
       success: true,
-      data: { startDate: '2026-09-02', endDate: '2026-09-04', overall: [{ companyName: 'A Dose Pharma', totalScanned: 7, totalContact: 6 }] },
+      data: {
+        startDate: '2026-09-02',
+        endDate: '2026-09-04',
+        overall: [{
+          companyName: 'A Dose Pharma',
+          totalScanned: 7,
+          totalContact: 6,
+          totalExportedContact: 0,
+          totalDownloadCount: 0,
+          isDownloaded: false,
+        }],
+      },
     })
     expect(mockApiGet).toHaveBeenCalledWith('/v1/admin/project/lead-scanner/usage', {
       headers: { Authorization: 'Bearer token', 'X-Project-UUID': 'project-a' },
     })
+  })
+
+  it('maps new metrics at root, day, and item levels', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        code: 200,
+        data: {
+          start_date: '2026-09-02',
+          end_date: '2026-09-04',
+          total_scanned: 8846,
+          total_contact: 8506,
+          total_exported_contact: 1533,
+          total_download_count: 13,
+          total_lead_scanner_enabled_count: 262,
+          days: [
+            {
+              day: 0,
+              day_label: 'Overall',
+              date: '',
+              total_scanned: 8846,
+              total_contact: 8506,
+              total_exported_contact: 1533,
+              total_download_count: 13,
+              items: [
+                {
+                  company_name: 'A Dose Pharma Co., Ltd.',
+                  total_scanned: 17,
+                  total_contact: 16,
+                  total_exported_contact: 5,
+                  download_count: 2,
+                  is_downloaded: true,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    })
+
+    const result = await getLeadScannerUsage('project-a')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.totalScanned).toBe(8846)
+      expect(result.data.totalContact).toBe(8506)
+      expect(result.data.totalExportedContact).toBe(1533)
+      expect(result.data.totalDownloadCount).toBe(13)
+      expect(result.data.totalLeadScannerEnabledCount).toBe(262)
+      expect(result.data.days).toHaveLength(1)
+      expect(result.data.days?.[0].totalExportedContact).toBe(1533)
+      expect(result.data.days?.[0].totalDownloadCount).toBe(13)
+      expect(result.data.overall).toEqual([
+        {
+          companyName: 'A Dose Pharma Co., Ltd.',
+          totalScanned: 17,
+          totalContact: 16,
+          totalExportedContact: 5,
+          totalDownloadCount: 2,
+          isDownloaded: true,
+        },
+      ])
+    }
   })
 
   it('maps hourly_traffic and peak_time when returned by API', async () => {
@@ -78,15 +155,15 @@ describe('lead scanner actions', () => {
             {
               day_label: '02 Sep 2026',
               companies: [
-                { company_name: 'A Dose Pharma', total_scanned: 5, total_contact: 4 },
-                { company_name: 'A&D Instruments', total_scanned: 13, total_contact: 10 },
+                { company_name: 'A Dose Pharma', total_scanned: 5, total_contact: 4, total_exported_contact: 2, total_download_count: 1, is_downloaded: true },
+                { company_name: 'A&D Instruments', total_scanned: 13, total_contact: 10, total_exported_contact: 4, total_download_count: 2, is_downloaded: false },
               ],
             },
             {
               day_label: '03 Sep 2026',
               companies: [
-                { company_name: 'A Dose Pharma', total_scanned: 2, total_contact: 2 },
-                { company_name: 'A&D Instruments', total_scanned: 10, total_contact: 10 },
+                { company_name: 'A Dose Pharma', total_scanned: 2, total_contact: 2, total_exported_contact: 1, total_download_count: 1, is_downloaded: true },
+                { company_name: 'A&D Instruments', total_scanned: 10, total_contact: 10, total_exported_contact: 3, total_download_count: 1, is_downloaded: true },
               ],
             },
           ],
@@ -102,8 +179,8 @@ describe('lead scanner actions', () => {
       expect(result.data.days?.[1].dayLabel).toBe('03 Sep 2026')
       // Aggregated overall
       expect(result.data.overall).toEqual([
-        { companyName: 'A Dose Pharma', totalScanned: 7, totalContact: 6 },
-        { companyName: 'A&D Instruments', totalScanned: 23, totalContact: 20 },
+        { companyName: 'A Dose Pharma', totalScanned: 7, totalContact: 6, totalExportedContact: 3, totalDownloadCount: 2, isDownloaded: true },
+        { companyName: 'A&D Instruments', totalScanned: 23, totalContact: 20, totalExportedContact: 7, totalDownloadCount: 3, isDownloaded: true },
       ])
     }
   })
@@ -151,5 +228,24 @@ describe('lead scanner actions', () => {
       headers: { Authorization: 'Bearer token', 'X-Project-UUID': 'project-a' },
       responseType: 'arraybuffer',
     })
+  })
+
+  it('disables all lead scanners through PATCH endpoint', async () => {
+    mockApiPatch.mockResolvedValue({ data: { success: true } })
+
+    const result = await disableAllLeadScanners('project-a')
+    expect(result).toEqual({ success: true })
+    expect(mockApiPatch).toHaveBeenCalledWith(
+      '/v1/admin/project/lead-scanner/disable-all',
+      {},
+      { headers: { Authorization: 'Bearer token', 'X-Project-UUID': 'project-a' } },
+    )
+  })
+
+  it('returns error when disableAllLeadScanners fails', async () => {
+    mockApiPatch.mockRejectedValue(new Error('Failed to disable'))
+
+    const result = await disableAllLeadScanners('project-a')
+    expect(result).toEqual({ success: false, error: 'Failed to disable' })
   })
 })
