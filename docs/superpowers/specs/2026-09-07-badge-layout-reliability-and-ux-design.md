@@ -28,7 +28,7 @@ No collaborative live editing, server-side autosave, or cross-device recovery is
 
 The property panel will label values in operational terms: Left/Top/Width/Height, Text size, Smallest text size, Text alignment, Capital letters, and Long-text behavior. Technical units remain visible as `mm` and `pt`.
 
-Frequently used actions are one click: center horizontally, center vertically, center on paper, reset selected field to its starter position, and choose Default / ILDEX / THAILAB starter. “Starter position” means every property of the selected field from the currently selected project starter (Default / ILDEX / THAILAB), with confirmation only when it overwrites a dirty field; it is one undoable action. Typography and fine controls live in an `Advanced text settings` disclosure, preserving full control without confronting normal users with every knob. Existing keyboard movement, snapping, warnings and numerical entry remain available.
+Frequently used actions are one click: center horizontally, center vertically, center on paper, reset selected field to its starter position, and choose Default / ILDEX / THAILAB starter. Starter selection replaces the complete local layout (paper, artwork reference and every field) as one undoable entry; it requires confirmation whenever the whole local layout is dirty, and no confirmation when it is clean. “Starter position” means every property of the selected field from the currently selected project starter (Default / ILDEX / THAILAB), with confirmation only when it overwrites a dirty field; it is one undoable action. Typography and fine controls live in an `Advanced text settings` disclosure, preserving full control without confronting normal users with every knob. Existing keyboard movement, snapping, warnings and numerical entry remain available.
 
 ### Error handling and safety
 
@@ -40,7 +40,7 @@ Frequently used actions are one click: center horizontally, center vertically, c
 ### Verification
 
 - Unit tests cover 50-entry boundaries, immutable snapshots, redo invalidation, drag coalescing, keyboard-input exclusions, checkpoint compatibility/staleness/clear rules, revision-0/malformed/quota branches, test-token invalidation/expiry, and exact quick-action geometry.
-- Component tests cover recovery prompt, friendly labels, advanced disclosure, and publish-after-tested-save.
+- Component tests cover recovery prompt, clean/dirty starter replacement, friendly labels, advanced disclosure, and publish-after-tested-save.
 - Backend disposable lifecycle test stays opt-in.
 - Manual acceptance requires the existing calibration print and an actual preprinted badge for each active project.
 
