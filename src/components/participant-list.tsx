@@ -44,7 +44,8 @@ import { isBusinessMatchingEnabled, THAILAB2026_PROJECT_UUID } from '@/lib/featu
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
-import { printBadge } from '@/utils/print-badge'
+import { printProjectBadges } from '@/lib/badge-layout/print'
+import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -254,6 +255,8 @@ export function ParticipantList({
   const [selectedEvent, setSelectedEvent] = useState(events[0]?.event_uuid || '')
   
   const onPrintClick = async (p: Participant) => {
+    let popup: Window
+    try { popup = reserveLayoutPrintWindow() } catch (error) { toast.error(error instanceof Error ? error.message : 'Popup blocked'); return }
     const printPromise = (async () => {
       const [printResult, detailResult] = await Promise.all([
         printParticipantBadge(projectId, p.registration_uuid),
@@ -273,10 +276,10 @@ export function ParticipantList({
             }
           : p
 
-      printBadge(getParticipantPrintData(participantForBadge, attendeeTypesByCode), projectId)
+      await printProjectBadges(projectId, [getParticipantPrintData(participantForBadge, attendeeTypesByCode)], popup)
 
       return 'Badge print triggered'
-    })()
+    })().catch(error => { popup.close(); throw error })
 
     toast.promise(printPromise, {
       loading: 'Printing badge...',

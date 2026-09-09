@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { isBusinessMatchingEnabled } from "@/lib/features"
+import * as React from 'react'
+import { cn } from '@/lib/utils'
+import { isBusinessMatchingEnabled } from '@/lib/features'
 import {
   Users,
   Contact,
@@ -25,9 +25,10 @@ import {
   Tags,
   Handshake,
   KeyRound,
-} from "lucide-react"
+  IdCard,
+} from 'lucide-react'
 
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from '@/components/nav-user'
 import {
   Sidebar,
   SidebarContent,
@@ -40,17 +41,17 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { ModeToggle } from "@/components/mode-toggle"
-import { useAuthStore } from "@/store/useAuthStore"
+import { ModeToggle } from '@/components/mode-toggle'
+import { useAuthStore } from '@/store/useAuthStore'
 
 interface SidebarProject {
   name: string
@@ -58,19 +59,22 @@ interface SidebarProject {
   url: string
 }
 
-export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof Sidebar> & { projects?: SidebarProject[] }) {
+export function AppSidebar({
+  projects,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { projects?: SidebarProject[] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const projectId = searchParams.get('projectId')
   const { user, isAuthenticated, isHydrated } = useAuthStore()
 
-  const activeProject = projects?.find(p => p.id === projectId)
+  const activeProject = projects?.find((p) => p.id === projectId)
 
   const userData = {
-    name: user?.username?.toUpperCase() || "ADMIN",
-    email: user?.role || "Administrator",
-    avatar: "/avatars/admin.jpg",
+    name: user?.username?.toUpperCase() || 'ADMIN',
+    email: user?.role || 'Administrator',
+    avatar: '/avatars/admin.jpg',
   }
 
   const basePath = user?.role === 'ORGANIZER' ? '/organizer' : '/admin'
@@ -115,51 +119,64 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
         <SidebarMenu>
           <SidebarMenuItem>
             {user?.role === 'ORGANIZER' ? (
-              <SidebarMenuButton 
-                size="lg" 
+              <SidebarMenuButton
+                size="lg"
                 variant="outline"
-                className="cursor-default h-16 transition-all duration-500 hover:scale-[1.02]"
+                className="h-16 cursor-default transition-all duration-500 hover:scale-[1.02]"
               >
-                <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-lg shadow-primary/20 transition-transform duration-500 group-hover:scale-110">
+                <div className="bg-aurora-gradient shadow-primary/20 flex aspect-square size-10 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-500 group-hover:scale-110">
                   <Sparkles className="size-5" />
                 </div>
-                <div className="grid flex-1 text-left leading-tight ml-3 group-data-[collapsible=icon]:hidden">
-                  <span className="truncate font-bold text-[15px] tracking-tight text-sidebar-foreground">Organizer</span>
-                  <span className="truncate text-[10px] text-sidebar-foreground/40 font-bold uppercase tracking-[0.15em] mt-1">Management Hub</span>
+                <div className="ml-3 grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                  <span className="text-sidebar-foreground truncate text-[15px] font-bold tracking-tight">
+                    Organizer
+                  </span>
+                  <span className="text-sidebar-foreground/40 mt-1 truncate text-[10px] font-bold tracking-[0.15em] uppercase">
+                    Management Hub
+                  </span>
                 </div>
               </SidebarMenuButton>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton 
-                    size="lg" 
+                  <SidebarMenuButton
+                    size="lg"
                     variant="outline"
-                    className="data-[state=open]:bg-white/10 h-16 transition-all duration-500 hover:scale-[1.02]"
+                    className="h-16 transition-all duration-500 hover:scale-[1.02] data-[state=open]:bg-white/10"
                   >
-                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-lg shadow-primary/20 transition-transform duration-500 group-hover:scale-110">
+                    <div className="bg-aurora-gradient shadow-primary/20 flex aspect-square size-10 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-500 group-hover:scale-110">
                       <Frame className="size-5" />
                     </div>
-                    <div className="grid flex-1 text-left leading-tight ml-3 group-data-[collapsible=icon]:hidden">
-                      <span className="truncate text-[9px] text-sidebar-foreground/40 font-bold uppercase tracking-[0.15em] mb-1">Active Project</span>
-                      <span className="truncate font-bold text-[15px] tracking-tight text-sidebar-foreground">
-                        {activeProject?.name || "Select Project"}
+                    <div className="ml-3 grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                      <span className="text-sidebar-foreground/40 mb-1 truncate text-[9px] font-bold tracking-[0.15em] uppercase">
+                        Active Project
+                      </span>
+                      <span className="text-sidebar-foreground truncate text-[15px] font-bold tracking-tight">
+                        {activeProject?.name || 'Select Project'}
                       </span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4 opacity-30 group-data-[collapsible=icon]:hidden" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 glass-elevated border-none p-2" align="start">
-                  <div className="px-3 py-2 text-[10px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.2em] text-slate-800">Projects</div>
+                <DropdownMenuContent
+                  className="glass-elevated w-[--radix-dropdown-menu-trigger-width] min-w-56 border-none p-2"
+                  align="start"
+                >
+                  <div className="text-sidebar-foreground/30 px-3 py-2 text-[10px] font-bold tracking-[0.2em] text-slate-800 uppercase">
+                    Projects
+                  </div>
                   {projects?.map((project) => (
                     <DropdownMenuItem
                       key={project.id}
                       onClick={() => handleProjectChange(project.id)}
-                      className="gap-3 p-2.5 rounded-xl focus:bg-primary/10 focus:text-primary cursor-pointer transition-colors"
+                      className="focus:bg-primary/10 focus:text-primary cursor-pointer gap-3 rounded-xl p-2.5 transition-colors"
                     >
-                      <div className="flex size-7 items-center justify-center rounded-lg bg-sidebar-accent/50">
+                      <div className="bg-sidebar-accent/50 flex size-7 items-center justify-center rounded-lg">
                         <Frame className="size-4" />
                       </div>
-                      <span className="font-semibold text-sm">{project.name}</span>
+                      <span className="text-sm font-semibold">
+                        {project.name}
+                      </span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -168,7 +185,7 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      
+
       <SidebarContent className="scrollbar-hide px-2 group-data-[collapsible=icon]:px-0">
         {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
           <SidebarGroup>
@@ -176,13 +193,26 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="Dashboard" 
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Dashboard"
                     isActive={isActive(basePath)}
                   >
-                    <Link href={projectId ? `${basePath}?projectId=${projectId}` : basePath}>
-                      <LayoutDashboard className={cn("transition-transform duration-300", isActive(basePath) ? "scale-110" : "group-hover:scale-110")} />
+                    <Link
+                      href={
+                        projectId
+                          ? `${basePath}?projectId=${projectId}`
+                          : basePath
+                      }
+                    >
+                      <LayoutDashboard
+                        className={cn(
+                          'transition-transform duration-300',
+                          isActive(basePath)
+                            ? 'scale-110'
+                            : 'group-hover:scale-110'
+                        )}
+                      />
                       <span>Dashboard Overview</span>
                     </Link>
                   </SidebarMenuButton>
@@ -199,12 +229,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
               <SidebarMenu>
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Exhibitors" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Exhibitors"
                       isActive={isActive(`${basePath}/exhibitors`)}
                     >
-                      <Link href={projectId ? `${basePath}/exhibitors?projectId=${projectId}` : `${basePath}/exhibitors`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/exhibitors?projectId=${projectId}`
+                            : `${basePath}/exhibitors`
+                        }
+                      >
                         <Users />
                         <span>Exhibitors</span>
                       </Link>
@@ -214,12 +250,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Participants" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Participants"
                       isActive={isActive(`${basePath}/participants`)}
                     >
-                      <Link href={projectId ? `${basePath}/participants?projectId=${projectId}` : `${basePath}/participants`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/participants?projectId=${projectId}`
+                            : `${basePath}/participants`
+                        }
+                      >
                         <Contact />
                         <span>Participants</span>
                       </Link>
@@ -229,12 +271,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Staff" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Staff"
                       isActive={isActive(`${basePath}/staff`)}
                     >
-                      <Link href={projectId ? `${basePath}/staff?projectId=${projectId}` : `${basePath}/staff`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/staff?projectId=${projectId}`
+                            : `${basePath}/staff`
+                        }
+                      >
                         <ContactRound />
                         <span>Staff</span>
                       </Link>
@@ -243,12 +291,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                 )}
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Organizers" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Organizers"
                       isActive={isActive(`${basePath}/organizers`)}
                     >
-                      <Link href={projectId ? `${basePath}/organizers?projectId=${projectId}` : `${basePath}/organizers`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/organizers?projectId=${projectId}`
+                            : `${basePath}/organizers`
+                        }
+                      >
                         <Users />
                         <span>Organizers</span>
                       </Link>
@@ -258,12 +312,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Conferences" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Conferences"
                       isActive={isActive(`${basePath}/conferences`)}
                     >
-                      <Link href={projectId ? `${basePath}/conferences?projectId=${projectId}` : `${basePath}/conferences`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/conferences?projectId=${projectId}`
+                            : `${basePath}/conferences`
+                        }
+                      >
                         <Presentation />
                         <span>Conferences</span>
                       </Link>
@@ -273,12 +333,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Rooms" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Rooms"
                       isActive={isActive(`${basePath}/rooms`)}
                     >
-                      <Link href={projectId ? `${basePath}/rooms?projectId=${projectId}` : `${basePath}/rooms`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/rooms?projectId=${projectId}`
+                            : `${basePath}/rooms`
+                        }
+                      >
                         <DoorOpen />
                         <span>Rooms</span>
                       </Link>
@@ -288,12 +354,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Events" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Events"
                       isActive={isActive(`${basePath}/events`)}
                     >
-                      <Link href={projectId ? `${basePath}/events?projectId=${projectId}` : `${basePath}/events`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/events?projectId=${projectId}`
+                            : `${basePath}/events`
+                        }
+                      >
                         <Calendar />
                         <span>Events</span>
                       </Link>
@@ -306,9 +378,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                     <SidebarMenuButton
                       asChild
                       tooltip="Business Matching Categories"
-                      isActive={isActive(`${basePath}/business-matching-categories`)}
+                      isActive={isActive(
+                        `${basePath}/business-matching-categories`
+                      )}
                     >
-                      <Link href={`${basePath}/business-matching-categories?projectId=${projectId}`}>
+                      <Link
+                        href={`${basePath}/business-matching-categories?projectId=${projectId}`}
+                      >
                         <Tags />
                         <span>Matching Categories</span>
                       </Link>
@@ -318,12 +394,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Invitation Codes" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Invitation Codes"
                       isActive={isActive(`${basePath}/invitation-codes`)}
                     >
-                      <Link href={projectId ? `${basePath}/invitation-codes?projectId=${projectId}` : `${basePath}/invitation-codes`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/invitation-codes?projectId=${projectId}`
+                            : `${basePath}/invitation-codes`
+                        }
+                      >
                         <FileText />
                         <span>Invitation Codes</span>
                       </Link>
@@ -338,7 +420,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Payment Codes"
                       isActive={isActive(`${basePath}/payment-codes`)}
                     >
-                      <Link href={projectId ? `${basePath}/payment-codes?projectId=${projectId}` : `${basePath}/payment-codes`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/payment-codes?projectId=${projectId}`
+                            : `${basePath}/payment-codes`
+                        }
+                      >
                         <KeyRound />
                         <span>Payment Codes</span>
                       </Link>
@@ -348,12 +436,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
 
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Quota Requests" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Quota Requests"
                       isActive={isActive(`${basePath}/quota-requests`)}
                     >
-                      <Link href={projectId ? `${basePath}/quota-requests?projectId=${projectId}` : `${basePath}/quota-requests`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/quota-requests?projectId=${projectId}`
+                            : `${basePath}/quota-requests`
+                        }
+                      >
                         <ArrowUpCircle />
                         <span>Quota Requests</span>
                       </Link>
@@ -367,7 +461,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Upgrade Requests"
                       isActive={isActive(`${basePath}/upgrade-requests`)}
                     >
-                      <Link href={projectId ? `${basePath}/upgrade-requests?projectId=${projectId}` : `${basePath}/upgrade-requests`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/upgrade-requests?projectId=${projectId}`
+                            : `${basePath}/upgrade-requests`
+                        }
+                      >
                         <BadgeCheck />
                         <span>Upgrade Requests</span>
                       </Link>
@@ -381,7 +481,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Business Matching"
                       isActive={isActive(`${basePath}/business-matching`)}
                     >
-                      <Link href={projectId ? `${basePath}/business-matching?projectId=${projectId}` : `${basePath}/business-matching`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/business-matching?projectId=${projectId}`
+                            : `${basePath}/business-matching`
+                        }
+                      >
                         <Handshake />
                         <span>Business Matching</span>
                       </Link>
@@ -400,12 +506,18 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
               <SidebarMenu>
                 {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Reports" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Reports"
                       isActive={isActive(`${basePath}/reports`)}
                     >
-                      <Link href={projectId ? `${basePath}/reports?projectId=${projectId}` : `${basePath}/reports`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/reports?projectId=${projectId}`
+                            : `${basePath}/reports`
+                        }
+                      >
                         <FileText />
                         <span>Reports</span>
                       </Link>
@@ -419,7 +531,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Questionnaires Stats"
                       isActive={isActive(`${basePath}/questionnaires-stats`)}
                     >
-                      <Link href={projectId ? `${basePath}/questionnaires-stats?projectId=${projectId}` : `${basePath}/questionnaires-stats`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/questionnaires-stats?projectId=${projectId}`
+                            : `${basePath}/questionnaires-stats`
+                        }
+                      >
                         <BarChart3 />
                         <span>Questionnaires Stats</span>
                       </Link>
@@ -433,7 +551,13 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                       tooltip="Imports"
                       isActive={isActive(`${basePath}/imports`)}
                     >
-                      <Link href={projectId ? `${basePath}/imports?projectId=${projectId}` : `${basePath}/imports`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/imports?projectId=${projectId}`
+                            : `${basePath}/imports`
+                        }
+                      >
                         <FileUp />
                         <span>Imports</span>
                       </Link>
@@ -442,26 +566,54 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
                 )}
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Utility" 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Utility"
                       isActive={isActive(`${basePath}/utilities`)}
                     >
-                      <Link href={projectId ? `${basePath}/utilities?projectId=${projectId}` : `${basePath}/utilities`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/utilities?projectId=${projectId}`
+                            : `${basePath}/utilities`
+                        }
+                      >
                         <Wrench />
                         <span>Utility</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Badge layout"
+                      isActive={isActive(`${basePath}/settings/badge-layout`)}
+                    >
+                      <Link
+                        href={`${basePath}/settings/badge-layout${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`}
+                      >
+                        <IdCard />
+                        <span>Badge layout</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Settings" 
-                      isActive={isActive(`${basePath}/settings`)}
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Settings"
+                      isActive={pathname === `${basePath}/settings`}
                     >
-                      <Link href={projectId ? `${basePath}/settings?projectId=${projectId}` : `${basePath}/settings`}>
+                      <Link
+                        href={
+                          projectId
+                            ? `${basePath}/settings?projectId=${projectId}`
+                            : `${basePath}/settings`
+                        }
+                      >
                         <Settings />
                         <span>Settings</span>
                       </Link>
@@ -474,10 +626,12 @@ export function AppSidebar({ projects, ...props }: React.ComponentProps<typeof S
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 gap-4">
+      <SidebarFooter className="gap-4 p-4">
         <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:justify-center">
-           <ModeToggle />
-           <span className="text-[10px] font-bold text-sidebar-foreground/20 uppercase tracking-widest group-data-[collapsible=icon]:hidden">v2.1.0</span>
+          <ModeToggle />
+          <span className="text-sidebar-foreground/20 text-[10px] font-bold tracking-widest uppercase group-data-[collapsible=icon]:hidden">
+            v2.1.0
+          </span>
         </div>
         <NavUser user={userData} />
       </SidebarFooter>
