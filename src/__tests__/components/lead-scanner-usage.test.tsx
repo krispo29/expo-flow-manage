@@ -103,6 +103,7 @@ describe('LeadScannerUsage', () => {
         days: [
           {
             dayLabel: '02 Sep 2026',
+            chart: { peakHour: 10, peakScans: 13, data: [{ hour: 10, label: '10AM', scans: 13 }] },
             overall: [
               { companyName: 'A Dose Pharma', totalScanned: 5, totalContact: 4 },
               { companyName: 'A&D Instruments', totalScanned: 13, totalContact: 10 },
@@ -110,6 +111,7 @@ describe('LeadScannerUsage', () => {
           },
           {
             dayLabel: '03 Sep 2026',
+            chart: { peakHour: 14, peakScans: 10, data: [{ hour: 14, label: '2PM', scans: 10 }] },
             overall: [
               { companyName: 'A Dose Pharma', totalScanned: 2, totalContact: 2 },
               { companyName: 'A&D Instruments', totalScanned: 10, totalContact: 10 },
@@ -132,10 +134,12 @@ describe('LeadScannerUsage', () => {
     await user.click(screen.getByRole('tab', { name: '02 Sep 2026' }))
     expect(screen.getByText('18')).toBeInTheDocument()
     expect(screen.getByText('14')).toBeInTheDocument()
+    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('10AM')
 
     // Click 03 Sep 2026 tab (12 scanned: 2 + 10, 12 contacts: 2 + 10)
     await user.click(screen.getByRole('tab', { name: '03 Sep 2026' }))
     expect(screen.getAllByText('12')).toHaveLength(2)
+    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('2PM')
   })
 
   it('allows sorting columns and clearing search', async () => {

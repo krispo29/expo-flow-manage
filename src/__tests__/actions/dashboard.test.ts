@@ -132,4 +132,22 @@ describe('dashboard actions', () => {
     expect(result.success).toBe(true)
     expect(result.data?.event_summaries).toEqual([])
   })
+
+  it('maps attendance chart data from the dashboard response', async () => {
+    mockCookies.mockResolvedValue({
+      get: jest.fn((name: string) => name === 'access_token' ? { value: 'token-123' } : undefined),
+    } as any)
+    mockApiGet.mockResolvedValue({ data: { data: {
+      attendance_chart: {
+        date: '2026-09-02 - 2026-09-04', timezone: 'Asia/Bangkok', peakHour: 13, peakScans: 1604,
+        data: [{ date: '2026-09-02', hour: 13, label: '2026-09-02 1PM', scans: 1604 }],
+      },
+    } } })
+
+    const result = await getDashboard('project-123')
+    expect(result.data?.attendance_chart).toEqual({
+      date: '2026-09-02 - 2026-09-04', timezone: 'Asia/Bangkok', peakHour: 13, peakScans: 1604,
+      data: [{ date: '2026-09-02', hour: 13, label: '2026-09-02 1PM', scans: 1604 }],
+    })
+  })
 })
