@@ -40,3 +40,16 @@ it('translates the inner content, preserves the page size, and hides disabled fi
   })
   expect(container.querySelector('[data-layout-field="company"]')).toBeNull()
 })
+
+it('applies vertical text alignment inside the selected field frame', async () => {
+  const layout = getStarterLayout('PH')
+  layout.fields.badgeType.verticalAlign = 'center'
+  const ready = jest.fn()
+  const { container } = render(
+    <LayoutBadgeCard layout={layout} data={sampleBadge} onReady={ready} />
+  )
+  await waitFor(() => expect(ready).toHaveBeenCalled())
+  expect(container.querySelector('[data-layout-field="badgeType"]')).toHaveStyle({
+    justifyContent: 'center',
+  })
+})

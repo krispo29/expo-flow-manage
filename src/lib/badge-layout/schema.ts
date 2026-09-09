@@ -28,6 +28,7 @@ const text = z
     letterSpacingPt: z.number().min(-5).max(20),
     textAlign: z.enum(['left', 'center', 'right']),
     textTransform: z.enum(['none', 'uppercase']),
+    verticalAlign: z.enum(['top', 'center', 'bottom']).default('top'),
     maxLines: z.union([z.literal(1), z.literal(2)]),
     fitMode: z.enum(['shrink-then-clip', 'clip']),
   })
@@ -145,14 +146,33 @@ export const publishedSchema = z
     'Invalid published revision'
   )
 export type PublishedBadgeLayout = z.infer<typeof publishedSchema>
+export const changeSummarySchema = z.object({
+  summary: z.string().min(1),
+  details: z.array(z.string()),
+})
 export const historySchema = z.array(
   z.object({
     publishedRevision: revision,
     publishedAt: z.string(),
     publishedBy: actor,
+    publishNote: z.string().nullable().optional(),
+    changeSummary: changeSummarySchema.nullable().optional(),
+    restoredFromRevision: revision.nullable().optional(),
   })
 )
 export type RevisionSummary = z.infer<typeof historySchema>[number]
+export const revisionDetailSchema = z.object({
+  projectUuid: z.string().min(1),
+  projectCode: z.string().min(1),
+  published: badgeLayoutSchema,
+  publishedRevision: revision,
+  publishedAt: z.string(),
+  publishedBy: actor,
+  publishNote: z.string().nullable().optional(),
+  changeSummary: changeSummarySchema.nullable().optional(),
+  restoredFromRevision: revision.nullable().optional(),
+})
+export type RevisionDetail = z.infer<typeof revisionDetailSchema>
 export const calibrationSchema = z.object({
   offsetXMm: z.number().min(-20).max(20),
   offsetYMm: z.number().min(-20).max(20),

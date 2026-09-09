@@ -203,7 +203,7 @@ export function StaffList({
       const result = await printProjectStaffBadge(projectId, p.staff_uuid)
         if (result.success && result.data) {
           const data = result.data
-            await printProjectBadges(projectId, [{
+            const printData = {
                firstName: data.first_name || '',
                lastName: data.last_name || '',
                companyName: data.company_name || '',
@@ -211,7 +211,12 @@ export function StaffList({
                registrationCode: data.staff_code || p.staff_code || '',
                category: data.staff_type_code || p.staff_type_code || 'STAFF',
                position: data.job_position || p.job_position || '',
-            }], popup)
+            }
+            if (result.layoutState !== undefined) {
+              await printProjectBadges(projectId, [printData], popup, undefined, result.layoutState)
+            } else {
+              await printProjectBadges(projectId, [printData], popup)
+            }
           return 'Badge print triggered'
         }
         throw new Error(result.error || 'Failed to print badge')

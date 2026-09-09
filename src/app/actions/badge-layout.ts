@@ -9,6 +9,7 @@ import {
   badgeLayoutSchema,
   stateSchema,
   historySchema,
+  revisionDetailSchema,
   type BadgeLayout,
   type BadgeLayoutState,
 } from '@/lib/badge-layout/schema'
@@ -29,11 +30,8 @@ async function request(
 ): Promise<Result> {
   try {
     const auth = await requireServerAuthContext({ projectUuid })
-    if (auth.userRole === 'ORGANIZER') {
-      const own = await requireServerAuthContext()
-      if (own.projectUuid !== projectUuid)
-        throw new Error('Project access denied')
-    }
+    if (auth.userRole !== 'ADMIN')
+      throw new Error('Badge layout is available to administrators only')
     const response = await api.request({
       url: '/v1/admin/project/badge-layout' + path,
       method,
@@ -86,14 +84,58 @@ export async function saveBadgeLayoutDraft(
     layout: parsed.data,
   })
 }
+
+/**
+ * Copy a validated draft between projects without publishing the destination.
+ * The source project is used only to authorize the cross-project operation;
+ * the destination revision is still checked by the normal draft-save API.
+ */
+export async function copyBadgeLayoutDraft(
+  sourceProjectUuid: string,
+  targetProjectUuid: string,
+  expectedTargetDraftRevision: number,
+  layout: BadgeLayout
+) {
+  try {
+    const auth = await requireServerAuthContext({
+      projectUuid: sourceProjectUuid,
+    })
+    if (auth.userRole !== 'ADMIN') {
+      return {
+        success: false as const,
+        error: 'Only administrators can copy layouts between projects.',
+      }
+    }
+    if (sourceProjectUuid === targetProjectUuid) {
+      return {
+        success: false as const,
+        error: 'Choose a different destination project.',
+      }
+    }
+    return saveBadgeLayoutDraft(
+      targetProjectUuid,
+      expectedTargetDraftRevision,
+      layout
+    )
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : 'Unable to copy layout',
+    }
+  }
+}
+
 export async function publishBadgeLayout(
   projectUuid: string,
   expectedDraftRevision: number,
-  expectedPublishedRevision: number
+  expectedPublishedRevision: number,
+  publishNote = ''
 ) {
+  const note = publishNote.trim()
   return request(projectUuid, '/publish', 'post', {
     expectedDraftRevision,
     expectedPublishedRevision,
+    ...(note ? { publishNote: note } : {}),
   })
 }
 export async function rollbackBadgeLayout(
@@ -117,6 +159,25 @@ export async function getBadgeLayoutRevisions(projectUuid: string) {
     }
   } catch {
     return { success: false as const, error: 'Unable to load revision history' }
+  }
+}
+export async function getBadgeLayoutRevision(
+  projectUuid: string,
+  revision: number
+) {
+  try {
+    const response = await api.get(
+      `/v1/admin/project/badge-layout/revisions/${revision}`,
+      {
+        headers: await requireServerAuthHeaders({ projectUuid }),
+      }
+    )
+    const detail = revisionDetailSchema.parse(response.data.data)
+    if (detail.projectUuid !== projectUuid)
+      throw new Error('Wrong project response')
+    return { success: true as const, revision: detail }
+  } catch {
+    return { success: false as const, error: 'Unable to load revision' }
   }
 }
 export async function uploadBadgeReference(

@@ -36,10 +36,16 @@ export async function printProjectBadges(
   projectUuid: string,
   badges: PrintBadgeData[],
   popup: Window,
-  onResolved?: (state: BadgeLayoutState | null) => void
+  onResolved?: (state: BadgeLayoutState | null) => void,
+  resolvedState?: BadgeLayoutState | null
 ) {
   try {
-    const result = await getBadgeLayout(projectUuid)
+    const result =
+      resolvedState === undefined
+        ? await getBadgeLayout(projectUuid)
+        : resolvedState
+          ? { success: true as const, state: resolvedState }
+          : { success: false as const, error: 'Layout unavailable' }
     if (!result.success) {
       if ([401, 403].includes(result.status ?? 0)) throw new Error(result.error)
       const project = getStoredProjects().find(

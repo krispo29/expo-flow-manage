@@ -584,7 +584,7 @@ export function AppSidebar({
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && (
+                {user?.role === 'ADMIN' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild

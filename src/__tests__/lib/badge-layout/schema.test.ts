@@ -11,4 +11,11 @@ describe('badge layout contract', () => {
       expect(badgeLayoutSchema.safeParse(layout).success).toBe(false)
     }
   })
+
+  it('defaults vertical text alignment for existing layouts', () => {
+    const layout = JSON.parse(JSON.stringify(cases[0].layout))
+    const parsed = badgeLayoutSchema.parse(layout)
+    expect(parsed.fields.badgeType.verticalAlign).toBe('top')
+    expect(parsed.fields.registrationCode.verticalAlign).toBe('top')
+  })
 })

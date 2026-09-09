@@ -5,6 +5,11 @@ import api from '@/lib/api'
 import { requireProjectContext } from '@/lib/authorization'
 import { getCountryNameFromValue } from '@/lib/countries'
 import { requireServerAuthHeaders } from '@/lib/server-auth'
+import { getBadgeLayout } from './badge-layout'
+import {
+  legacyPrintLayoutMetadata,
+  toPrintLayoutMetadata,
+} from '@/lib/badge-layout/print-metadata'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
@@ -281,8 +286,20 @@ export async function deleteProjectStaff(projectUuid: string, staffId: string) {
 export async function printProjectStaffBadge(projectUuid: string, staffId: string) {
   try {
     const headers = await getAuthHeaders(projectUuid)
-    const response = await api.post(`/v1/admin/project/staff/${staffId}/print`, {}, { headers })
-    return { success: true, data: response.data.data }
+    const layout = await getBadgeLayout(projectUuid)
+    if (!layout.success && [401, 403].includes(layout.status ?? 0))
+      return { success: false, error: layout.error }
+    const print_layout = layout.success
+      ? toPrintLayoutMetadata(layout.state)
+      : legacyPrintLayoutMetadata()
+    const response = await api.post(`/v1/admin/project/staff/${staffId}/print`, {
+      print_layout,
+    }, { headers })
+    return {
+      success: true,
+      data: response.data.data,
+      layoutState: layout.success ? layout.state : null,
+    }
   } catch (error: any) {
     console.error('Error printing project staff badge:', error)
     const errMsg = error.response?.data?.message || 'Failed to print badge'

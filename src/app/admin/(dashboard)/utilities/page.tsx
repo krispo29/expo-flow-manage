@@ -172,7 +172,11 @@ function UtilitiesContent() {
           }
         })
         
-        await printProjectBadges(projectId, badgeData, popup, setBadgeLayoutState)
+        if (result.layoutState !== undefined) {
+          await printProjectBadges(projectId, badgeData, popup, setBadgeLayoutState, result.layoutState)
+        } else {
+          await printProjectBadges(projectId, badgeData, popup, setBadgeLayoutState)
+        }
       } else {
         popup.close()
         toast.error(result.error || "Failed to bulk print")

@@ -8,6 +8,8 @@ import {
   type Calibration,
 } from '@/lib/badge-layout/schema'
 
+const FIT_TOLERANCE_PX = 1
+
 export function LayoutBadgeCard({
   layout,
   data,
@@ -45,9 +47,10 @@ export function LayoutBadgeCard({
           element.style.fontSize = pt + 'pt'
           const linePx = ((pt * 96) / 72) * field.lineHeight
           return (
-            element.scrollWidth <= availableWidth + 0.5 &&
+            element.scrollWidth <= availableWidth + FIT_TOLERANCE_PX &&
             element.scrollHeight <=
-              Math.min(availableHeight, linePx * field.maxLines) + 0.5
+              Math.min(availableHeight, linePx * field.maxLines) +
+                FIT_TOLERANCE_PX
           )
         }
         let chosen = field.fontSizePt
@@ -120,6 +123,14 @@ export function LayoutBadgeCard({
                 height: field.heightMm + 'mm',
                 overflow: 'hidden',
                 boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent:
+                  field.kind === 'text' && field.verticalAlign === 'center'
+                    ? 'center'
+                    : field.kind === 'text' && field.verticalAlign === 'bottom'
+                      ? 'flex-end'
+                      : 'flex-start',
               }}
             >
               {field.kind === 'qr' ? (

@@ -6,16 +6,29 @@ import { requireProjectContext } from '@/lib/authorization'
 import { getUserRole } from '@/app/actions/auth'
 import { getServerAuthContext, requireServerAuthHeaders } from '@/lib/server-auth'
 import { getAttendeeTypeLabel } from '@/lib/attendee-types'
+import { getBadgeLayout } from './badge-layout'
+import {
+  legacyPrintLayoutMetadata,
+  toPrintLayoutMetadata,
+} from '@/lib/badge-layout/print-metadata'
 
 export async function printParticipantBadge(projectId: string, registrationUuid: string) {
   try {
     const headers = await getAuthHeaders(projectId)
-    await api.post(`/v1/admin/project/participants/${registrationUuid}/print`, {}, {
+    const layout = await getBadgeLayout(projectId)
+    if (!layout.success && [401, 403].includes(layout.status ?? 0))
+      return { success: false, error: layout.error }
+    const print_layout = layout.success
+      ? toPrintLayoutMetadata(layout.state)
+      : legacyPrintLayoutMetadata()
+    await api.post(`/v1/admin/project/participants/${registrationUuid}/print`, {
+      print_layout,
+    }, {
       headers
     })
 
     revalidatePath('/admin/participants')
-    return { success: true }
+    return { success: true, layoutState: layout.success ? layout.state : null }
   } catch (error: unknown) {
     console.error('Error printing participant badge:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to print participant badge'
@@ -26,14 +39,21 @@ export async function printParticipantBadge(projectId: string, registrationUuid:
 export async function printParticipantBadgesBulk(projectId: string, registrationCodes: string[]) {
   try {
     const headers = await getAuthHeaders(projectId)
+    const layout = await getBadgeLayout(projectId)
+    if (!layout.success && [401, 403].includes(layout.status ?? 0))
+      return { success: false, error: layout.error }
+    const print_layout = layout.success
+      ? toPrintLayoutMetadata(layout.state)
+      : legacyPrintLayoutMetadata()
     await api.post('/v1/admin/project/participants/print-bulk', {
-      codes: registrationCodes
+      codes: registrationCodes,
+      print_layout,
     }, {
       headers
     })
 
     revalidatePath('/admin/participants')
-    return { success: true }
+    return { success: true, layoutState: layout.success ? layout.state : null }
   } catch (error: unknown) {
     console.error('Error printing bulk participant badges:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to print bulk participant badges'
@@ -121,6 +141,38 @@ interface ParticipantSearchResponse {
   code?: number
   data?: ParticipantSearchItem[] | { items?: ParticipantSearchItem[] }
   message?: string
+}
+
+export type BadgePreviewParticipant = Pick<
+  Participant,
+  | 'registration_uuid'
+  | 'registration_code'
+  | 'first_name'
+  | 'last_name'
+  | 'company_name'
+  | 'job_position'
+  | 'attendee_type_code'
+> & {
+  country?: string
+  residence_country?: string
+  attendee_type_name?: string
+}
+
+function toBadgePreviewParticipant(
+  participant: Participant
+): BadgePreviewParticipant {
+  return {
+    registration_uuid: participant.registration_uuid,
+    registration_code: participant.registration_code,
+    first_name: participant.first_name,
+    last_name: participant.last_name,
+    company_name: participant.company_name,
+    job_position: participant.job_position,
+    attendee_type_code: participant.attendee_type_code,
+    country: participant.country,
+    residence_country: participant.residence_country,
+    attendee_type_name: participant.attendee_type_name,
+  }
 }
 
 function getParticipantSearchItems(responseData: unknown): ParticipantSearchItem[] {
@@ -451,6 +503,55 @@ export async function searchParticipantsByCodes(projectId: string, codes: string
     console.error('Error searching participants:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to search participants'
     return { error: errorMessage }
+  }
+}
+
+export async function searchParticipantsForBadgePreview(
+  projectId: string,
+  keyword: string
+) {
+  const normalizedKeyword = keyword.trim()
+  if (normalizedKeyword.length < 2) {
+    return {
+      success: false as const,
+      error: 'Enter at least 2 characters to search attendees.',
+    }
+  }
+
+  try {
+    await requireProjectContext(projectId)
+    if ((await getUserRole()) === 'ORGANIZER') {
+      const result = await getParticipants(projectId, normalizedKeyword)
+      if (!result.success) {
+        return {
+          success: false as const,
+          error: result.error || 'Unable to search attendees',
+        }
+      }
+      return {
+        success: true as const,
+        data: (result.data || []).slice(0, 20).map(toBadgePreviewParticipant),
+      }
+    }
+    const headers = await getAuthHeaders(projectId)
+    const params = new URLSearchParams({ keyword: normalizedKeyword })
+    const response = await api.get(
+      `/v1/admin/project/participants/search?${params.toString()}`,
+      { headers }
+    )
+    const participants = getParticipantSearchItems(response.data)
+      .map(normalizeParticipantSearchItem)
+      .slice(0, 20)
+      .map(toBadgePreviewParticipant)
+
+    return { success: true as const, data: participants }
+  } catch (error: unknown) {
+    console.error('Error searching participants for badge preview:', error)
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Failed to search attendees for badge preview'
+    return { success: false as const, error: errorMessage }
   }
 }
 

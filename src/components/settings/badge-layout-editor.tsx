@@ -34,16 +34,26 @@ import {
   Clock,
   User,
   ChevronDown,
+  Copy,
+  FileUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  searchParticipantsForBadgePreview,
+  type BadgePreviewParticipant,
+} from '@/app/actions/participant'
 import {
   getBadgeLayout,
+  getBadgeLayoutRevision,
   getBadgeLayoutRevisions,
+  copyBadgeLayoutDraft,
   publishBadgeLayout,
   rollbackBadgeLayout,
   saveBadgeLayoutDraft,
   uploadBadgeReference,
 } from '@/app/actions/badge-layout'
+import { getProjects, type Project } from '@/app/actions/project'
 import { LayoutBadgeCard } from '@/components/print/layout-badge-card'
 import { ReadinessPopover } from './badge-layout/readiness-popover'
 import { CanvasRulers } from './badge-layout/canvas-rulers'
@@ -61,6 +71,7 @@ import {
   type BadgeFieldKey,
   type BadgeLayout,
   type BadgeLayoutState,
+  type BadgeRenderData,
   type RevisionSummary,
 } from '@/lib/badge-layout/schema'
 import { getStarterLayout } from '@/lib/badge-layout/templates'
@@ -69,6 +80,7 @@ import {
   samplePersonas,
   type SamplePersonaKey,
 } from '@/lib/badge-layout/samples'
+import { participantToBadgeRenderData } from '@/lib/badge-layout/participant-preview'
 import {
   moveField,
   resizeField,
@@ -102,6 +114,14 @@ const labels: Record<BadgeFieldKey, string> = {
 }
 const pixelsPerMm = 96 / 25.4
 const TEST_VALID_FOR_MS = 24 * 60 * 60 * 1000
+const emptyBadgePreview: BadgeRenderData = {
+  fullName: '',
+  position: '',
+  company: '',
+  country: '',
+  registrationCode: '',
+  badgeType: '',
+}
 type TestToken = {
   draftRevision: number
   fingerprint: string
@@ -114,7 +134,13 @@ type PendingConfirmation = {
   destructive?: boolean
   onConfirm: () => void | Promise<void>
   onCancel?: () => void
+  showPublishNote?: boolean
 }
+type PreviewMode = 'sample' | 'attendee'
+type CopyProjectOption = Pick<
+  Project,
+  'project_uuid' | 'project_code' | 'project_name'
+>
 
 const RESIZE_HANDLES: {
   handle: ResizeHandle
@@ -306,12 +332,27 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   const [conflict, setConflict] = useState(false)
   const [history, setHistory] = useState<RevisionSummary[]>([])
   const [persona, setPersona] = useState<SamplePersonaKey>('standard')
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('sample')
+  const [attendeeQuery, setAttendeeQuery] = useState('')
+  const [attendeeResults, setAttendeeResults] = useState<
+    BadgePreviewParticipant[]
+  >([])
+  const [selectedAttendee, setSelectedAttendee] =
+    useState<BadgePreviewParticipant | null>(null)
+  const [attendeeSearchState, setAttendeeSearchState] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle')
+  const [attendeeSearchError, setAttendeeSearchError] = useState('')
   const [showRulers, setShowRulers] = useState(true)
   const [showLanyardGuide, setShowLanyardGuide] = useState(false)
   const [showMarginGuide, setShowMarginGuide] = useState(false)
-  const [previewTarget, setPreviewTarget] = useState<'draft' | 'published'>(
-    'draft'
-  )
+  const [previewTarget, setPreviewTarget] = useState<
+    'draft' | 'published' | 'revision'
+  >('draft')
+  const [historicalRevision, setHistoricalRevision] = useState<{
+    revision: number
+    layout: BadgeLayout
+  } | null>(null)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isSpacePressed, setIsSpacePressed] = useState(false)
   const [isPanning, setIsPanning] = useState(false)
@@ -339,6 +380,17 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   } | null>(null)
   const [pendingConfirmation, setPendingConfirmation] =
     useState<PendingConfirmation | null>(null)
+  const [publishNote, setPublishNote] = useState('')
+  const publishNoteRef = useRef('')
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false)
+  const [copyProjects, setCopyProjects] = useState<CopyProjectOption[]>([])
+  const [copyProjectsLoading, setCopyProjectsLoading] = useState(false)
+  const [copyProjectsError, setCopyProjectsError] = useState('')
+  const [copyTargetUuid, setCopyTargetUuid] = useState('')
+  const [copyTargetState, setCopyTargetState] =
+    useState<BadgeLayoutState | null>(null)
+  const [copyTargetLoading, setCopyTargetLoading] = useState(false)
+  const [copyTargetError, setCopyTargetError] = useState('')
   const preview = useRef<HTMLDivElement>(null)
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({})
   const layoutHistory = useRef<ReturnType<typeof createLayoutHistory> | null>(
@@ -348,6 +400,10 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   const layoutRef = useRef<BadgeLayout | null>(null)
   const testedRef = useRef<TestToken | null>(null)
   const testPrintInFlight = useRef(false)
+  const attendeeSearchRequestRef = useRef(0)
+  const copyTargetRequestRef = useRef(0)
+  const navigationBypassRef = useRef(false)
+  const referenceUploadInputRef = useRef<HTMLInputElement>(null)
   const conflictRef = useRef(false)
   const selectedRef = useRef<BadgeFieldKey | null>(selected)
   const drag = useRef<{
@@ -425,6 +481,39 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   useEffect(() => {
     void load()
   }, [load])
+  useEffect(() => {
+    setPreviewMode('sample')
+    setAttendeeQuery('')
+    setAttendeeResults([])
+    setSelectedAttendee(null)
+    setAttendeeSearchState('idle')
+    setAttendeeSearchError('')
+    attendeeSearchRequestRef.current += 1
+  }, [projectUuid])
+  async function searchForAttendees() {
+    const query = attendeeQuery.trim()
+    if (query.length < 2) {
+      setAttendeeResults([])
+      setSelectedAttendee(null)
+      setAttendeeSearchState('error')
+      setAttendeeSearchError('Enter at least 2 characters to search attendees.')
+      return
+    }
+    const requestId = ++attendeeSearchRequestRef.current
+    setAttendeeSearchState('loading')
+    setAttendeeSearchError('')
+    setSelectedAttendee(null)
+    const result = await searchParticipantsForBadgePreview(projectUuid, query)
+    if (requestId !== attendeeSearchRequestRef.current) return
+    if (!result.success) {
+      setAttendeeResults([])
+      setAttendeeSearchState('error')
+      setAttendeeSearchError(result.error)
+      return
+    }
+    setAttendeeResults(result.data)
+    setAttendeeSearchState('success')
+  }
   stateRef.current = state
   layoutRef.current = layout
   testedRef.current = tested
@@ -445,6 +534,7 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
     if (remember) layoutHistory.current?.push(next)
     layoutRef.current = next
     setLayout(next)
+    setClippedFields([])
     testedRef.current = null
     setTested(null)
   }, [])
@@ -516,7 +606,36 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
     return () => vp.removeEventListener('wheel', handleWheel)
   }, [Boolean(layout)])
 
-  const editable = !busy && !conflict && previewTarget === 'draft' && !pendingConfirmation
+  const editable =
+    !busy && !conflict && previewTarget === 'draft' && !pendingConfirmation
+  const canManagePublishedRevision = !busy && !conflict && !pendingConfirmation
+  const previewData = useMemo(
+    () =>
+      previewMode === 'attendee'
+        ? selectedAttendee
+          ? participantToBadgeRenderData(
+              selectedAttendee,
+              state?.projectCode ?? ''
+            )
+          : emptyBadgePreview
+        : (samplePersonas[persona]?.data ?? sampleBadge),
+    [previewMode, selectedAttendee, state?.projectCode, persona]
+  )
+  const handlePreviewReady = useCallback(() => {
+    const nextClippedFields = Array.from(
+      preview.current?.querySelectorAll<HTMLElement>(
+        '[data-text-field][data-overflow="true"]'
+      ) ?? []
+    ).map((element) => labels[element.dataset.textField as BadgeFieldKey])
+    setClippedFields((current) => {
+      if (
+        current.length === nextClippedFields.length &&
+        current.every((value, index) => value === nextClippedFields[index])
+      )
+        return current
+      return nextClippedFields
+    })
+  }, [])
   const save = useCallback(async () => {
     const curLayout = layoutRef.current
     const curState = stateRef.current
@@ -613,10 +732,11 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   }, [applyLayout, editable, dirty, save])
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (dirty) event.preventDefault()
+      if (dirty && !navigationBypassRef.current) event.preventDefault()
     }
     window.addEventListener('beforeunload', warn)
     const confirmNavigation = (event: MouseEvent) => {
+      if (navigationBypassRef.current) return
       if (
         !dirty ||
         event.ctrlKey ||
@@ -633,14 +753,17 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
         link.href === window.location.href
       )
         return
-      if (
-        !window.confirm(
-          'Leave this page and discard unsaved badge layout changes?'
-        )
-      ) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
+      event.preventDefault()
+      event.stopPropagation()
+      setPendingConfirmation({
+        title: 'Leave page?',
+        description: 'Leave this page and discard unsaved badge layout changes?',
+        confirmLabel: 'Leave page',
+        onConfirm: () => {
+          navigationBypassRef.current = true
+          link.click()
+        },
+      })
     }
     document.addEventListener('click', confirmNavigation, true)
     return () => {
@@ -654,6 +777,8 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   const dismissConfirmation = () => {
     const confirmation = pendingConfirmation
     setPendingConfirmation(null)
+    setPublishNote('')
+    publishNoteRef.current = ''
     confirmation?.onCancel?.()
   }
   const confirmationDialog = pendingConfirmation && (
@@ -670,6 +795,32 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
             {pendingConfirmation.description}
           </DialogDescription>
         </DialogHeader>
+        {pendingConfirmation.showPublishNote && (
+          <div className="space-y-2">
+            <label htmlFor="publish-note" className="text-sm font-medium">
+              Publish note{' '}
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
+            </label>
+            <Textarea
+              id="publish-note"
+              value={publishNote}
+              maxLength={500}
+              rows={3}
+              allowThai
+              placeholder="Describe what changed or why this version is being published"
+              onChange={(event) => {
+                const next = event.target.value.slice(0, 500)
+                setPublishNote(next)
+                publishNoteRef.current = next
+              }}
+            />
+            <div className="text-muted-foreground text-right text-[11px]">
+              {publishNote.length}/500
+            </div>
+          </div>
+        )}
         <DialogFooter>
           <button className={control} onClick={dismissConfirmation}>
             Cancel
@@ -679,15 +830,118 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
               control +
               (pendingConfirmation.destructive
                 ? ' bg-destructive text-destructive-foreground'
-                : '')
+                : ' bg-primary text-primary-foreground hover:bg-primary/90')
             }
             onClick={async () => {
               const confirmation = pendingConfirmation
               setPendingConfirmation(null)
-              await confirmation.onConfirm()
+              const operation = confirmation.onConfirm()
+              setPublishNote('')
+              publishNoteRef.current = ''
+              await operation
             }}
           >
             {pendingConfirmation.confirmLabel}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+  const copyDialog = (
+    <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Copy layout to another project</DialogTitle>
+          <DialogDescription>
+            Copy the current layout as a draft. The destination&apos;s published
+            layout will not change until an administrator publishes it there.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {copyProjectsLoading && (
+            <p role="status" className="text-muted-foreground text-sm">
+              Loading destination projects…
+            </p>
+          )}
+          {copyProjectsError && (
+            <p role="alert" className="text-destructive text-sm">
+              {copyProjectsError}
+            </p>
+          )}
+          {!copyProjectsLoading && !copyProjectsError && (
+            <>
+              <label
+                htmlFor="copy-layout-target"
+                className="text-foreground block space-y-1.5 text-sm font-medium"
+              >
+                Destination project
+                <select
+                  id="copy-layout-target"
+                  className={control + ' text-foreground w-full'}
+                  value={copyTargetUuid}
+                  disabled={!copyProjects.length || copyTargetLoading}
+                  onChange={(event) =>
+                    void selectCopyTarget(event.target.value)
+                  }
+                >
+                  <option value="">
+                    {copyProjects.length
+                      ? 'Choose a project…'
+                      : 'No other projects available'}
+                  </option>
+                  {copyProjects.map((project) => (
+                    <option
+                      key={project.project_uuid}
+                      value={project.project_uuid}
+                    >
+                      {project.project_name} ({project.project_code})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {copyTargetLoading && (
+                <p role="status" className="text-muted-foreground text-xs">
+                  Loading the destination draft…
+                </p>
+              )}
+              {copyTargetError && (
+                <p role="alert" className="text-destructive text-xs">
+                  {copyTargetError}
+                </p>
+              )}
+              {copyTargetState && !copyTargetLoading && (
+                <div className="bg-muted/40 rounded-lg border p-3 text-xs">
+                  <p className="font-medium">
+                    Current draft revision: {copyTargetState.draftRevision}
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    Published revision:{' '}
+                    {copyTargetState.publishedRevision ||
+                      'none (legacy fallback)'}
+                    . Only the draft will be replaced.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <button
+            type="button"
+            className={control}
+            onClick={() => setCopyDialogOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={control + ' bg-primary text-primary-foreground'}
+            disabled={
+              !copyTargetState || copyTargetLoading || copyProjectsLoading
+            }
+            onClick={reviewCopy}
+          >
+            Review copy
           </button>
         </DialogFooter>
       </DialogContent>
@@ -706,11 +960,170 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
         </div>
       </>
     )
+  async function previewRevision(revision: number) {
+    setBusy(true)
+    setMessage('')
+    try {
+      const result = await getBadgeLayoutRevision(projectUuid, revision)
+      if (!result.success) {
+        setMessage(result.error)
+        return
+      }
+      setHistoricalRevision({
+        revision: result.revision.publishedRevision,
+        layout: result.revision.published,
+      })
+      setPreviewTarget('revision')
+    } finally {
+      setBusy(false)
+    }
+  }
   const validation = badgeLayoutSchema.safeParse(layout)
   const displayedLayout =
-    previewTarget === 'published' && state.published ? state.published : layout
+    previewTarget === 'published' && state.published
+      ? state.published
+      : previewTarget === 'revision' && historicalRevision
+        ? historicalRevision.layout
+        : layout
   const field = selected ? displayedLayout.fields[selected] : null
   const overlaps = overlappingFields(displayedLayout)
+
+  async function openCopyDialog() {
+    if (!editable || !layout || !badgeLayoutSchema.safeParse(layout).success)
+      return
+    copyTargetRequestRef.current += 1
+    setCopyDialogOpen(true)
+    setCopyProjectsLoading(true)
+    setCopyProjectsError('')
+    setCopyTargetUuid('')
+    setCopyTargetState(null)
+    setCopyTargetError('')
+    try {
+      const result = await getProjects()
+      if (!result.success) {
+        setCopyProjects([])
+        setCopyProjectsError(
+          result.error || 'Unable to load destination projects.'
+        )
+        return
+      }
+      setCopyProjects(
+        result.projects
+          .filter((project) => project.project_uuid !== projectUuid)
+          .map(({ project_uuid, project_code, project_name }) => ({
+            project_uuid,
+            project_code,
+            project_name,
+          }))
+      )
+    } catch {
+      setCopyProjects([])
+      setCopyProjectsError('Unable to load destination projects.')
+    } finally {
+      setCopyProjectsLoading(false)
+    }
+  }
+
+  async function selectCopyTarget(targetUuid: string) {
+    const requestId = ++copyTargetRequestRef.current
+    setCopyTargetUuid(targetUuid)
+    setCopyTargetState(null)
+    setCopyTargetError('')
+    if (!targetUuid) {
+      setCopyTargetLoading(false)
+      return
+    }
+    setCopyTargetLoading(true)
+    try {
+      const result = await getBadgeLayout(targetUuid)
+      if (requestId !== copyTargetRequestRef.current) return
+      if (!result.success) {
+        setCopyTargetError(result.error)
+        return
+      }
+      setCopyTargetState(result.state)
+    } catch {
+      if (requestId === copyTargetRequestRef.current)
+        setCopyTargetError('Unable to load the destination draft.')
+    } finally {
+      if (requestId === copyTargetRequestRef.current)
+        setCopyTargetLoading(false)
+    }
+  }
+
+  async function copyToProject(
+    target: CopyProjectOption,
+    expectedTargetDraftRevision: number,
+    sourceFingerprint: string
+  ) {
+    const sourceLayout = layoutRef.current
+    if (
+      !sourceLayout ||
+      fingerprintLayout(sourceLayout) !== sourceFingerprint ||
+      !badgeLayoutSchema.safeParse(sourceLayout).success
+    ) {
+      setMessage('The source layout changed. Review the copy again.')
+      return
+    }
+
+    setBusy(true)
+    try {
+      const latest = await getBadgeLayout(target.project_uuid)
+      if (!latest.success) {
+        setMessage(`Unable to verify ${target.project_name}'s latest draft.`)
+        return
+      }
+      if (latest.state.draftRevision !== expectedTargetDraftRevision) {
+        setMessage(
+          `${target.project_name} changed while you were reviewing. Load it again before copying.`
+        )
+        return
+      }
+      const result = await copyBadgeLayoutDraft(
+        projectUuid,
+        target.project_uuid,
+        expectedTargetDraftRevision,
+        sourceLayout
+      )
+      if (!result.success) {
+        setMessage(result.error)
+        return
+      }
+      setMessage(
+        `Layout copied to ${target.project_name}. It is saved as draft revision ${result.state.draftRevision}; publish it from that project when ready.`
+      )
+    } catch {
+      setMessage(
+        `Unable to copy layout to ${target.project_name}. Please retry.`
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function reviewCopy() {
+    const target = copyProjects.find(
+      (project) => project.project_uuid === copyTargetUuid
+    )
+    const sourceLayout = layoutRef.current
+    if (!target || !copyTargetState || !sourceLayout) {
+      setCopyTargetError(
+        'Choose a destination project and wait for its draft to load.'
+      )
+      return
+    }
+    const sourceFingerprint = fingerprintLayout(sourceLayout)
+    setCopyDialogOpen(false)
+    requestConfirmation({
+      title: `Copy layout to ${target.project_name}?`,
+      description: `This replaces that project's current draft with this layout. Its published layout and print jobs stay unchanged until an administrator publishes the new draft.`,
+      confirmLabel: 'Copy draft',
+      destructive: true,
+      onConfirm: () =>
+        copyToProject(target, copyTargetState.draftRevision, sourceFingerprint),
+    })
+  }
+
   const updateField = (
     patch: Partial<BadgeLayout['fields'][BadgeFieldKey]>
   ) => {
@@ -730,7 +1143,8 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   async function publish(
     expectedDraftRevision: number,
     expectedPublishedRevision: number,
-    expectedFingerprint: string
+    expectedFingerprint: string,
+    publishNoteValue = ''
   ) {
     const currentState = stateRef.current
     const currentLayout = layoutRef.current
@@ -751,14 +1165,23 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
     }
     setBusy(true)
     try {
-      const result = await publishBadgeLayout(
-        projectUuid,
-        expectedDraftRevision,
-        expectedPublishedRevision
-      )
+      const result = publishNoteValue.trim()
+        ? await publishBadgeLayout(
+            projectUuid,
+            expectedDraftRevision,
+            expectedPublishedRevision,
+            publishNoteValue
+          )
+        : await publishBadgeLayout(
+            projectUuid,
+            expectedDraftRevision,
+            expectedPublishedRevision
+          )
       if (result.success) {
         setState(result.state)
         clearCheckpoint(projectUuid)
+        const revisions = await getBadgeLayoutRevisions(projectUuid)
+        if (revisions.success) setHistory(revisions.revisions)
         setMessage('Layout published. New print jobs will use this revision.')
       } else {
         setMessage(result.error)
@@ -774,7 +1197,19 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
     }
   }
   async function testPrint() {
-    if (!layout || !state || !editable || pendingConfirmation || testPrintInFlight.current || !validation.success) return
+    if (
+      !layout ||
+      !state ||
+      !editable ||
+      pendingConfirmation ||
+      testPrintInFlight.current ||
+      !validation.success
+    )
+      return
+    if (previewMode === 'attendee' && !selectedAttendee) {
+      setMessage('Select an attendee before starting a real-data test print.')
+      return
+    }
     testPrintInFlight.current = true
     testedRef.current = null
     setTested(null)
@@ -800,8 +1235,7 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
         setState(saved.state)
         clearCheckpoint(projectUuid)
       }
-      const activeSample = samplePersonas[persona]?.data ?? sampleBadge
-      await renderLayoutPrintWindow(popup, layout, [activeSample])
+      await renderLayoutPrintWindow(popup, layout, [previewData])
       const testedAt = Date.now()
       const testedFingerprint = fingerprintLayout(layout)
       requestConfirmation({
@@ -852,6 +1286,7 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
   return (
     <div className="space-y-4 p-4">
       {confirmationDialog}
+      {copyDialog}
       <header className="bg-card flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 shadow-xs">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-3">
@@ -954,10 +1389,30 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
             variant="outline"
             size="sm"
             className="h-9 gap-1.5 px-3 text-xs tracking-normal normal-case"
-            disabled={!editable || !validation.success}
+            disabled={!editable || !validation.success || busy}
+            onClick={() => void openCopyDialog()}
+            aria-label="Copy layout to another project"
+            title="Copy this layout as a draft in another project"
+          >
+            <Copy className="size-3.5" />
+            <span>Copy to project</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 px-3 text-xs tracking-normal normal-case"
+            disabled={
+              !editable ||
+              !validation.success ||
+              (previewMode === 'attendee' && !selectedAttendee)
+            }
             onClick={() => void testPrint()}
             aria-label="Test print"
-            title="Open 1:1 test print window with sample attendee"
+            title={
+              previewMode === 'attendee' && !selectedAttendee
+                ? 'Select an attendee before test printing'
+                : 'Open 1:1 test print window with the selected preview data'
+            }
           >
             <Printer className="size-3.5" />
             <span>Test print</span>
@@ -968,16 +1423,20 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
             className="bg-primary text-primary-foreground h-9 gap-1.5 px-3.5 text-xs font-semibold tracking-normal normal-case shadow-sm"
             disabled={!editable || !validation.success || !canPublish}
             onClick={() => {
+              setPublishNote('')
+              publishNoteRef.current = ''
               requestConfirmation({
                 title: 'Publish layout?',
                 description:
                   'New print jobs for every badge type in this project will use this tested layout.',
                 confirmLabel: 'Publish layout',
+                showPublishNote: true,
                 onConfirm: () =>
                   publish(
                     state.draftRevision,
                     state.publishedRevision,
-                    fingerprintLayout(layout)
+                    fingerprintLayout(layout),
+                    publishNoteRef.current
                   ),
               })
             }}
@@ -1247,7 +1706,10 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
             <div className="bg-muted/40 flex items-center rounded-lg border p-0.5">
               <button
                 type="button"
-                onClick={() => setPreviewTarget('draft')}
+                onClick={() => {
+                  setHistoricalRevision(null)
+                  setPreviewTarget('draft')
+                }}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
                   previewTarget === 'draft'
                     ? 'bg-background text-foreground font-semibold shadow-2xs'
@@ -1267,7 +1729,10 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
               </button>
               <button
                 type="button"
-                onClick={() => setPreviewTarget('published')}
+                onClick={() => {
+                  setHistoricalRevision(null)
+                  setPreviewTarget('published')
+                }}
                 disabled={!state.published}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
                   previewTarget === 'published'
@@ -1295,36 +1760,167 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                     : ''}
                 </span>
               </button>
+              {previewTarget === 'revision' && historicalRevision && (
+                <span className="bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                  History preview (r{historicalRevision.revision})
+                </span>
+              )}
             </div>
 
-            {/* Persona Switcher */}
-            <div className="flex items-center gap-2">
+            {/* Preview data selector */}
+            <div className="flex flex-wrap items-center gap-2">
               <label
-                htmlFor="persona-switcher"
+                htmlFor="preview-data-mode"
                 className="text-muted-foreground flex items-center gap-1.5 font-medium"
               >
                 <Users className="size-3.5" />
-                <span>Persona:</span>
+                <span>Preview data:</span>
               </label>
               <select
-                id="persona-switcher"
-                aria-label="Preview attendee persona"
-                value={persona}
+                id="preview-data-mode"
+                aria-label="Preview data mode"
+                value={previewMode}
                 onChange={(event) => {
-                  setPersona(event.target.value as SamplePersonaKey)
+                  const nextMode = event.target.value as PreviewMode
+                  setPreviewMode(nextMode)
+                  if (nextMode === 'sample') {
+                    setAttendeeResults([])
+                    setSelectedAttendee(null)
+                    setAttendeeSearchState('idle')
+                    setAttendeeSearchError('')
+                    attendeeSearchRequestRef.current += 1
+                  }
                 }}
                 className="bg-background focus:ring-primary h-8 rounded-md border px-2.5 text-xs font-medium focus:ring-1 focus:outline-hidden"
               >
-                <option value="standard">
-                  Standard Attendee (Alex Mercer)
-                </option>
-                <option value="thai">Thai Complex Script (ดร. กฤษฎา)</option>
-                <option value="executive">
-                  Multi-line Executive (Prof. Montgomery)
-                </option>
-                <option value="vip">VIP / Exhibitor (Sarah Chen)</option>
+                <option value="sample">Sample data</option>
+                <option value="attendee">Real attendee</option>
               </select>
+              {previewMode === 'sample' && (
+                <select
+                  id="persona-switcher"
+                  aria-label="Preview attendee persona"
+                  value={persona}
+                  onChange={(event) => {
+                    setPersona(event.target.value as SamplePersonaKey)
+                  }}
+                  className="bg-background focus:ring-primary h-8 rounded-md border px-2.5 text-xs font-medium focus:ring-1 focus:outline-hidden"
+                >
+                  <option value="standard">
+                    Standard Attendee (Alex Mercer)
+                  </option>
+                  <option value="thai">Thai Complex Script (ดร. กฤษฎา)</option>
+                  <option value="executive">
+                    Multi-line Executive (Prof. Montgomery)
+                  </option>
+                  <option value="vip">VIP / Exhibitor (Sarah Chen)</option>
+                </select>
+              )}
+              {previewMode === 'attendee' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <form
+                    className="flex items-center gap-1.5"
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void searchForAttendees()
+                    }}
+                  >
+                    <input
+                      aria-label="Search attendees"
+                      value={attendeeQuery}
+                      onChange={(event) => setAttendeeQuery(event.target.value)}
+                      placeholder="Name, company or registration code"
+                      className="bg-background focus:ring-primary h-8 w-56 rounded-md border px-2.5 text-xs outline-none focus:ring-1"
+                    />
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2.5 text-xs"
+                      aria-busy={attendeeSearchState === 'loading'}
+                    >
+                      {attendeeSearchState === 'loading'
+                        ? 'Searching…'
+                        : 'Search'}
+                    </Button>
+                  </form>
+                  {selectedAttendee && (
+                    <span className="text-muted-foreground text-xs">
+                      Selected:{' '}
+                      <strong>
+                        {selectedAttendee.first_name}{' '}
+                        {selectedAttendee.last_name}
+                      </strong>
+                    </span>
+                  )}
+                  {!selectedAttendee && (
+                    <span className="text-muted-foreground text-xs">
+                      Search and select an attendee to preview real data.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
+            {previewMode === 'attendee' && attendeeSearchState === 'error' && (
+              <p role="alert" className="text-destructive text-xs">
+                {attendeeSearchError}
+              </p>
+            )}
+            {previewMode === 'attendee' &&
+              attendeeSearchState === 'success' && (
+                <div className="w-full">
+                  {attendeeResults.length === 0 ? (
+                    <p className="text-muted-foreground text-xs">
+                      No attendees found. Try a different name, company or
+                      registration code.
+                    </p>
+                  ) : (
+                    <div
+                      className="bg-background grid max-h-32 gap-1 overflow-y-auto rounded-md border p-1 sm:grid-cols-2"
+                      role="listbox"
+                      aria-label="Attendee search results"
+                    >
+                      {attendeeResults.map((attendee) => {
+                        const attendeeName = [
+                          attendee.first_name,
+                          attendee.last_name,
+                        ]
+                          .filter(Boolean)
+                          .join(' ')
+                        const attendeeLabel = attendeeName || 'Unnamed attendee'
+                        return (
+                          <button
+                            key={
+                              attendee.registration_uuid ||
+                              attendee.registration_code
+                            }
+                            type="button"
+                            role="option"
+                            aria-selected={
+                              selectedAttendee?.registration_uuid ===
+                              attendee.registration_uuid
+                            }
+                            onClick={() => setSelectedAttendee(attendee)}
+                            className="hover:bg-muted flex min-w-0 items-start justify-between gap-2 rounded px-2 py-1.5 text-left text-xs"
+                          >
+                            <span className="min-w-0 truncate">
+                              <strong className="block truncate">
+                                {attendeeLabel}
+                              </strong>
+                              <span className="text-muted-foreground block truncate">
+                                {attendee.company_name || 'No company'}
+                              </span>
+                            </span>
+                            <span className="text-muted-foreground shrink-0 font-mono text-[10px]">
+                              {attendee.registration_code || 'No code'}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* Overlays & Rulers Toggle Buttons */}
             <div className="flex items-center gap-1.5">
@@ -1381,6 +1977,28 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                 size="sm"
                 onClick={() => setPreviewTarget('draft')}
                 className="bg-background h-7 shrink-0 border-emerald-300 px-2.5 text-xs text-emerald-800 dark:border-emerald-700 dark:text-emerald-200"
+              >
+                Return to Draft Editor
+              </Button>
+            </div>
+          )}
+          {previewTarget === 'revision' && historicalRevision && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+              <div>
+                <strong>
+                  Viewing historical revision {historicalRevision.revision}
+                </strong>{' '}
+                — read-only preview. This does not change the draft or live
+                layout.
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setHistoricalRevision(null)
+                  setPreviewTarget('draft')
+                }}
+                className="bg-background h-7 shrink-0 border-amber-300 px-2.5 text-xs text-amber-900 dark:border-amber-700 dark:text-amber-100"
               >
                 Return to Draft Editor
               </Button>
@@ -1486,19 +2104,8 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                   >
                     <LayoutBadgeCard
                       layout={displayedLayout}
-                      data={samplePersonas[persona]?.data ?? sampleBadge}
-                      onReady={() =>
-                        setClippedFields(
-                          Array.from(
-                            preview.current?.querySelectorAll<HTMLElement>(
-                              '[data-text-field][data-overflow="true"]'
-                            ) ?? []
-                          ).map(
-                            (element) =>
-                              labels[element.dataset.textField as BadgeFieldKey]
-                          )
-                        )
-                      }
+                      data={previewData}
+                      onReady={handlePreviewReady}
                     />
                     {displayedLayout.referenceBackgroundUrl && (
                       <div
@@ -1550,6 +2157,11 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                     {previewTarget === 'published' && (
                       <div className="pointer-events-none absolute top-2 right-2 z-20 rounded-md border border-emerald-300 bg-emerald-600/90 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase shadow-xs dark:bg-emerald-900/90">
                         Live r{state.publishedRevision}
+                      </div>
+                    )}
+                    {previewTarget === 'revision' && historicalRevision && (
+                      <div className="pointer-events-none absolute top-2 right-2 z-20 rounded-md border border-amber-300 bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase shadow-xs dark:bg-amber-900/90">
+                        History r{historicalRevision.revision}
                       </div>
                     )}
                     {previewTarget === 'draft' && (
@@ -1640,6 +2252,7 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                                     },
                                   }
                                   start.last = next
+                                  setClippedFields([])
                                   setLayout(next)
                                   setActiveTooltip({
                                     xMm:
@@ -2230,6 +2843,43 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                     </div>
                   </div>
 
+                  {/* Vertical Text Alignment Segmented Control */}
+                  <div className="space-y-1.5">
+                    <span className="text-muted-foreground text-xs">
+                      Vertical text alignment
+                    </span>
+                    <div className="bg-muted/30 flex rounded-lg border p-0.5">
+                      {(['top', 'center', 'bottom'] as const).map((align) => {
+                        const isActive = field.verticalAlign === align
+                        const Icon =
+                          align === 'top'
+                            ? AlignStartHorizontal
+                            : align === 'center'
+                              ? AlignCenterHorizontal
+                              : AlignEndHorizontal
+                        return (
+                          <button
+                            key={align}
+                            type="button"
+                            disabled={!editable}
+                            aria-pressed={isActive}
+                            aria-label={`Align text vertically ${align}`}
+                            className={`flex flex-1 items-center justify-center rounded-md py-1 text-xs transition-all ${
+                              isActive
+                                ? 'bg-background text-foreground font-semibold shadow-2xs'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                            onClick={() =>
+                              updateField({ verticalAlign: align })
+                            }
+                          >
+                            <Icon className="size-3.5" />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
                   {/* Font Weight Segmented Control */}
                   <div className="space-y-1.5">
                     <span className="text-muted-foreground text-xs">
@@ -2470,28 +3120,49 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
               aria-label="Reference artwork opacity"
             />
           </div>
-          <input
-            className="w-full text-sm"
-            aria-label="Upload reference artwork"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            disabled={!editable}
-            onChange={async (event) => {
-              const file = event.target.files?.[0]
-              if (!file) return
-              setBusy(true)
-              try {
-                const form = new FormData()
-                form.append('image', file)
-                const result = await uploadBadgeReference(projectUuid, form)
-                if (result.success)
-                  applyLayout({ ...layout, referenceBackgroundUrl: result.url })
-                else setMessage(result.error)
-              } finally {
-                setBusy(false)
-              }
-            }}
-          />
+          <div className="space-y-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-center text-xs normal-case"
+              disabled={!editable}
+              onClick={() => referenceUploadInputRef.current?.click()}
+            >
+              <FileUp className="size-3.5" />
+              Upload reference artwork
+            </Button>
+            <input
+              ref={referenceUploadInputRef}
+              className="sr-only"
+              aria-label="Upload reference artwork file"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={!editable}
+              onChange={async (event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (!file) return
+                setBusy(true)
+                try {
+                  const form = new FormData()
+                  form.append('image', file)
+                  const result = await uploadBadgeReference(projectUuid, form)
+                  if (result.success)
+                    applyLayout({
+                      ...layout,
+                      referenceBackgroundUrl: result.url,
+                    })
+                  else setMessage(result.error)
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            />
+            <p className="text-muted-foreground text-[11px]">
+              PNG, JPG, or WebP
+            </p>
+          </div>
           <button
             className={control}
             disabled={!editable || !layout.referenceBackgroundUrl}
@@ -2529,8 +3200,8 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                 )}
               </div>
               <p className="text-muted-foreground text-xs font-normal">
-                Review past published layouts and restore an earlier revision if
-                needed
+                Review changes, preview past layouts, or restore an earlier
+                revision if needed
               </p>
             </div>
           </div>
@@ -2581,11 +3252,58 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                           {formatPublisher(revision.publishedBy)}
                         </span>
                       </div>
+                      {revision.restoredFromRevision && (
+                        <div className="text-muted-foreground text-[11px]">
+                          Restored from revision {revision.restoredFromRevision}
+                        </div>
+                      )}
+                      {revision.changeSummary && (
+                        <div className="mt-2 max-w-xl space-y-1 text-[11px]">
+                          <p className="text-foreground font-medium">
+                            {revision.changeSummary.summary}
+                          </p>
+                          {revision.changeSummary.details.length > 0 && (
+                            <details className="text-muted-foreground">
+                              <summary className="cursor-pointer select-none hover:underline">
+                                View details
+                              </summary>
+                              <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                                {revision.changeSummary.details.map(
+                                  (detail) => (
+                                    <li key={detail}>{detail}</li>
+                                  )
+                                )}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      )}
+                      {revision.publishNote && (
+                        <p className="bg-muted/40 text-muted-foreground mt-2 max-w-xl rounded-md px-2.5 py-1.5 text-[11px] whitespace-pre-wrap">
+                          <span className="text-foreground font-medium">
+                            Note:
+                          </span>{' '}
+                          {revision.publishNote}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs normal-case"
+                      disabled={busy}
+                      onClick={() =>
+                        void previewRevision(revision.publishedRevision)
+                      }
+                      aria-label={`Preview revision ${revision.publishedRevision}`}
+                    >
+                      <Eye className="size-3" />
+                      <span>Preview</span>
+                    </Button>
                     {isCurrent ? (
-                      <span className="text-muted-foreground px-3 py-1 text-[11px] italic">
+                      <span className="text-muted-foreground px-1 py-1 text-[11px] italic">
                         Active version
                       </span>
                     ) : (
@@ -2593,7 +3311,7 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                         variant="outline"
                         size="sm"
                         className="h-8 gap-1.5 text-xs normal-case"
-                        disabled={!editable}
+                        disabled={!canManagePublishedRevision}
                         onClick={() => {
                           const expectedPublishedRevision =
                             state.publishedRevision
@@ -2621,6 +3339,10 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                                 )
                                 if (result.success) {
                                   setState(result.state)
+                                  const revisions =
+                                    await getBadgeLayoutRevisions(projectUuid)
+                                  if (revisions.success)
+                                    setHistory(revisions.revisions)
                                   setMessage(
                                     'Previous layout restored as a new published revision.'
                                   )

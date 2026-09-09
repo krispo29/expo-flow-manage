@@ -276,7 +276,12 @@ export function ParticipantList({
             }
           : p
 
-      await printProjectBadges(projectId, [getParticipantPrintData(participantForBadge, attendeeTypesByCode)], popup)
+      const printData = getParticipantPrintData(participantForBadge, attendeeTypesByCode)
+      if (printResult.layoutState !== undefined) {
+        await printProjectBadges(projectId, [printData], popup, undefined, printResult.layoutState)
+      } else {
+        await printProjectBadges(projectId, [printData], popup)
+      }
 
       return 'Badge print triggered'
     })().catch(error => { popup.close(); throw error })
