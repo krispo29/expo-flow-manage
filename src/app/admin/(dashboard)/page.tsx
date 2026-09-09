@@ -188,7 +188,7 @@ export default async function Page(props: Props) {
         </Card>
       </div>
 
-      <LeadScannerPeakHours chart={result.data?.attendance_chart} />
+      <LeadScannerPeakHours chart={result.data?.attendance_chart} compactTimeLabels aggregateByHour />
 
       <EventSummaryCards events={result.data?.event_summaries || []} failed={failed} />
 

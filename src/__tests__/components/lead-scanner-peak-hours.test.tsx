@@ -9,6 +9,9 @@ jest.mock('recharts', () => {
     ResponsiveContainer: ({ children }: any) => (
       <div style={{ width: 800, height: 260 }}>{children}</div>
     ),
+    AreaChart: ({ data, children }: { data: unknown; children: React.ReactNode }) => (
+      <svg data-testid="area-chart-data" data-chart={JSON.stringify(data)}>{children}</svg>
+    ),
   }
 })
 
@@ -56,6 +59,38 @@ describe('LeadScannerPeakHours', () => {
     )
 
     expect(screen.getByTestId('peak-time-value')).toHaveTextContent('1PM')
+  })
+
+  it('removes the date from dashboard peak-time labels', () => {
+    render(
+      <LeadScannerPeakHours
+        compactTimeLabels
+        chart={{ peakHour: 13, peakScans: 9, data: [{ hour: 13, label: '2026-09-02 1PM', scans: 9 }] }}
+      />,
+    )
+
+    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('1PM')
+  })
+
+  it('aggregates dashboard points with the same hour', () => {
+    render(
+      <LeadScannerPeakHours
+        compactTimeLabels
+        aggregateByHour
+        chart={{
+          peakHour: 13,
+          data: [
+            { date: '2026-09-02', hour: 13, label: '2026-09-02 1PM', scans: 3 },
+            { date: '2026-09-03', hour: 13, label: '2026-09-03 1PM', scans: 5 },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByTestId('area-chart-data')).toHaveAttribute(
+      'data-chart',
+      expect.stringContaining('"scans":8'),
+    )
   })
 
   it('displays dash for peak time when totalScanned is 0 and no data', () => {

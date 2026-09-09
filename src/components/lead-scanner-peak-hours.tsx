@@ -9,6 +9,8 @@ interface Props {
   chart?: TrafficChart
   data?: HourlyTrafficPoint[]
   peakTime?: string
+  compactTimeLabels?: boolean
+  aggregateByHour?: boolean
 }
 
 const ZERO_HOURS = Array.from({ length: 24 }, (_, hour) => ({
@@ -21,14 +23,14 @@ const TICK_HOURS = ['1AM', '4AM', '7AM', '10AM', '1PM', '4PM', '7PM', '10PM']
 
 function CustomTooltip({ active, payload, label }: {
   active?: boolean
-  payload?: Array<{ value: number }>
+  payload?: Array<{ value: number; payload?: { label?: string } }>
   label?: string
 }) {
   if (active && payload && payload.length) {
     const value = payload[0].value
     return (
       <div className="rounded-lg border border-border/80 bg-popover/95 px-3 py-2 shadow-lg backdrop-blur text-xs">
-        <p className="font-semibold text-popover-foreground">{label}</p>
+        <p className="font-semibold text-popover-foreground">{payload[0].payload?.label ?? label}</p>
         <p className="mt-1 font-bold text-primary">
           {typeof value === 'number' ? value.toLocaleString() : value}{' '}
           <span className="font-normal text-muted-foreground">scans</span>
@@ -39,17 +41,40 @@ function CustomTooltip({ active, payload, label }: {
   return null
 }
 
-export function LeadScannerPeakHours({ chart, data, peakTime: propPeakTime }: Props) {
+export function LeadScannerPeakHours({
+  chart,
+  data,
+  peakTime: propPeakTime,
+  compactTimeLabels = false,
+  aggregateByHour = false,
+}: Props) {
   const chartData = useMemo(() => {
     if (chart?.data.length) return chart.data
     if (data?.length) return data
     return ZERO_HOURS
   }, [chart, data])
 
+  const displayedChartData = useMemo(() => {
+    const labelledData = chartData.map((point) => ({
+      ...point,
+      timeLabel: compactTimeLabels ? point.label.replace(/^\d{4}-\d{2}-\d{2}\s+/, '') : point.label,
+    }))
+    if (!aggregateByHour) return labelledData
+
+    const totalsByHour = new Map<string, typeof labelledData[number]>()
+    for (const point of labelledData) {
+      const key = String(point.hour)
+      const existing = totalsByHour.get(key)
+      totalsByHour.set(key, existing ? { ...existing, scans: existing.scans + point.scans } : point)
+    }
+
+    return Array.from(totalsByHour.values()).sort((a, b) => Number(a.hour) - Number(b.hour))
+  }, [aggregateByHour, chartData, compactTimeLabels])
+
   const peakDisplay = useMemo(() => {
     if (propPeakTime) return propPeakTime
     if (chart?.peakHour !== undefined) {
-      return chartData.find((point) => String(point.hour) === String(chart.peakHour))?.label ?? '-'
+      return displayedChartData.find((point) => String(point.hour) === String(chart.peakHour))?.timeLabel ?? '-'
     }
 
     const maxPoint = chartData.reduce(
@@ -58,7 +83,7 @@ export function LeadScannerPeakHours({ chart, data, peakTime: propPeakTime }: Pr
     )
 
     return maxPoint.scans > 0 ? maxPoint.label : '-'
-  }, [chart, chartData, propPeakTime])
+  }, [chart, chartData, displayedChartData, propPeakTime])
 
   return (
     <Card className="overflow-hidden">
@@ -89,7 +114,7 @@ export function LeadScannerPeakHours({ chart, data, peakTime: propPeakTime }: Pr
       <CardContent className="pt-2">
         <div className="h-[220px] w-full sm:h-[260px]" data-testid="peak-hours-chart-container">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 5 }}>
+            <AreaChart data={displayedChartData} margin={{ top: 15, right: 15, left: -20, bottom: 5 }}>
               <defs>
                 <linearGradient id="peakHourTrafficGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
@@ -103,8 +128,8 @@ export function LeadScannerPeakHours({ chart, data, peakTime: propPeakTime }: Pr
                 className="stroke-border/40"
               />
               <XAxis
-                dataKey="label"
-                ticks={chartData.length === 24 ? TICK_HOURS : undefined}
+                dataKey="timeLabel"
+                ticks={displayedChartData.length === 24 ? TICK_HOURS : undefined}
                 axisLine={{ stroke: 'currentColor', className: 'stroke-border/60' }}
                 tickLine={false}
                 tick={{ fontSize: 11, fill: 'currentColor' }}
