@@ -100,6 +100,7 @@ describe('LeadScannerUsage', () => {
           { companyName: 'A Dose Pharma', totalScanned: 7, totalContact: 6 },
           { companyName: 'A&D Instruments', totalScanned: 23, totalContact: 20 },
         ],
+        chart: { peakHour: 11, peakScans: 23, data: [{ hour: 11, label: '11AM', scans: 23 }] },
         days: [
           {
             dayLabel: '02 Sep 2026',
@@ -129,6 +130,7 @@ describe('LeadScannerUsage', () => {
 
     // Default is total (30 scanned: 7 + 23)
     expect(screen.getByText('30')).toBeInTheDocument()
+    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('11AM')
 
     // Click 02 Sep 2026 tab (18 scanned: 5 + 13)
     await user.click(screen.getByRole('tab', { name: '02 Sep 2026' }))
