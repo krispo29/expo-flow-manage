@@ -21,13 +21,41 @@ export type LeadScannerDay = {
   totalContact?: number
   totalExportedContact?: number
   totalDownloadCount?: number
+  chart?: TrafficChart
   overall: CompanyUsageItem[]
 }
 
 export type HourlyTrafficPoint = {
-  hour: string
+  date?: string
+  hour: number | string
   label: string
   scans: number
+}
+
+export type TrafficChart = {
+  date?: string
+  timezone?: string
+  peakHour?: number | string
+  peakScans?: number
+  data: HourlyTrafficPoint[]
+}
+
+type RawTrafficPoint = {
+  date?: string
+  hour?: number | string
+  label?: string
+  scans?: number
+  total_scanned?: number
+}
+
+type RawTrafficChart = {
+  date?: string
+  timezone?: string
+  peakHour?: number | string
+  peak_hour?: number | string
+  peakScans?: number
+  peak_scans?: number
+  data?: RawTrafficPoint[]
 }
 
 export type LeadScannerUsage = {
@@ -40,6 +68,7 @@ export type LeadScannerUsage = {
   totalLeadScannerEnabledCount?: number
   overall: CompanyUsageItem[]
   days?: LeadScannerDay[]
+  chart?: TrafficChart
   hourlyTraffic?: HourlyTrafficPoint[]
   peakTime?: string
 }
@@ -72,6 +101,23 @@ function mapCompanyUsageItem(item: any): CompanyUsageItem {
   }
 }
 
+function mapTrafficChart(chart: RawTrafficChart | null | undefined): TrafficChart | undefined {
+  if (!chart || !Array.isArray(chart.data)) return undefined
+
+  return {
+    date: chart.date,
+    timezone: chart.timezone,
+    peakHour: chart.peakHour ?? chart.peak_hour,
+    peakScans: chart.peakScans ?? chart.peak_scans,
+    data: chart.data.map((item) => ({
+      date: item.date,
+      hour: item.hour ?? '',
+      label: item.label ?? String(item.hour ?? ''),
+      scans: item.scans ?? item.total_scanned ?? 0,
+    })),
+  }
+}
+
 async function getAdminProjectHeaders(projectId?: string) {
   const auth = await getServerAuthContext()
   if (auth?.userRole !== 'ADMIN') throw new Error('Unauthorized')
@@ -89,7 +135,7 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
 
     const hourlyTraffic = Array.isArray(data.hourly_traffic)
       ? data.hourly_traffic.map((item: {
-          hour?: string
+          hour?: number | string
           label?: string
           scans?: number
           total_scanned?: number
@@ -125,6 +171,7 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
             d.download_count ??
             d.totalDownloadCount ??
             d.downloadCount,
+          chart: mapTrafficChart(d.chart),
           overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? d.usage ?? d.usages ?? []).map(
             mapCompanyUsageItem,
           ),
@@ -155,6 +202,7 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
             d.download_count ??
             d.totalDownloadCount ??
             d.downloadCount,
+          chart: mapTrafficChart(d.chart),
           overall: (d.companies ?? d.overall ?? d.data ?? d.items ?? []).map(mapCompanyUsageItem),
         }))
       }
@@ -210,6 +258,7 @@ export async function getLeadScannerUsage(projectId?: string): Promise<LeadScann
         totalLeadScannerEnabledCount:
           data.total_lead_scanner_enabled_count ?? data.totalLeadScannerEnabledCount,
         ...(parsedDays.length > 0 ? { days: parsedDays } : {}),
+        ...(mapTrafficChart(data.chart) ? { chart: mapTrafficChart(data.chart) } : {}),
         ...(hourlyTraffic ? { hourlyTraffic } : {}),
         ...(data.peak_time ? { peakTime: data.peak_time } : {}),
       },

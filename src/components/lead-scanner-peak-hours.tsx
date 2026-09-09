@@ -2,41 +2,20 @@
 
 import { useMemo } from 'react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { HourlyTrafficPoint } from '@/app/actions/lead-scanner'
+import type { HourlyTrafficPoint, TrafficChart } from '@/app/actions/lead-scanner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface Props {
+  chart?: TrafficChart
   data?: HourlyTrafficPoint[]
-  totalScanned?: number
   peakTime?: string
 }
 
-const DEFAULT_HOURS = [
-  { hour: '00:00', label: '12AM', weight: 0 },
-  { hour: '01:00', label: '1AM', weight: 0 },
-  { hour: '02:00', label: '2AM', weight: 0 },
-  { hour: '03:00', label: '3AM', weight: 0 },
-  { hour: '04:00', label: '4AM', weight: 0.01 },
-  { hour: '05:00', label: '5AM', weight: 0.05 },
-  { hour: '06:00', label: '6AM', weight: 0.18 },
-  { hour: '07:00', label: '7AM', weight: 0.24 },
-  { hour: '08:00', label: '8AM', weight: 0.32 },
-  { hour: '09:00', label: '9AM', weight: 0.54 },
-  { hour: '10:00', label: '10AM', weight: 0.65 },
-  { hour: '11:00', label: '11AM', weight: 0.70 },
-  { hour: '12:00', label: '12PM', weight: 0.76 },
-  { hour: '13:00', label: '1PM', weight: 0.88 },
-  { hour: '14:00', label: '2PM', weight: 1.0 }, // Peak time at 2 PM
-  { hour: '15:00', label: '3PM', weight: 0.94 },
-  { hour: '16:00', label: '4PM', weight: 0.89 },
-  { hour: '17:00', label: '5PM', weight: 0.78 },
-  { hour: '18:00', label: '6PM', weight: 0.64 },
-  { hour: '19:00', label: '7PM', weight: 0.55 },
-  { hour: '20:00', label: '8PM', weight: 0.45 },
-  { hour: '21:00', label: '9PM', weight: 0.32 },
-  { hour: '22:00', label: '10PM', weight: 0.18 },
-  { hour: '23:00', label: '11PM', weight: 0.05 },
-]
+const ZERO_HOURS = Array.from({ length: 24 }, (_, hour) => ({
+  hour,
+  label: hour === 0 ? '12AM' : hour < 12 ? `${hour}AM` : hour === 12 ? '12PM' : `${hour - 12}PM`,
+  scans: 0,
+}))
 
 const TICK_HOURS = ['1AM', '4AM', '7AM', '10AM', '1PM', '4PM', '7PM', '10PM']
 
@@ -60,28 +39,18 @@ function CustomTooltip({ active, payload, label }: {
   return null
 }
 
-export function LeadScannerPeakHours({ data, totalScanned = 0, peakTime: propPeakTime }: Props) {
+export function LeadScannerPeakHours({ chart, data, peakTime: propPeakTime }: Props) {
   const chartData = useMemo(() => {
-    if (data && data.length > 0) {
-      return data
-    }
-
-    if (totalScanned <= 0) {
-      return DEFAULT_HOURS.map((h) => ({ hour: h.hour, label: h.label, scans: 0 }))
-    }
-
-    const totalWeight = DEFAULT_HOURS.reduce((sum, h) => sum + h.weight, 0)
-    const factor = totalScanned / totalWeight
-
-    return DEFAULT_HOURS.map((h) => ({
-      hour: h.hour,
-      label: h.label,
-      scans: Math.max(0, Math.round(h.weight * factor)),
-    }))
-  }, [data, totalScanned])
+    if (chart?.data.length) return chart.data
+    if (data?.length) return data
+    return ZERO_HOURS
+  }, [chart, data])
 
   const peakDisplay = useMemo(() => {
     if (propPeakTime) return propPeakTime
+    if (chart?.peakHour !== undefined) {
+      return chartData.find((point) => String(point.hour) === String(chart.peakHour))?.label ?? '-'
+    }
 
     const maxPoint = chartData.reduce(
       (max, curr) => (curr.scans > max.scans ? curr : max),
@@ -89,7 +58,7 @@ export function LeadScannerPeakHours({ data, totalScanned = 0, peakTime: propPea
     )
 
     return maxPoint.scans > 0 ? maxPoint.label : '-'
-  }, [chartData, propPeakTime])
+  }, [chart, chartData, propPeakTime])
 
   return (
     <Card className="overflow-hidden">
@@ -135,7 +104,7 @@ export function LeadScannerPeakHours({ data, totalScanned = 0, peakTime: propPea
               />
               <XAxis
                 dataKey="label"
-                ticks={TICK_HOURS}
+                ticks={chartData.length === 24 ? TICK_HOURS : undefined}
                 axisLine={{ stroke: 'currentColor', className: 'stroke-border/60' }}
                 tickLine={false}
                 tick={{ fontSize: 11, fill: 'currentColor' }}

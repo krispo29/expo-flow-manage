@@ -700,9 +700,9 @@ export function LeadScannerUsage({ projectId }: Props) {
           </div>
 
           <LeadScannerPeakHours
-            data={report?.hourlyTraffic}
-            totalScanned={totals.scanned}
-            peakTime={report?.peakTime}
+            chart={activeDay?.chart}
+            data={selectedDay === 'total' ? report?.hourlyTraffic : undefined}
+            peakTime={selectedDay === 'total' ? report?.peakTime : undefined}
           />
 
           <Card>

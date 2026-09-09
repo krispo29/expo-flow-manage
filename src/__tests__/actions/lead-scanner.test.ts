@@ -145,6 +145,35 @@ describe('lead scanner actions', () => {
     })
   })
 
+  it('maps chart data for each usage day', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: {
+          start_date: '2026-09-02',
+          end_date: '2026-09-02',
+          days: [{
+            day: 1,
+            day_label: '02 Sep 2026',
+            items: [],
+            chart: {
+              date: '2026-09-02', timezone: 'Asia/Bangkok', peakHour: 13, peakScans: 1604,
+              data: [{ hour: 13, label: '1PM', scans: 1604 }],
+            },
+          }],
+        },
+      },
+    })
+
+    const result = await getLeadScannerUsage('project-a')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.days?.[0].chart).toEqual({
+        date: '2026-09-02', timezone: 'Asia/Bangkok', peakHour: 13, peakScans: 1604,
+        data: [{ hour: 13, label: '1PM', scans: 1604 }],
+      })
+    }
+  })
+
   it('parses days array and auto-aggregates overall when overall is missing', async () => {
     mockApiGet.mockResolvedValue({
       data: {

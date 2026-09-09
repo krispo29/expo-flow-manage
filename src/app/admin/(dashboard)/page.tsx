@@ -26,6 +26,7 @@ import type { DashboardConference } from "@/app/actions/dashboard"
 import { formatDistanceToNow } from "date-fns"
 import { AttendeeTypeChart } from "@/components/dashboard/attendee-type-chart"
 import { EventSummaryCards } from "@/components/dashboard/event-summary-cards"
+import { LeadScannerPeakHours } from "@/components/lead-scanner-peak-hours"
 import { redirect } from "next/navigation"
 
 type Props = {
@@ -186,6 +187,8 @@ export default async function Page(props: Props) {
           <Activity className="absolute -right-4 -bottom-4 size-24 opacity-20 text-white rotate-12 transition-transform group-hover/card:scale-110 group-hover/card:rotate-0" />
         </Card>
       </div>
+
+      <LeadScannerPeakHours chart={result.data?.attendance_chart} />
 
       <EventSummaryCards events={result.data?.event_summaries || []} failed={failed} />
 

@@ -41,15 +41,25 @@ describe('LeadScannerPeakHours', () => {
     expect(screen.getByTestId('peak-time-value')).toHaveTextContent('2:00 PM')
   })
 
-  it('generates fallback distribution with 2PM peak when totalScanned is positive', () => {
-    render(<LeadScannerPeakHours totalScanned={100} />)
+  it('renders zero-value fallback data when a chart is unavailable', () => {
+    render(<LeadScannerPeakHours />)
 
     expect(screen.getByText('Peak Hour Traffic')).toBeInTheDocument()
-    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('2PM')
+    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('-')
+  })
+
+  it('uses the backend peak hour label', () => {
+    render(
+      <LeadScannerPeakHours
+        chart={{ peakHour: 13, peakScans: 9, data: [{ hour: 13, label: '1PM', scans: 9 }] }}
+      />,
+    )
+
+    expect(screen.getByTestId('peak-time-value')).toHaveTextContent('1PM')
   })
 
   it('displays dash for peak time when totalScanned is 0 and no data', () => {
-    render(<LeadScannerPeakHours totalScanned={0} />)
+    render(<LeadScannerPeakHours />)
 
     expect(screen.getByTestId('peak-time-value')).toHaveTextContent('-')
   })

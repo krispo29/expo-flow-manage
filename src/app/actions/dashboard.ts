@@ -2,6 +2,7 @@
 
 import api from '@/lib/api'
 import { getServerAuthHeaders } from '@/lib/server-auth'
+import type { TrafficChart } from '@/app/actions/lead-scanner'
 
 // Helper function to get headers with auth
 async function getAuthHeaders(projectUuid?: string) {
@@ -70,6 +71,42 @@ export interface DashboardData {
   recent_participants: DashboardRecentParticipant[]
   conferences: DashboardConference[]
   event_summaries: DashboardEventSummary[]
+  attendance_chart?: TrafficChart
+}
+
+type RawTrafficPoint = {
+  date?: string
+  hour?: number | string
+  label?: string
+  scans?: number
+  total_scanned?: number
+}
+
+type RawTrafficChart = {
+  date?: string
+  timezone?: string
+  peakHour?: number | string
+  peak_hour?: number | string
+  peakScans?: number
+  peak_scans?: number
+  data?: RawTrafficPoint[]
+}
+
+function mapTrafficChart(chart: RawTrafficChart | null | undefined): TrafficChart | undefined {
+  if (!chart || !Array.isArray(chart.data)) return undefined
+
+  return {
+    date: chart.date,
+    timezone: chart.timezone,
+    peakHour: chart.peakHour ?? chart.peak_hour,
+    peakScans: chart.peakScans ?? chart.peak_scans,
+    data: chart.data.map((item) => ({
+      date: item.date,
+      hour: item.hour ?? '',
+      label: item.label ?? String(item.hour ?? ''),
+      scans: item.scans ?? item.total_scanned ?? 0,
+    })),
+  }
 }
 
 // ─── Action ───────────────────────────────────────────────────────────────────
@@ -99,7 +136,8 @@ export async function getDashboard(projectUuid?: string) {
       },
       recent_participants: rawData.recent_participants || [],
       conferences: rawData.conferences || [],
-      event_summaries: rawData.event_summaries || []
+      event_summaries: rawData.event_summaries || [],
+      attendance_chart: mapTrafficChart(rawData.attendance_chart),
     }
 
     return { success: true, data: fallbackData }
