@@ -1,6 +1,9 @@
 // utils/print-badge.ts
 
 import { getAttendeeTypeLabel } from "@/lib/attendee-types"
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { QRCodeSVG } from 'qrcode.react'
 import { findCountryByCodeOrName, getCountryDisplayName, getCountryNameFromValue } from "@/lib/countries"
 import { isThailabBadgeProject, THAILAB_BADGE_PROJECT_CODE } from "@/components/print/thailab-badge-card"
 
@@ -32,15 +35,8 @@ function getBadgeType(data: PrintBadgeData) {
   return (getAttendeeTypeLabel(data.badgeType || data.category) || "VISITOR").toUpperCase()
 }
 
-function getQrCodeUrl(registrationCode: string) {
-  const params = new URLSearchParams({
-    data: registrationCode,
-    ecc: "M",
-    margin: "0",
-    size: "100x100",
-  })
-
-  return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`
+function getQrCodeSvg(registrationCode: string) {
+  return renderToStaticMarkup(createElement(QRCodeSVG, { value: registrationCode || 'PREVIEW', level: 'M', marginSize: 4, size: 256, style: { width: '100%', height: '100%' } }))
 }
 
 const getBadgeStyles = () => `
@@ -587,7 +583,7 @@ const generateBadgeHtml = (data: PrintBadgeData) => {
   const country = escapeHtml(data.country || "")
   const registrationCode = data.registrationCode || ""
   const badgeType = escapeHtml(getBadgeType(data))
-  const qrCodeUrl = escapeHtml(getQrCodeUrl(registrationCode))
+  const qrCodeSvg = getQrCodeSvg(registrationCode)
 
   return `
     <section class="badge-print-page">
@@ -609,7 +605,7 @@ const generateBadgeHtml = (data: PrintBadgeData) => {
 
           <div class="badge-print-qr-section">
             <div class="badge-print-qr-frame">
-              <img src="${qrCodeUrl}" alt="QR Code" />
+              ${qrCodeSvg}
             </div>
             <div class="badge-print-registration-code">${escapeHtml(registrationCode)}</div>
           </div>
@@ -638,7 +634,7 @@ const generateThailabBadgeHtml = (data: PrintBadgeData) => {
 
   const registrationCode = data.registrationCode || ""
   const badgeType = escapeHtml(getBadgeType(data))
-  const qrCodeUrl = escapeHtml(getQrCodeUrl(registrationCode))
+  const qrCodeSvg = getQrCodeSvg(registrationCode)
 
   return `
     <section class="badge-print-page thailab-badge-page">
@@ -655,7 +651,7 @@ const generateThailabBadgeHtml = (data: PrintBadgeData) => {
 
           <div class="thailab-badge-qr-group">
             <div class="thailab-badge-qr">
-              <img src="${qrCodeUrl}" alt="QR Code" />
+              ${qrCodeSvg}
             </div>
             <div class="thailab-badge-registration-code">${escapeHtml(registrationCode)}</div>
           </div>
@@ -712,8 +708,8 @@ function writePrintDocument(
   printWindow.document.close()
 }
 
-export function printBadge(data: PrintBadgeData, projectCode?: string): void {
-  const printWindow = window.open("", "_blank", PRINT_WINDOW_FEATURES)
+export function printBadge(data: PrintBadgeData, projectCode?: string, reservedWindow?: Window): void {
+  const printWindow = reservedWindow ?? window.open("", "_blank", PRINT_WINDOW_FEATURES)
   if (!printWindow) {
     alert("Please allow pop-ups to print the badge.")
     return
@@ -736,10 +732,10 @@ export function printBadge(data: PrintBadgeData, projectCode?: string): void {
   )
 }
 
-export function printBadges(dataArray: PrintBadgeData[], projectCode?: string): void {
+export function printBadges(dataArray: PrintBadgeData[], projectCode?: string, reservedWindow?: Window): void {
   if (!dataArray || dataArray.length === 0) return
 
-  const printWindow = window.open("", "_blank", PRINT_WINDOW_FEATURES)
+  const printWindow = reservedWindow ?? window.open("", "_blank", PRINT_WINDOW_FEATURES)
   if (!printWindow) {
     alert("Please allow pop-ups to print the badge.")
     return

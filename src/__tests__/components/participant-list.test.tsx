@@ -1,7 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ParticipantList } from '@/components/participant-list'
 import { printParticipantBadge, getParticipantById } from '@/app/actions/participant'
-import { printBadge } from '@/utils/print-badge'
+import { printProjectBadges } from '@/lib/badge-layout/print'
+import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
 
 jest.mock('@/app/actions/participant', () => ({
   createParticipant: jest.fn(),
@@ -26,9 +27,10 @@ jest.mock('@/components/CountrySelector', () => ({
   CountrySelector: () => null,
 }))
 
-jest.mock('@/utils/print-badge', () => ({
-  printBadge: jest.fn(),
+jest.mock('@/lib/badge-layout/print', () => ({
+  printProjectBadges: jest.fn(),
 }))
+jest.mock('@/lib/badge-layout/print-window', () => ({ reserveLayoutPrintWindow: jest.fn() }))
 
 jest.mock('sonner', () => ({
   toast: {
@@ -80,6 +82,8 @@ describe('ParticipantList', () => {
   })
 
   it('triggers badge printing with registration code and projectId when print icon is clicked', async () => {
+    const popup = { close: jest.fn() } as unknown as Window
+    jest.mocked(reserveLayoutPrintWindow).mockReturnValue(popup)
     ;(printParticipantBadge as jest.Mock).mockResolvedValue({ success: true })
     ;(getParticipantById as jest.Mock).mockResolvedValue({
       success: true,
@@ -104,13 +108,15 @@ describe('ParticipantList', () => {
 
     await waitFor(() => {
       expect(printParticipantBadge).toHaveBeenCalledWith('07626a19-001d-4675-addd-3a92e3f46d47', 'uuid-REG-001')
-      expect(printBadge).toHaveBeenCalledWith(
-        expect.objectContaining({
+      expect(printProjectBadges).toHaveBeenCalledWith(
+        '07626a19-001d-4675-addd-3a92e3f46d47',
+        [expect.objectContaining({
           firstName: 'Alice',
           registrationCode: 'REG-001',
-        }),
-        '07626a19-001d-4675-addd-3a92e3f46d47'
+        })],
+        popup
       )
+      expect(jest.mocked(reserveLayoutPrintWindow).mock.invocationCallOrder[0]).toBeLessThan(jest.mocked(printParticipantBadge).mock.invocationCallOrder[0])
     })
   })
 

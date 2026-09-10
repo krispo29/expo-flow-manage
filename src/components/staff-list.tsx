@@ -37,7 +37,8 @@ import {
 import { getEvents } from '@/app/actions/settings'
 import { countries, getCountryNameFromValue } from '@/lib/countries'
 import { toast } from 'sonner'
-import { printBadge } from '@/utils/print-badge'
+import { printProjectBadges } from '@/lib/badge-layout/print'
+import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -197,13 +198,13 @@ export function StaffList({
   }
 
   const onPrintClick = async (p: Staff) => {
-    toast.promise(printProjectStaffBadge(projectId, p.staff_uuid), {
-      loading: 'Printing badge...',
-      success: (result) => {
+    let popup: Window
+    try { popup = reserveLayoutPrintWindow() } catch (error) { toast.error(error instanceof Error ? error.message : 'Popup blocked'); return }
+    const printing = (async () => {
+      const result = await printProjectStaffBadge(projectId, p.staff_uuid)
         if (result.success && result.data) {
           const data = result.data
-          try {
-            printBadge({
+            const printData = {
                firstName: data.first_name || '',
                lastName: data.last_name || '',
                companyName: data.company_name || '',
@@ -211,14 +212,19 @@ export function StaffList({
                registrationCode: data.staff_code || p.staff_code || '',
                category: data.staff_type_code || p.staff_type_code || 'STAFF',
                position: data.job_position || p.job_position || '',
-            }, projectId)
-          } catch (e) {
-            console.error("Local print failed", e)
-          }
+            }
+            if (result.layoutState !== undefined) {
+              await printProjectBadges(projectId, [printData], popup, undefined, result.layoutState)
+            } else {
+              await printProjectBadges(projectId, [printData], popup)
+            }
           return 'Badge print triggered'
         }
         throw new Error(result.error || 'Failed to print badge')
-      },
+    })().catch(error => { popup.close(); throw error })
+    toast.promise(printing, {
+      loading: 'Printing badge...',
+      success: message => message,
       error: (err) => err instanceof Error ? err.message : 'Failed to print badge'
     })
   }

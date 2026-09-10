@@ -14,7 +14,11 @@ import { toast } from "sonner"
 import { BadgePrint } from "@/components/badge-print"
 import { QRCodeSVG } from "qrcode.react"
 import { useSearchParams } from "next/navigation"
-import { printBadges } from "@/utils/print-badge"
+import { printProjectBadges, normalizeBadge } from '@/lib/badge-layout/print'
+import { getBadgeLayout } from '@/app/actions/badge-layout'
+import { LayoutBadgeCard } from '@/components/print/layout-badge-card'
+import type { BadgeLayoutState } from '@/lib/badge-layout/schema'
+import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { findCountryByCodeOrName, getCountryDisplayName, getCountryNameFromValue } from "@/lib/countries"
@@ -38,6 +42,12 @@ function parseParticipantSearchTerms(value: string) {
 function UtilitiesContent() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId') || ""
+  const [badgeLayoutState, setBadgeLayoutState] = useState<BadgeLayoutState | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    if (projectId) void getBadgeLayout(projectId).then(result => { if (!cancelled) setBadgeLayoutState(result.success ? result.state : null) }).catch(() => { if (!cancelled) setBadgeLayoutState(null) })
+    return () => { cancelled = true }
+  }, [projectId])
   const [projectCode, setProjectCode] = useState<string>(() => {
     return projectId === THAILAB2026_PROJECT_UUID ? "THAILAB2026" : ""
   })
@@ -58,6 +68,9 @@ function UtilitiesContent() {
   const [printSearch, setPrintSearch] = useState("")
   const [participants, setParticipants] = useState<RealParticipant[]>([])
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null)
+  const previewParticipant = participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]
+  const publishedLayout = badgeLayoutState?.projectUuid === projectId ? badgeLayoutState.published : null
+  const previewScale = publishedLayout ? Math.min(.82, 300 / (publishedLayout.paper.widthMm * 96 / 25.4)) : .82
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [zoom, setZoom] = useState(1)
   const [resultSearch, setResultSearch] = useState("")
@@ -126,8 +139,10 @@ function UtilitiesContent() {
       return
     }
 
+    let popup: Window | undefined
     setIsSubmittingBulk(true)
     try {
+      popup = reserveLayoutPrintWindow()
       const codes = selectedParticipants.map(p => p.registration_code)
       const result = await printParticipantBadgesBulk(projectId, codes)
       if (result.success) {
@@ -157,11 +172,17 @@ function UtilitiesContent() {
           }
         })
         
-        printBadges(badgeData, projectCode)
+        if (result.layoutState !== undefined) {
+          await printProjectBadges(projectId, badgeData, popup, setBadgeLayoutState, result.layoutState)
+        } else {
+          await printProjectBadges(projectId, badgeData, popup, setBadgeLayoutState)
+        }
       } else {
+        popup.close()
         toast.error(result.error || "Failed to bulk print")
       }
     } catch (error) {
+      popup?.close()
       console.error("Print error:", error)
       toast.error("An unexpected error occurred")
     } finally {
@@ -423,16 +444,26 @@ function UtilitiesContent() {
                                                     <UserCheck className="h-6 w-6 text-primary" />
                                                     Badge Inspector
                                                 </h3>
-                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-[9px] font-black uppercase tracking-[0.2em]">Verified</Badge>
+                                                <Badge variant="outline" className="bg-white/5 border-white/10 text-[9px] font-black uppercase tracking-[0.2em]">{publishedLayout ? `Revision ${badgeLayoutState?.publishedRevision}` : 'Legacy'}</Badge>
                                             </div>
                                             <p className="text-sm font-medium text-muted-foreground italic mb-8">Inspecting high-fidelity render for verification.</p>
                                             
-                                            <div className="shadow-2xl rounded-3xl bg-white overflow-hidden aspect-[3/4.2] relative group ring-4 ring-white/5 flex items-start justify-center pt-10">
-                                                <div className="transition-transform group-hover:scale-[1.03] duration-1000 origin-top pointer-events-none" style={{ transform: 'scale(0.82)' }}>
-                                                    <BadgePrint 
+                                            <div className="shadow-2xl rounded-3xl bg-white overflow-auto relative group ring-4 ring-white/5 flex items-start justify-center pt-10" style={{ height: publishedLayout ? publishedLayout.paper.heightMm * 96 / 25.4 * previewScale + 48 : 500 }}>
+                                                <div className="origin-top pointer-events-none shrink-0" style={{ transform: `scale(${previewScale})` }}>
+                                                    {publishedLayout && previewParticipant ? (
+                                                      <LayoutBadgeCard layout={publishedLayout} data={normalizeBadge({
+                                                        firstName: previewParticipant.first_name,
+                                                        lastName: previewParticipant.last_name,
+                                                        position: previewParticipant.job_position,
+                                                        companyName: previewParticipant.company_name,
+                                                        country: previewParticipant.residence_country || '',
+                                                        registrationCode: previewParticipant.registration_code,
+                                                        badgeType: previewParticipant.badge_name || previewParticipant.attendee_type_name || previewParticipant.attendee_type_code,
+                                                      }, badgeLayoutState?.projectCode || projectCode)} />
+                                                    ) : <BadgePrint
                                                         participant={(participants.find(p => p.registration_uuid === selectedParticipantId) || participants[0]) as RealParticipant & { title_other?: string }} 
                                                         projectCode={projectCode}
-                                                    />
+                                                    />}
                                                 </div>
                                                 
                                                 {/* Intelligence Overlay */}

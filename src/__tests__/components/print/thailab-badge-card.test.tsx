@@ -10,6 +10,17 @@ import {
 import { BadgePrint } from '@/components/badge-print'
 import type { PrintBadgeData } from '@/utils/print-badge'
 
+const originalResizeObserver = globalThis.ResizeObserver
+beforeAll(() => {
+  Object.defineProperty(globalThis, 'ResizeObserver', { configurable: true, writable: true, value: class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } })
+})
+afterAll(() => { globalThis.ResizeObserver = originalResizeObserver })
+const participantDefaults = { email: '', registered_at: '', is_active: true, conference_count: 0, is_email_sent: false }
+
 const sampleBadge: PrintBadgeData = {
   firstName: 'Tidarat',
   lastName: 'Karnmitree',
@@ -60,7 +71,7 @@ describe('THAILAB badge content', () => {
   })
 
   it('uses the approved fixed print geometry and styles', () => {
-    const styles = renderToStaticMarkup(createElement(ThailabBadgePrintStyles))
+    const styles = renderToStaticMarkup(createElement(ThailabBadgePrintStyles)).replace(/\s+/g, ' ')
     const markup = renderToStaticMarkup(createElement(ThailabBadgeCard, { badge: sampleBadge }))
 
     expect(styles).toContain('.thailab-badge-header-spacer')
@@ -80,6 +91,7 @@ describe('THAILAB badge content', () => {
 describe('BadgePrint integration', () => {
   it('renders THAILAB badge layout when projectCode is THAILAB2026', () => {
     const participant = {
+      ...participantDefaults,
       registration_uuid: 'reg-1',
       first_name: 'John',
       last_name: 'Doe',
@@ -103,6 +115,7 @@ describe('BadgePrint integration', () => {
 
   it('renders default badge layout when projectCode is not THAILAB2026', () => {
     const participant = {
+      ...participantDefaults,
       registration_uuid: 'reg-2',
       first_name: 'Jane',
       last_name: 'Smith',

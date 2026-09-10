@@ -1,5 +1,6 @@
 import api from '@/lib/api'
-import { getParticipants, getParticipantById, createParticipant, updateParticipant, deleteParticipant, importParticipants, exportAttendanceLogs } from '@/app/actions/participant'
+import { getParticipants, getParticipantById, createParticipant, updateParticipant, deleteParticipant, importParticipants, exportAttendanceLogs, searchParticipantsForBadgePreview } from '@/app/actions/participant'
+import { getUserRole } from '@/app/actions/auth'
 import { cookies } from 'next/headers'
 
 // Mock the API module
@@ -47,8 +48,9 @@ const mockApiDelete = api.delete as jest.MockedFunction<typeof api.delete>
 const mockCookies = cookies as jest.MockedFunction<typeof cookies>
 
 describe('participant actions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
+beforeEach(() => {
+  jest.clearAllMocks()
+  jest.mocked(getUserRole).mockResolvedValue('ADMIN')
     mockApiGet.mockReset()
     mockApiPost.mockReset()
     mockApiPut.mockReset()
@@ -132,6 +134,113 @@ describe('participant actions', () => {
       const result = await getParticipantById('invalid-id')
 
       expect(result).toEqual({ error: 'Not found' })
+    })
+  })
+
+  describe('searchParticipantsForBadgePreview', () => {
+    it('searches only within the authorized project and removes non-preview fields', async () => {
+      mockApiGet.mockResolvedValue({
+        data: {
+          data: [
+            {
+              registration_uuid: 'p-1',
+              registration_code: 'R001',
+              full_name: 'John Doe',
+              company_name: 'ACME',
+              job_position: 'Developer',
+              residence_country: 'TH',
+              attendee_type_code: 'VIP',
+              email: 'private@example.com',
+            },
+          ],
+        },
+      })
+
+      const result = await searchParticipantsForBadgePreview(
+        'project-123',
+        'John Doe'
+      )
+
+      expect(result).toEqual({
+        success: true,
+        data: [
+          expect.objectContaining({
+            registration_uuid: 'p-1',
+            registration_code: 'R001',
+            first_name: 'John',
+            last_name: 'Doe',
+            company_name: 'ACME',
+            job_position: 'Developer',
+            attendee_type_code: 'VIP',
+          }),
+        ],
+      })
+      expect(result.success && result.data[0]).not.toHaveProperty('email')
+      expect(mockApiGet).toHaveBeenCalledWith(
+        '/v1/admin/project/participants/search?keyword=John+Doe',
+        expect.any(Object)
+      )
+    })
+
+    it('does not call the API for a short query', async () => {
+      const result = await searchParticipantsForBadgePreview('project-123', 'a')
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Enter at least 2 characters to search attendees.',
+      })
+      expect(mockApiGet).not.toHaveBeenCalled()
+    })
+
+    it('returns an error when the search fails', async () => {
+      mockApiGet.mockRejectedValue(new Error('Search unavailable'))
+
+      const result = await searchParticipantsForBadgePreview(
+        'project-123',
+        'John'
+      )
+
+      expect(result).toEqual({ success: false, error: 'Search unavailable' })
+    })
+
+    it('uses the organizer participant list because organizer search is not a separate backend route', async () => {
+      jest.mocked(getUserRole).mockResolvedValue('ORGANIZER')
+      mockApiGet.mockResolvedValue({
+        data: {
+          data: [
+            {
+              registration_uuid: 'p-2',
+              registration_code: 'R002',
+              first_name: 'Jane',
+              last_name: 'Smith',
+              email: 'private@example.com',
+              company_name: 'ACME',
+              job_position: 'Designer',
+              attendee_type_code: 'VISITOR',
+            },
+          ],
+        },
+      })
+
+      const result = await searchParticipantsForBadgePreview(
+        'project-123',
+        'Jane'
+      )
+
+      expect(result).toEqual({
+        success: true,
+        data: [
+          expect.objectContaining({
+            registration_uuid: 'p-2',
+            first_name: 'Jane',
+            last_name: 'Smith',
+          }),
+        ],
+      })
+      expect(mockApiGet).toHaveBeenCalledWith(
+        '/v1/organizer/participants',
+        expect.any(Object)
+      )
     })
   })
 
