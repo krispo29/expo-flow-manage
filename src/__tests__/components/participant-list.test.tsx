@@ -61,6 +61,10 @@ const participant = (registration_code: string, first_name: string) => ({
 })
 
 describe('ParticipantList', () => {
+  beforeAll(() => {
+    window.HTMLElement.prototype.scrollIntoView = jest.fn()
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -120,7 +124,7 @@ describe('ParticipantList', () => {
     })
   })
 
-  it('renders Other in title options when creating participant', () => {
+  it('shows an input when Other is selected as the title', () => {
     render(
       <ParticipantList
         participants={[]}
@@ -134,6 +138,10 @@ describe('ParticipantList', () => {
     fireEvent.click(addButton)
 
     expect(screen.getByText('Create Participant')).toBeInTheDocument()
-    expect(screen.getByText('Other')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('combobox')[2])
+    fireEvent.click(screen.getByRole('option', { name: 'Other' }))
+
+    expect(screen.getByLabelText(/specify title/i)).toBeRequired()
   })
 })

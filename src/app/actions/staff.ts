@@ -22,6 +22,7 @@ export interface Staff {
   registrationUuid?: string
   registrationCode?: string
   title?: string
+  title_other?: string
   firstName: string
   lastName: string
   email: string

@@ -82,6 +82,7 @@ export interface Participant {
   conference_count: number
   is_email_sent: boolean
   title?: string
+  title_other?: string
   badge_name?: string
   country?: string
   residence_country?: string
