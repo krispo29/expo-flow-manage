@@ -99,6 +99,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
     firstName: '',
     lastName: '',
     title: '',
+    title_other: '',
     position: '',
     email: '',
     mobile: '',
@@ -127,7 +128,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
         registrationUuid: m.registration_uuid,
         registrationCode: m.registration_code,
         exhibitorId: exhibitorId,
-        title: m.title || '',
+        title: m.title === 'Other' ? 'Others' : m.title || '',
+        title_other: m.title_other || '',
         firstName: m.first_name || '',
         lastName: m.last_name || '',
         email: m.email || '',
@@ -159,7 +161,8 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
       setFormData({
         firstName: staff.firstName || '',
         lastName: staff.lastName || '',
-        title: staff.title || 'Mr.',
+        title: staff.title === 'Other' ? 'Others' : staff.title || 'Mr.',
+        title_other: staff.title_other || '',
         position: staff.position || '',
         email: staff.email || '',
         mobile: staff.mobile || '',
@@ -174,6 +177,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
         firstName: '',
         lastName: '',
         title: 'Mr.',
+        title_other: '',
         position: '',
         email: '',
         mobile: '',
@@ -195,6 +199,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
     // Structure expected by the actions
     const payload = {
       title: formData.title,
+      title_other: formData.title_other,
       firstName: formData.firstName,
       lastName: formData.lastName,
       position: formData.position,
@@ -432,7 +437,7 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
                   </TableCell>
                   <TableCell>{staff.registrationCode || staff.id.substring(0, 8)}</TableCell>
-                  <TableCell>{(staff.title === 'Other' && (staff as any).title_other ? (staff as any).title_other : staff.title)}</TableCell>
+                  <TableCell>{(staff.title === 'Other' || staff.title === 'Others') && staff.title_other ? staff.title_other : staff.title}</TableCell>
                   <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
                   <TableCell>{staff.position}</TableCell>
                   <TableCell>
@@ -507,17 +512,36 @@ export function StaffManagement({ exhibitorId, projectId, exhibitor, userRole, l
                 <div className="col-span-3">
                   <Select 
                     value={formData.title} 
-                    onValueChange={(value) => setFormData({...formData, title: value})}
+                    onValueChange={(value) => setFormData({
+                      ...formData,
+                      title: value,
+                      title_other: value === 'Others' ? formData.title_other : '',
+                    })}
                   >
                     <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from(new Set([...TITLES, formData.title])).filter(Boolean).map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
+                      {Array.from(new Set([...TITLES, formData.title]))
+                        .filter(titleOption => titleOption && titleOption !== 'Others')
+                        .map(titleOption => {
+                          const value = titleOption === 'Other' ? 'Others' : titleOption
+                          return <SelectItem key={value} value={value}>{titleOption}</SelectItem>
+                        })}
                     </SelectContent>
                   </Select>
+                  {(formData.title === 'Other' || formData.title === 'Others') && (
+                    <div className="mt-2 space-y-2">
+                      <Label htmlFor="title_other">Specify Title *</Label>
+                      <Input
+                        id="title_other"
+                        value={formData.title_other}
+                        onChange={event => setFormData({ ...formData, title_other: event.target.value })}
+                        placeholder="Specify title"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">

@@ -44,7 +44,8 @@ import { isBusinessMatchingEnabled, THAILAB2026_PROJECT_UUID } from '@/lib/featu
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
 import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
-import { printBadge } from '@/utils/print-badge'
+import { printProjectBadges } from '@/lib/badge-layout/print'
+import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -249,11 +250,14 @@ export function ParticipantList({
   // Dialog Form State for controlled components
   const [attendeeType, setAttendeeType] = useState('VI')
   const [title, setTitle] = useState('Mr.')
+  const [titleOther, setTitleOther] = useState('')
   const [residenceCountry, setResidenceCountry] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
   const [mobileCountryCode, setMobileCountryCode] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
   const [selectedEvent, setSelectedEvent] = useState(events[0]?.event_uuid || '')
   
   const onPrintClick = async (p: Participant) => {
+    let popup: Window
+    try { popup = reserveLayoutPrintWindow() } catch (error) { toast.error(error instanceof Error ? error.message : 'Popup blocked'); return }
     const printPromise = (async () => {
       const [printResult, detailResult] = await Promise.all([
         printParticipantBadge(projectId, p.registration_uuid),
@@ -273,10 +277,15 @@ export function ParticipantList({
             }
           : p
 
-      printBadge(getParticipantPrintData(participantForBadge, attendeeTypesByCode), projectId)
+      const printData = getParticipantPrintData(participantForBadge, attendeeTypesByCode)
+      if (printResult.layoutState !== undefined) {
+        await printProjectBadges(projectId, [printData], popup, undefined, printResult.layoutState)
+      } else {
+        await printProjectBadges(projectId, [printData], popup)
+      }
 
       return 'Badge print triggered'
-    })()
+    })().catch(error => { popup.close(); throw error })
 
     toast.promise(printPromise, {
       loading: 'Printing badge...',
@@ -412,6 +421,7 @@ export function ParticipantList({
     setSelectedParticipant(null)
     setAttendeeType('VI')
     setTitle('Mr.')
+    setTitleOther('')
     setResidenceCountry(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
     setMobileCountryCode(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
     setSelectedEvent(events[0]?.event_uuid || '')
@@ -427,6 +437,7 @@ export function ParticipantList({
       setSelectedParticipant(result.data)
       setAttendeeType(result.data.attendee_type_code || 'VI')
       setTitle(result.data.title || 'Mr.')
+      setTitleOther(result.data.title_other || '')
       const residenceCountryCode = getCountryCodeFromValue(result.data.residence_country, '')
       setResidenceCountry(residenceCountryCode)
 
@@ -438,6 +449,7 @@ export function ParticipantList({
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
       setTitle(p.title || 'Mr.')
+      setTitleOther(p.title_other || '')
       setResidenceCountry(getCountryCodeFromValue(p.residence_country, ''))
       setMobileCountryCode('')
       setSelectedEvent(events[0]?.event_uuid || '')
@@ -1188,7 +1200,15 @@ export function ParticipantList({
               </div>
               <div className="space-y-2.5">
                 <Label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Title</Label>
-                <Select name="title" value={title} onValueChange={setTitle} required>
+                <Select
+                  name="title"
+                  value={title}
+                  onValueChange={value => {
+                    setTitle(value)
+                    if (value !== 'Other') setTitleOther('')
+                  }}
+                  required
+                >
                   <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl focus:bg-white/10 transition-all">
                     <SelectValue />
                   </SelectTrigger>
@@ -1198,6 +1218,20 @@ export function ParticipantList({
                     ))}
                   </SelectContent>
                 </Select>
+                {title === 'Other' && (
+                  <div className="space-y-2.5 mt-2">
+                    <Label htmlFor="title_other" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Specify Title *</Label>
+                    <Input
+                      id="title_other"
+                      name="title_other"
+                      placeholder="Specify title"
+                      value={titleOther}
+                      onChange={event => setTitleOther(event.target.value)}
+                      required
+                      className="h-12 bg-white/5 border-white/10 rounded-xl"
+                    />
+                  </div>
+                )}
               </div>
               <div className="space-y-2.5">
                 <Label htmlFor="first_name" className="text-[10px] font-bold uppercase tracking-widest text-primary/60">First Name *</Label>

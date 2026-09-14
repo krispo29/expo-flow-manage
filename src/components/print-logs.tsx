@@ -40,6 +40,18 @@ import { Separator } from '@/components/ui/separator'
 
 type PrintLogMode = 'print-logs' | 'missing-activity'
 
+type PrintHistoryEntry = {
+  created_at: string
+  created_by: string
+  layout_revision?: number | null
+  layout_source?: 'api' | 'cache' | 'legacy' | null
+  layout_offset_x_mm?: number | null
+  layout_offset_y_mm?: number | null
+  print_job_id?: string | null
+  calibration_profile_id?: string | null
+  calibration_profile_name?: string | null
+}
+
 function formatLogDateTime(value?: string | null) {
   if (!value) return '---'
 
@@ -89,7 +101,7 @@ export function PrintLogs({
 
   // History Dialog
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
-  const [historyLogs, setHistoryLogs] = useState<{created_at: string, created_by: string}[]>([])
+  const [historyLogs, setHistoryLogs] = useState<PrintHistoryEntry[]>([])
   const [historyTargetName, setHistoryTargetName] = useState('')
 
   // Generate Attendance Dialog
@@ -839,6 +851,16 @@ export function PrintLogs({
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-foreground">{format(new Date(h.created_at), 'MMM dd, yyyy')}</p>
                     <p className="text-[10px] font-mono font-bold text-primary/60">{format(new Date(h.created_at), 'hh:mm:ss a')}</p>
+                    <p className="text-[10px] font-semibold text-primary/70">
+                      {h.layout_revision === null || h.layout_revision === undefined
+                        ? 'Layout metadata unavailable (older log)'
+                        : `Layout revision ${h.layout_revision} · ${h.layout_source || 'unknown source'}`}
+                    </p>
+                    {h.calibration_profile_name && (
+                      <p className="text-[10px] text-muted-foreground/70">
+                        Printer profile: {h.calibration_profile_name}
+                      </p>
+                    )}
                   </div>
                   <Badge variant="outline" className="text-[9px] font-black tracking-widest border-white/10 opacity-60 uppercase">
                     ID: {h.created_by || 'SYS'}

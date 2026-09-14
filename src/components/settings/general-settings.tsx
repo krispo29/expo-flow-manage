@@ -1601,7 +1601,8 @@ export function ProjectSettings({ projectUuid }: Readonly<ProjectSettingsProps>)
             <Separator className="bg-white/5" />
 
             <div className="space-y-8">
-              <SectionHeader icon={Ticket} title="Badge Settings" />
+              <SectionHeader icon={Ticket} title="Legacy Badge Settings" />
+              <p className="text-sm text-muted-foreground">These values do not control published badge layouts. Use the Badge layout editor to configure paper dimensions, field positioning and reference artwork.</p>
               <div className="grid gap-6 lg:grid-cols-3">
                 <Field label="Background Image URL" className="lg:col-span-3">
                   <ImageUrlInput value={settingsForm.badge.background_image_url} onChange={(value) => updateSettings((current) => ({ ...current, badge: { ...current.badge, background_image_url: value } }))} />
