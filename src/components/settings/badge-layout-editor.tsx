@@ -2105,6 +2105,7 @@ export function BadgeLayoutEditor({ projectUuid }: { projectUuid: string }) {
                     <LayoutBadgeCard
                       layout={displayedLayout}
                       data={previewData}
+                      autoFitText={false}
                       onReady={handlePreviewReady}
                     />
                     {displayedLayout.referenceBackgroundUrl && (
