@@ -53,3 +53,21 @@ it('applies vertical text alignment inside the selected field frame', async () =
     justifyContent: 'center',
   })
 })
+
+it('keeps the configured font size when editor preview disables auto-fit', async () => {
+  const layout = getStarterLayout('INDO2026')
+  layout.fields.badgeType.fontSizePt = 48
+  const ready = jest.fn()
+  const { container } = render(
+    <LayoutBadgeCard
+      layout={layout}
+      data={sampleBadge}
+      autoFitText={false}
+      onReady={ready}
+    />
+  )
+  await waitFor(() => expect(ready).toHaveBeenCalled())
+  expect(
+    container.querySelector<HTMLElement>('[data-text-field="badgeType"]')
+  ).toHaveStyle({ fontSize: '48pt' })
+})

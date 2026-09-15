@@ -14,11 +14,13 @@ export function LayoutBadgeCard({
   layout,
   data,
   calibration = { offsetXMm: 0, offsetYMm: 0 },
+  autoFitText = true,
   onReady,
 }: {
   layout: BadgeLayout
   data: BadgeRenderData
   calibration?: Calibration
+  autoFitText?: boolean
   onReady?: () => void
 }) {
   const root = useRef<HTMLElement>(null)
@@ -54,7 +56,11 @@ export function LayoutBadgeCard({
           )
         }
         let chosen = field.fontSizePt
-        if (field.fitMode === 'shrink-then-clip' && !fits(chosen)) {
+        if (
+          autoFitText &&
+          field.fitMode === 'shrink-then-clip' &&
+          !fits(chosen)
+        ) {
           let low = field.minFontSizePt,
             high = field.fontSizePt
           for (let i = 0; i < 12; i++) {
@@ -78,7 +84,7 @@ export function LayoutBadgeCard({
     return () => {
       cancelled = true
     }
-  }, [layout, data])
+  }, [autoFitText, layout, data])
   return (
     <section
       ref={root}
