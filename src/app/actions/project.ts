@@ -49,7 +49,6 @@ export async function getProjects() {
 
     const response = await api.get('/v1/admin/projects', { headers })
     const result = response.data
-    console.log('Projects API response:', result)
     
     const projects = (result.data || []) as Project[]
     
