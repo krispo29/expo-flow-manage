@@ -401,7 +401,6 @@ export async function createConference(formData: FormData) {
       detail: detail || undefined,
     }
 
-    console.log('====== CREATE CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
     await api.post('/v1/admin/project/conferences', body, { headers })
 
     revalidatePath('/admin/conferences')
@@ -457,7 +456,6 @@ export async function updateConference(conferenceUuid: string, formData: FormDat
       detail: detail || undefined,
     }
 
-    console.log('====== UPDATE CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
     await api.put('/v1/admin/project/conferences', body, { headers })
 
     revalidatePath('/admin/conferences')

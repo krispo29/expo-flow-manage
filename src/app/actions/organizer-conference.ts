@@ -206,7 +206,6 @@ export async function createOrganizerConference(formData: FormData) {
       detail: detail || undefined,
     }
 
-    console.log('====== CREATE ORGANIZER CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
     await api.post('/v1/organizer/conferences', body, { headers })
 
     revalidatePath('/organizer/conferences')
@@ -261,7 +260,6 @@ export async function updateOrganizerConference(conferenceUuid: string, formData
       detail: detail || undefined,
     }
 
-    console.log('====== UPDATE ORGANIZER CONFERENCE PAYLOAD ======', JSON.stringify(body, null, 2))
     await api.put(`/v1/organizer/conferences/${conferenceUuid}`, body, { headers })
 
     revalidatePath('/organizer/conferences')
