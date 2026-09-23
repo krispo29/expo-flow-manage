@@ -261,7 +261,7 @@ export function ParticipantList({
     const printPromise = (async () => {
       const [printResult, detailResult] = await Promise.all([
         printParticipantBadge(projectId, p.registration_uuid),
-        getParticipantById(p.registration_uuid),
+        getParticipantById(p.registration_uuid, projectId),
       ])
 
       if (!printResult.success) {
@@ -430,7 +430,7 @@ export function ParticipantList({
 
   async function openEdit(p: Participant) {
     setLoading(true)
-    const result = await getParticipantById(p.registration_uuid)
+    const result = await getParticipantById(p.registration_uuid, projectId)
     setLoading(false)
 
     if (result.success && result.data) {
@@ -438,7 +438,12 @@ export function ParticipantList({
       setAttendeeType(result.data.attendee_type_code || 'VI')
       setTitle(result.data.title || 'Mr.')
       setTitleOther(result.data.title_other || '')
-      const residenceCountryCode = getCountryCodeFromValue(result.data.residence_country, '')
+      const residenceCountryValue =
+        result.data.residence_country ||
+        (result.data as unknown as { country?: string }).country ||
+        result.data.company_country ||
+        ''
+      const residenceCountryCode = getCountryCodeFromValue(residenceCountryValue, '')
       setResidenceCountry(residenceCountryCode)
 
       setMobileCountryCode(
@@ -446,11 +451,18 @@ export function ParticipantList({
       )
       setSelectedEvent(result.data.event_uuid || events[0]?.event_uuid || '')
     } else {
+      if (result.error) {
+        toast.error(result.error)
+      }
       setSelectedParticipant(p)
       setAttendeeType(p.attendee_type_code || 'VI')
       setTitle(p.title || 'Mr.')
       setTitleOther(p.title_other || '')
-      setResidenceCountry(getCountryCodeFromValue(p.residence_country, ''))
+      const residenceCountryValue =
+        p.residence_country ||
+        (p as unknown as { country?: string }).country ||
+        ''
+      setResidenceCountry(getCountryCodeFromValue(residenceCountryValue, ''))
       setMobileCountryCode('')
       setSelectedEvent(events[0]?.event_uuid || '')
     }
@@ -464,7 +476,7 @@ export function ParticipantList({
         label: "Delete",
         onClick: async () => {
           setLoading(true)
-          const result = await deleteParticipant(registrationUuid)
+          const result = await deleteParticipant(registrationUuid, projectId)
           setLoading(false)
 
           if (result.success) {
@@ -485,9 +497,9 @@ export function ParticipantList({
 
     let result
     if (selectedParticipant) {
-      result = await updateParticipant(selectedParticipant.registration_uuid, formData)
+      result = await updateParticipant(selectedParticipant.registration_uuid, formData, projectId)
     } else {
-      result = await createParticipant(formData)
+      result = await createParticipant(formData, projectId)
     }
 
     setLoading(false)
