@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { 
   Table, 
   TableBody, 
@@ -40,10 +40,12 @@ import {
 } from '@/app/actions/participant'
 import { getConferences, getRooms, type Conference, type Room } from '@/app/actions/conference'
 import { type Event } from '@/app/actions/settings'
+import { type Project } from '@/app/actions/project'
+import { type StoredProject } from '@/lib/auth-storage'
 import { isBusinessMatchingEnabled, THAILAB2026_PROJECT_UUID } from '@/lib/features'
 import { toast } from 'sonner'
 import { CountrySelector } from '@/components/CountrySelector'
-import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue } from '@/lib/countries'
+import { countries, getCountryCodeFromPhoneCodeOrValue, getCountryCodeFromValue, getCountryNameFromValue, getDefaultCountryCodeForProject } from '@/lib/countries'
 import { printProjectBadges } from '@/lib/badge-layout/print'
 import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -98,6 +100,7 @@ function getParticipantPrintData(
 interface ParticipantListProps {
   participants: Participant[]
   projectId: string
+  project?: Project | StoredProject
   attendeeTypes: AttendeeType[]
   events: Event[]
   initialRegistrationCode?: string
@@ -106,6 +109,7 @@ interface ParticipantListProps {
 export function ParticipantList({ 
   participants, 
   projectId, 
+  project,
   attendeeTypes,
   events,
   initialRegistrationCode = '',
@@ -248,12 +252,23 @@ export function ParticipantList({
   const formRef = useRef<HTMLFormElement>(null)
   
   // Dialog Form State for controlled components
+  const defaultCountryCode = useMemo(() => {
+    return getDefaultCountryCodeForProject(project || projectId)
+  }, [project, projectId])
+
   const [attendeeType, setAttendeeType] = useState('VI')
   const [title, setTitle] = useState('Mr.')
   const [titleOther, setTitleOther] = useState('')
-  const [residenceCountry, setResidenceCountry] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
-  const [mobileCountryCode, setMobileCountryCode] = useState(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
+  const [residenceCountry, setResidenceCountry] = useState(defaultCountryCode)
+  const [mobileCountryCode, setMobileCountryCode] = useState(defaultCountryCode)
   const [selectedEvent, setSelectedEvent] = useState(events[0]?.event_uuid || '')
+
+  useEffect(() => {
+    if (!selectedParticipant && !isDialogOpen) {
+      setResidenceCountry(defaultCountryCode)
+      setMobileCountryCode(defaultCountryCode)
+    }
+  }, [defaultCountryCode, selectedParticipant, isDialogOpen])
   
   const onPrintClick = async (p: Participant) => {
     let popup: Window
@@ -422,8 +437,8 @@ export function ParticipantList({
     setAttendeeType('VI')
     setTitle('Mr.')
     setTitleOther('')
-    setResidenceCountry(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
-    setMobileCountryCode(projectId === THAILAB2026_PROJECT_UUID ? 'TH' : 'VN')
+    setResidenceCountry(defaultCountryCode)
+    setMobileCountryCode(defaultCountryCode)
     setSelectedEvent(events[0]?.event_uuid || '')
     setIsDialogOpen(true)
   }
@@ -443,11 +458,11 @@ export function ParticipantList({
         (result.data as unknown as { country?: string }).country ||
         result.data.company_country ||
         ''
-      const residenceCountryCode = getCountryCodeFromValue(residenceCountryValue, '')
+      const residenceCountryCode = getCountryCodeFromValue(residenceCountryValue, defaultCountryCode)
       setResidenceCountry(residenceCountryCode)
 
       setMobileCountryCode(
-        getCountryCodeFromPhoneCodeOrValue(result.data.mobile_country_code, '')
+        getCountryCodeFromPhoneCodeOrValue(result.data.mobile_country_code, defaultCountryCode)
       )
       setSelectedEvent(result.data.event_uuid || events[0]?.event_uuid || '')
     } else {
@@ -462,8 +477,8 @@ export function ParticipantList({
         p.residence_country ||
         (p as unknown as { country?: string }).country ||
         ''
-      setResidenceCountry(getCountryCodeFromValue(residenceCountryValue, ''))
-      setMobileCountryCode('')
+      setResidenceCountry(getCountryCodeFromValue(residenceCountryValue, defaultCountryCode))
+      setMobileCountryCode(defaultCountryCode)
       setSelectedEvent(events[0]?.event_uuid || '')
     }
     setIsDialogOpen(true)
@@ -1265,6 +1280,8 @@ export function ParticipantList({
                   label=""
                   placeholder="Select"
                   displayProperty="phoneCode"
+                  projectId={projectId}
+                  projectCode={project?.project_code}
                 />
                 <input
                   type="hidden"
@@ -1301,6 +1318,8 @@ export function ParticipantList({
                   onChange={setResidenceCountry}
                   label=""
                   placeholder="Select country"
+                  projectId={projectId}
+                  projectCode={project?.project_code}
                 />
                 <input
                   type="hidden"

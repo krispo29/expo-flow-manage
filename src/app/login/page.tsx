@@ -96,6 +96,7 @@ export default function LoginPage() {
               project_uuid: p.project_uuid,
               project_name: p.project_name,
               project_code: p.project_code || '',
+              country_code: p.country_code || '',
               logo_url: p.logo_url
             }))
             setStoredProjects(storedProjects)

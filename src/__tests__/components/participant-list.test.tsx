@@ -144,4 +144,32 @@ describe('ParticipantList', () => {
 
     expect(screen.getByLabelText(/specify title/i)).toBeRequired()
   })
+
+  it('defaults mobile country code and residence country to Indonesia for INDO2026', () => {
+    render(
+      <ParticipantList
+        participants={[]}
+        projectId="f90471b1-2522-4d71-886c-9ae6e60c2d22"
+        project={{
+          project_uuid: 'f90471b1-2522-4d71-886c-9ae6e60c2d22',
+          project_code: 'INDO2026',
+          project_name: 'ILDEX Indonesia 2026',
+          country_code: 'Indonesia',
+        } as any}
+        attendeeTypes={[]}
+        events={[]}
+      />,
+    )
+
+    const addButton = screen.getByRole('button', { name: /^add$/i })
+    fireEvent.click(addButton)
+
+    expect(screen.getByText('Create Participant')).toBeInTheDocument()
+
+    const mobileCountryCodeInput = document.querySelector('input[name="mobile_country_code"]') as HTMLInputElement
+    const residenceCountryInput = document.querySelector('input[name="residence_country"]') as HTMLInputElement
+
+    expect(mobileCountryCodeInput?.value).toBe('+62')
+    expect(residenceCountryInput?.value).toBe('Indonesia')
+  })
 })

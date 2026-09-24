@@ -21,6 +21,7 @@ export interface StoredProject {
   project_uuid: string
   project_name: string
   project_code: string
+  country_code?: string
   logo_url?: string
 }
 

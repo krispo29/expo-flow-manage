@@ -35,7 +35,7 @@ import {
   getProjectStaffEventPermissions, updateProjectStaffEventPermissions
 } from '@/app/actions/staff'
 import { getEvents } from '@/app/actions/settings'
-import { countries, getCountryNameFromValue } from '@/lib/countries'
+import { countries, getCountryNameFromValue, getDefaultCountryCodeForProject } from '@/lib/countries'
 import { toast } from 'sonner'
 import { printProjectBadges } from '@/lib/badge-layout/print'
 import { reserveLayoutPrintWindow } from '@/lib/badge-layout/print-window'
@@ -97,10 +97,11 @@ export function StaffList({
 
   const formRef = useRef<HTMLFormElement>(null)
 
+  const defaultCountryCode = getDefaultCountryCodeForProject(projectId)
   const [staffType, setStaffType] = useState('ST')
   const [title, setTitle] = useState('Mr.')
-  const [residenceCountry, setResidenceCountry] = useState('TH')
-  const [mobileCountryCode, setMobileCountryCode] = useState('')
+  const [residenceCountry, setResidenceCountry] = useState(defaultCountryCode)
+  const [mobileCountryCode, setMobileCountryCode] = useState(defaultCountryCode)
   const [isBusinessMatching, setIsBusinessMatching] = useState(false)
 
   const [loading, setLoading] = useState(false)

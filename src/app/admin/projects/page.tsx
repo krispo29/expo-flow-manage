@@ -72,6 +72,7 @@ import {
   getCountryCodeFromValue,
   getCountryDisplayName,
   getCountryNameFromValue,
+  getDefaultCountryCodeForProject,
 } from '@/lib/countries'
 
 export default function ProjectsPage() {
@@ -138,7 +139,7 @@ export default function ProjectsPage() {
     const formData = new FormData(event.currentTarget)
     const selectedCountryName =
       countries.find((country) => country.code === selectedCountry)?.name ||
-      getCountryNameFromValue(selectedCountry || 'VN')
+      getCountryNameFromValue(selectedCountry || getDefaultCountryCodeForProject(editingProject))
 
     const projectData = {
       project_uuid: editingProject.project_uuid,
@@ -187,7 +188,7 @@ export default function ProjectsPage() {
     e.stopPropagation()
     setEditingProject(project)
     setSelectedTimezone(project.timezone || '')
-    setSelectedCountry(getCountryCodeFromValue(project.country_code, 'VN'))
+    setSelectedCountry(getCountryCodeFromValue(project.country_code, getDefaultCountryCodeForProject(project)))
     setIsEditOpen(true)
   }
 
