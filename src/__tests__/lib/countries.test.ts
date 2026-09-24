@@ -7,6 +7,7 @@ import {
   getCountryCodeFromValue,
   getCountryDisplayName,
   getCountryNameFromValue,
+  getDefaultCountryCodeForProject,
 } from '@/lib/countries'
 
 describe('countries', () => {
@@ -187,5 +188,61 @@ describe('country value helpers', () => {
     expect(getCountryCodeFromValue('', '')).toBe('')
     expect(getCountryNameFromValue('Neverland')).toBe('Neverland')
     expect(getCountryCodeFromValue('Neverland')).toBe('TH')
+  })
+
+  describe('getDefaultCountryCodeForProject', () => {
+    afterEach(() => {
+      sessionStorage.clear()
+    })
+
+    it('resolves ID for INDO2026 project code', () => {
+      expect(getDefaultCountryCodeForProject('INDO2026')).toBe('ID')
+      expect(getDefaultCountryCodeForProject({ project_code: 'INDO2026' })).toBe('ID')
+    })
+
+    it('resolves TH for THAILAB2026 project code', () => {
+      expect(getDefaultCountryCodeForProject('THAILAB2026')).toBe('TH')
+      expect(getDefaultCountryCodeForProject({ project_code: 'THAILAB2026' })).toBe('TH')
+    })
+
+    it('resolves PH for ILDEXPH2026 project code', () => {
+      expect(getDefaultCountryCodeForProject('ILDEXPH2026')).toBe('PH')
+      expect(getDefaultCountryCodeForProject({ project_code: 'ILDEXPH2026' })).toBe('PH')
+    })
+
+    it('resolves VN for ILDEX2026 (Vietnam) project code', () => {
+      expect(getDefaultCountryCodeForProject('ILDEX2026')).toBe('VN')
+      expect(getDefaultCountryCodeForProject({ project_code: 'ILDEX2026' })).toBe('VN')
+    })
+
+    it('resolves from country_code field on project object', () => {
+      expect(getDefaultCountryCodeForProject({ country_code: 'Indonesia' })).toBe('ID')
+      expect(getDefaultCountryCodeForProject({ country_code: 'Thailand' })).toBe('TH')
+      expect(getDefaultCountryCodeForProject({ country_code: 'Philippines' })).toBe('PH')
+      expect(getDefaultCountryCodeForProject({ country_code: 'Vietnam' })).toBe('VN')
+      expect(getDefaultCountryCodeForProject({ country_code: 'ID' })).toBe('ID')
+    })
+
+    it('resolves from project_name when code is generic', () => {
+      expect(getDefaultCountryCodeForProject({ project_name: 'ILDEX Indonesia 2026' })).toBe('ID')
+      expect(getDefaultCountryCodeForProject({ project_name: 'ILDEX Philippines 2026' })).toBe('PH')
+    })
+
+    it('resolves via stored project in sessionStorage when passing project UUID', () => {
+      sessionStorage.setItem(
+        'auth_projects',
+        JSON.stringify([
+          {
+            project_uuid: 'f90471b1-2522-4d71-886c-9ae6e60c2d22',
+            project_code: 'INDO2026',
+            project_name: 'ILDEX Indonesia 2026',
+            country_code: 'Indonesia',
+          },
+        ])
+      )
+      expect(
+        getDefaultCountryCodeForProject('f90471b1-2522-4d71-886c-9ae6e60c2d22')
+      ).toBe('ID')
+    })
   })
 })

@@ -276,17 +276,17 @@ export async function getParticipants(projectId: string, query?: string, type?: 
   }
 }
 
-export async function getParticipantById(id: string) {
+export async function getParticipantById(id: string, projectId?: string) {
   try {
-    const authContext = await getServerAuthContext()
-    const projectUuid = authContext?.projectUuid
+    const authContext = await getServerAuthContext({ projectUuid: projectId })
+    const projectUuid = projectId || authContext?.projectUuid
     
     // Verify user has access to this project
     if (projectUuid) {
       await requireProjectContext(projectUuid)
     }
     
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders(projectUuid)
  
     const response = await api.get(`/v1/admin/project/participants/${id}`, {
       headers
@@ -300,8 +300,15 @@ export async function getParticipantById(id: string) {
   }
 }
 
-export async function createParticipant(formData: FormData) {
+export async function createParticipant(formData: FormData, projectId?: string) {
   try {
+    const authContext = await getServerAuthContext({ projectUuid: projectId })
+    const projectUuid = projectId || authContext?.projectUuid
+
+    if (projectUuid) {
+      await requireProjectContext(projectUuid)
+    }
+
     const eventUuid = formData.get('event_uuid') as string
 
     const body = {
@@ -321,7 +328,7 @@ export async function createParticipant(formData: FormData) {
       attendee_type_code: formData.get('attendee_type_code') as string
     }
 
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders(projectUuid)
  
     await api.post('/v1/admin/project/participants', body, {
       headers
@@ -336,8 +343,15 @@ export async function createParticipant(formData: FormData) {
   }
 }
 
-export async function updateParticipant(registrationUuid: string, formData: FormData) {
+export async function updateParticipant(registrationUuid: string, formData: FormData, projectId?: string) {
   try {
+    const authContext = await getServerAuthContext({ projectUuid: projectId })
+    const projectUuid = projectId || authContext?.projectUuid
+
+    if (projectUuid) {
+      await requireProjectContext(projectUuid)
+    }
+
     const body = {
       registration_uuid: registrationUuid,
       title: formData.get('title') as string,
@@ -354,7 +368,7 @@ export async function updateParticipant(registrationUuid: string, formData: Form
       attendee_type_code: formData.get('attendee_type_code') as string
     }
 
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders(projectUuid)
  
     const role = await getUserRole()
     const basePath = role === 'ORGANIZER' 
@@ -375,10 +389,10 @@ export async function updateParticipant(registrationUuid: string, formData: Form
   }
 }
 
-export async function deleteParticipant(registrationUuid: string) {
+export async function deleteParticipant(registrationUuid: string, projectId?: string) {
   try {
-    const authContext = await getServerAuthContext()
-    const projectUuid = authContext?.projectUuid
+    const authContext = await getServerAuthContext({ projectUuid: projectId })
+    const projectUuid = projectId || authContext?.projectUuid
     
     // Verify user has access to this project before deletion
     if (!projectUuid) {
@@ -386,7 +400,7 @@ export async function deleteParticipant(registrationUuid: string) {
     }
     await requireProjectContext(projectUuid)
     
-    const headers = await getAuthHeaders()
+    const headers = await getAuthHeaders(projectUuid)
  
     await api.delete(`/v1/admin/project/participants/${registrationUuid}/delete`, {
       headers

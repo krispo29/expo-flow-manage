@@ -1,3 +1,6 @@
+import { getSelectedProject, getStoredProjects } from '@/lib/auth-storage';
+import { THAILAB2026_PROJECT_UUID } from '@/lib/features';
+
 export interface Country {
   code: string;       // ISO 2-letter code
   name: string;       // ชื่อประเทศ
@@ -338,4 +341,86 @@ export const getCountryCodeFromPhoneCodeOrValue = (
   if (country) return country.code;
 
   return getCountryByCode(fallbackCode)?.code || fallbackCode;
+};
+
+export interface ProjectInfoLike {
+  project_uuid?: string | null;
+  project_code?: string | null;
+  country_code?: string | null;
+  project_name?: string | null;
+}
+
+export const getDefaultCountryCodeForProject = (
+  projectOrId?: ProjectInfoLike | string | null,
+  fallback = 'ID'
+): string => {
+  let projectCode = '';
+  let countryCode = '';
+  let projectName = '';
+  let projectUuid = '';
+
+  if (typeof projectOrId === 'string' && projectOrId.trim()) {
+    projectUuid = projectOrId.trim();
+    if (typeof window !== 'undefined') {
+      const stored = getStoredProjects().find((p) => p.project_uuid === projectUuid);
+      if (stored) {
+        projectCode = stored.project_code || '';
+        countryCode = stored.country_code || '';
+        projectName = stored.project_name || '';
+      }
+    }
+    if (!projectCode) {
+      projectCode = projectUuid;
+    }
+  } else if (projectOrId && typeof projectOrId === 'object') {
+    projectCode = projectOrId.project_code || '';
+    countryCode = projectOrId.country_code || '';
+    projectName = projectOrId.project_name || '';
+    projectUuid = projectOrId.project_uuid || '';
+  }
+
+  // If in browser and still missing info, check URL projectId or sessionStorage
+  if (!projectCode && !countryCode && typeof window !== 'undefined') {
+    const urlProjectId = new URLSearchParams(window.location.search).get('projectId');
+    const activeId = projectUuid || urlProjectId || getSelectedProject();
+    if (activeId) {
+      const stored = getStoredProjects().find((p) => p.project_uuid === activeId);
+      if (stored) {
+        projectCode = stored.project_code || '';
+        countryCode = stored.country_code || '';
+        projectName = stored.project_name || '';
+      }
+    }
+  }
+
+  // 1. Direct country_code matching (e.g. "Indonesia", "Thailand", "Philippines", "Vietnam", "ID", "TH")
+  if (countryCode) {
+    const matched = findCountryByCodeOrName(countryCode);
+    if (matched) return matched.code;
+  }
+
+  // 2. Specific project UUID check (e.g. THAILAB2026)
+  if (projectUuid === THAILAB2026_PROJECT_UUID) {
+    return 'TH';
+  }
+
+  // 3. Project code matching
+  const upperCode = projectCode.toUpperCase();
+  if (upperCode.includes('INDO')) return 'ID';
+  if (upperCode.includes('THAI') || upperCode.startsWith('TL')) return 'TH';
+  if (upperCode.includes('PH') || upperCode.includes('PHIL')) return 'PH';
+  if (upperCode.includes('VN') || upperCode.includes('VIET') || upperCode === 'ILDEX2026') return 'VN';
+  if (upperCode.includes('MY')) return 'MY';
+  if (upperCode.includes('SG')) return 'SG';
+
+  // 4. Project name matching
+  const upperName = projectName.toUpperCase();
+  if (upperName.includes('INDONESIA')) return 'ID';
+  if (upperName.includes('THAILAND')) return 'TH';
+  if (upperName.includes('PHILIPPINE')) return 'PH';
+  if (upperName.includes('VIETNAM')) return 'VN';
+  if (upperName.includes('MALAYSIA')) return 'MY';
+  if (upperName.includes('SINGAPORE')) return 'SG';
+
+  return fallback;
 };

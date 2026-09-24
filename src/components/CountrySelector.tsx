@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { countries, findCountryByPhoneCodeOrValue, getCountryDisplayName } from "@/lib/countries";
+import { countries, findCountryByPhoneCodeOrValue, getCountryDisplayName, getDefaultCountryCodeForProject } from "@/lib/countries";
 import { getSelectedProject, getStoredProjects } from "@/lib/auth-storage";
 import { THAILAB2026_PROJECT_UUID } from "@/lib/features";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,8 @@ interface CountrySelectorProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  projectId?: string;
+  projectCode?: string;
 }
 
 export function CountrySelector({
@@ -42,6 +44,8 @@ export function CountrySelector({
   required = false,
   disabled = false,
   className,
+  projectId: propProjectId,
+  projectCode: propProjectCode,
 }: CountrySelectorProps) {
   const [open, setOpen] = useState(false);
   const userProjectId = useAuthStore((state) => state.user?.projectId);
@@ -50,41 +54,44 @@ export function CountrySelector({
       ? null
       : new URLSearchParams(window.location.search).get('projectId');
   const selectedProjectId =
-    projectIdFromUrl || userProjectId || getSelectedProject();
+    propProjectId || projectIdFromUrl || userProjectId || getSelectedProject();
+  const matchedProject = getStoredProjects().find(
+    (project) => project.project_uuid === selectedProjectId
+  );
   const projectCode =
-    selectedProjectId === THAILAB2026_PROJECT_UUID
+    propProjectCode ||
+    (selectedProjectId === THAILAB2026_PROJECT_UUID
       ? 'THAILAB2026'
-      : getStoredProjects().find(
-          (project) => project.project_uuid === selectedProjectId
-        )?.project_code;
+      : matchedProject?.project_code);
   const getDisplayValue = (country: typeof countries[number]) =>
     displayProperty === 'name'
       ? getCountryDisplayName(country, projectCode)
       : country[displayProperty];
 
+  const primaryCountryCode = useMemo(() => {
+    return getDefaultCountryCodeForProject(
+      propProjectCode || matchedProject || selectedProjectId
+    );
+  }, [propProjectCode, matchedProject, selectedProjectId]);
+
   const sortedCountries = useMemo(() => {
     return [...countries].sort((a, b) => {
-      const isThaiLab = projectCode === 'THAILAB2026' || selectedProjectId === THAILAB2026_PROJECT_UUID;
-      
-      if (isThaiLab) {
-        // Prioritize Thailand first, then Vietnam
-        if (a.code === 'TH') return -1;
-        if (b.code === 'TH') return 1;
-        if (a.code === 'VN') return -1;
-        if (b.code === 'VN') return 1;
-      } else {
-        // Prioritize Vietnam first, then Thailand
-        if (a.code === 'VN') return -1;
-        if (b.code === 'VN') return 1;
-        if (a.code === 'TH') return -1;
-        if (b.code === 'TH') return 1;
+      // 1. Primary project country is top priority
+      if (a.code === primaryCountryCode) return -1;
+      if (b.code === primaryCountryCode) return 1;
+
+      // 2. Secondary regional priorities
+      const secondaries = ['TH', 'VN', 'ID'].filter((code) => code !== primaryCountryCode);
+      for (const sec of secondaries) {
+        if (a.code === sec) return -1;
+        if (b.code === sec) return 1;
       }
-      
+
       const valA = a[displayProperty as keyof typeof a] as string;
       const valB = b[displayProperty as keyof typeof b] as string;
       return valA.localeCompare(valB);
     });
-  }, [displayProperty, projectCode, selectedProjectId]);
+  }, [displayProperty, primaryCountryCode]);
 
   const selectedCountry = findCountryByPhoneCodeOrValue(value);
 
